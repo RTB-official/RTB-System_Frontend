@@ -1,12 +1,7 @@
-import MainLayout from './layout/MainLayout';
-import HomePage from './pages/Home/HomePage';
+import CreationPage from './pages/Creation/CreationPage';
 
 function App() {
-  return (
-    <MainLayout>
-      <HomePage />
-    </MainLayout>
-  );
+  return <CreationPage />;
 }
 
 export default App;
