@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 // 아이콘 컴포넌트들
 const IconHome = () => (
@@ -27,7 +27,7 @@ const IconPayment = () => (
 
 const IconBeachAccess = () => (
   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M13.127 14.56L6.43799 21.24L2.75799 17.56L9.43799 10.88C8.89799 8.22 9.65799 5.36 11.537 3.48C14.347 0.67 18.657 0.45 21.707 2.89L16.557 8.04L17.967 9.45L23.117 4.3C25.567 7.35 25.337 11.66 22.527 14.47C20.647 16.35 17.787 17.11 15.127 16.57L13.127 14.56Z" fill="currentColor" />
+    <path d="M21 16V14L13 9V3.5C13 2.67 12.33 2 11.5 2C10.67 2 10 2.67 10 3.5V9L2 14V16L10 13.5V19L8 20.5V22L11.5 21L15 22V20.5L13 19V13.5L21 16Z" fill="currentColor" />
   </svg>
 );
 
@@ -49,24 +49,41 @@ const IconClose = () => (
   </svg>
 );
 
-interface MenuItem {
-  icon: React.ReactNode;
-  label: string;
-  active?: boolean;
-}
+const IconSubdirectory = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M19 15L13 21V18H4V10H6V16H13V13L19 15Z" fill="currentColor" />
+  </svg>
+);
 
 interface SidebarProps {
   onClose?: () => void;
+  activeMenu?: string;
+  activeSubMenu?: string;
 }
 
-export default function Sidebar({ onClose }: SidebarProps) {
-  const [activeItem, setActiveItem] = useState('출장 보고서');
+export default function Sidebar({ onClose, activeMenu = '출장 보고서', activeSubMenu }: SidebarProps) {
+  const [activeItem, setActiveItem] = useState(activeMenu);
+  const [expenseOpen, setExpenseOpen] = useState(activeMenu === '지출 관리');
+  const [activeSubItem, setActiveSubItem] = useState(activeSubMenu || '');
 
-  const menuItems: MenuItem[] = [
+  useEffect(() => {
+    if (activeMenu === '지출 관리') {
+      setExpenseOpen(true);
+    }
+  }, [activeMenu]);
+
+  const mainMenuItems = [
     { icon: <IconHome />, label: '대시보드' },
-    { icon: <IconDescription />, label: '출장 보고서', active: true },
+    { icon: <IconDescription />, label: '출장 보고서' },
     { icon: <IconAssessment />, label: '워크로드' },
-    { icon: <IconPayment />, label: '지출 관리' },
+  ];
+
+  const expenseSubMenuItems = [
+    { label: '구성원 지출 관리' },
+    { label: '개인 지출 기록' },
+  ];
+
+  const bottomMenuItems = [
     { icon: <IconBeachAccess />, label: '휴가 관리' },
     { icon: <IconPeople />, label: '구성원 관리' },
   ];
@@ -118,12 +135,77 @@ export default function Sidebar({ onClose }: SidebarProps) {
 
         {/* Menu Items */}
         <nav className="flex flex-col gap-2">
-          {menuItems.map((item) => (
+          {/* Main Menu Items */}
+          {mainMenuItems.map((item) => (
             <button
               key={item.label}
-              onClick={() => setActiveItem(item.label)}
+              onClick={() => {
+                setActiveItem(item.label);
+                setExpenseOpen(false);
+              }}
               className={`flex gap-6 items-center p-3 rounded-xl transition-colors ${
-                activeItem === item.label
+                activeItem === item.label && activeMenu !== '지출 관리'
+                  ? 'bg-[#364153] text-white'
+                  : 'text-[#101828] hover:bg-[#e5e7eb]'
+              }`}
+            >
+              <div className="flex gap-3 items-center w-[162px]">
+                {item.icon}
+                <p className="font-medium text-[16px] leading-[1.5]">{item.label}</p>
+              </div>
+            </button>
+          ))}
+
+          {/* 지출 관리 with Dropdown */}
+          <div>
+            <button
+              onClick={() => {
+                setExpenseOpen(!expenseOpen);
+                setActiveItem('지출 관리');
+              }}
+              className={`w-full flex gap-6 items-center p-3 rounded-xl transition-colors ${
+                activeMenu === '지출 관리'
+                  ? 'bg-[#364153] text-white'
+                  : 'text-[#101828] hover:bg-[#e5e7eb]'
+              }`}
+            >
+              <div className="flex gap-3 items-center w-[162px]">
+                <IconPayment />
+                <p className="font-medium text-[16px] leading-[1.5]">지출 관리</p>
+              </div>
+            </button>
+
+            {/* Submenu */}
+            {expenseOpen && (
+              <div className="ml-4 mt-1 flex flex-col gap-1">
+                {expenseSubMenuItems.map((subItem) => (
+                  <button
+                    key={subItem.label}
+                    onClick={() => setActiveSubItem(subItem.label)}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-left ${
+                      activeSubItem === subItem.label
+                        ? 'text-blue-600 font-medium'
+                        : 'text-[#6a7282] hover:text-[#101828] hover:bg-[#e5e7eb]'
+                    }`}
+                  >
+                    <span className="text-gray-400">ㄴ</span>
+                    <p className="text-[14px]">{subItem.label}</p>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Bottom Menu Items */}
+          {bottomMenuItems.map((item) => (
+            <button
+              key={item.label}
+              onClick={() => {
+                setActiveItem(item.label);
+                setExpenseOpen(false);
+              }}
+              className={`flex gap-6 items-center p-3 rounded-xl transition-colors ${
+                activeItem === item.label && activeMenu !== '지출 관리'
                   ? 'bg-[#364153] text-white'
                   : 'text-[#101828] hover:bg-[#e5e7eb]'
               }`}
@@ -139,4 +221,3 @@ export default function Sidebar({ onClose }: SidebarProps) {
     </aside>
   );
 }
-
