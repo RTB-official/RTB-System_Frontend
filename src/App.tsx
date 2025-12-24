@@ -1,23 +1,30 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import LoginPage from './pages/Login/LoginPage';
-import CreationPage from './pages/Creation/CreationPage';
-import WorkloadPage from './pages/Workload/WorkloadPage';
-import WorkloadDetailPage from './pages/Workload/WorkloadDetailPage';
-import PersonalExpensePage from './pages/Expense/PersonalExpensePage';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import LoginPage from './pages/Login/LoginPage'
+import HomePage from './pages/Home/HomePage'
+import WorkloadPage from './pages/Workload/WorkloadPage'
+import WorkloadDetailPage from './pages/Workload/WorkloadDetailPage'
+import CreationPage from './pages/Creation/CreationPage'
+import ReportListPage from './pages/Report/ReportListPage'
+import DashboardPage from './pages/Dashboard/DashboardPage'
+import PersonalExpensePage from './pages/Expense/PersonalExpensePage'
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<LoginPage />} />
         <Route path="/login" element={<LoginPage />} />
-        <Route path="/reportcreate" element={<CreationPage />} />
+        <Route path="/home" element={<HomePage />} />
+        <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/workload" element={<WorkloadPage />} />
         <Route path="/workload/detail/:id" element={<WorkloadDetailPage />} />
+        <Route path="/reportcreate" element={<CreationPage />} />
+        <Route path="/report" element={<ReportListPage />} />
         <Route path="/expense" element={<PersonalExpensePage />} />
+        <Route path="/" element={<Navigate to="/login" replace />} />
+        <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </BrowserRouter>
-  );
+  )
 }
 
-export default App;
+export default App

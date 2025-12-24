@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 // 아이콘 컴포넌트들
 const IconHome = () => (
@@ -65,6 +66,8 @@ export default function Sidebar({ onClose, activeMenu = '출장 보고서', acti
   const [activeItem, setActiveItem] = useState(activeMenu);
   const [expenseOpen, setExpenseOpen] = useState(activeMenu === '지출 관리');
   const [activeSubItem, setActiveSubItem] = useState(activeSubMenu || '');
+  const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     if (activeMenu === '지출 관리') {
@@ -80,8 +83,40 @@ export default function Sidebar({ onClose, activeMenu = '출장 보고서', acti
 
   const expenseSubMenuItems = [
     { label: '구성원 지출 관리' },
-    { label: '개인 지출 기록' },
+    { label: '개인 지출' },
   ];
+
+  const routeMap: Record<string, string> = {
+    '대시보드': '/dashboard',
+    '출장 보고서': '/report',
+    '워크로드': '/workload',
+    '지출 관리': '/reportcreate',
+    '휴가 관리': '/vacation',
+    '구성원 관리': '/members',
+  };
+
+  // inverse map: path -> label (first match)
+  const getLabelFromPath = (path: string) => {
+    const entry = Object.entries(routeMap).find(([, p]) => path.startsWith(p));
+    return entry ? entry[0] : '';
+  };
+
+  // Sync active item with current route so hover/active state reflects navigation
+  useEffect(() => {
+    const label = getLabelFromPath(location.pathname);
+    if (label) {
+      setActiveItem(label);
+      setExpenseOpen(label === '지출 관리');
+    }
+  }, [location.pathname]);
+  // Ensure /expense route highlights 개인 지출 under 지출 관리
+  useEffect(() => {
+    if (location.pathname.startsWith('/expense')) {
+      setActiveItem('지출 관리');
+      setExpenseOpen(true);
+      setActiveSubItem('개인 지출');
+    }
+  }, [location.pathname]);
 
   const bottomMenuItems = [
     { icon: <IconBeachAccess />, label: '휴가 관리' },
@@ -142,6 +177,8 @@ export default function Sidebar({ onClose, activeMenu = '출장 보고서', acti
               onClick={() => {
                 setActiveItem(item.label);
                 setExpenseOpen(false);
+                const path = routeMap[item.label];
+                if (path) navigate(path);
               }}
               className={`flex gap-6 items-center p-3 rounded-xl transition-colors ${
                 activeItem === item.label && activeMenu !== '지출 관리'
@@ -181,7 +218,14 @@ export default function Sidebar({ onClose, activeMenu = '출장 보고서', acti
                 {expenseSubMenuItems.map((subItem) => (
                   <button
                     key={subItem.label}
-                    onClick={() => setActiveSubItem(subItem.label)}
+                    onClick={() => {
+                      setActiveSubItem(subItem.label);
+                      setActiveItem('지출 관리');
+                      // navigate to expense page when selecting 개인 지출
+                      if (subItem.label === '개인 지출') {
+                        navigate('/expense');
+                      }
+                    }}
                     className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-left ${
                       activeSubItem === subItem.label
                         ? 'text-blue-600 font-medium'
