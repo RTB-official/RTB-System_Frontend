@@ -91,7 +91,7 @@ export default function Sidebar({ onClose, activeMenu = '출장 보고서', acti
     '출장 보고서': '/report',
     '워크로드': '/workload',
     '지출 관리': '/reportcreate',
-    '휴가 관리': '/vacation',
+    '휴가 관리': '/Vacation',
     '구성원 관리': '/members',
   };
 

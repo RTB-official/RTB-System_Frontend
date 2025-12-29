@@ -7,6 +7,7 @@ import CreationPage from './pages/Creation/CreationPage'
 import ReportListPage from './pages/Report/ReportListPage'
 import DashboardPage from './pages/Dashboard/DashboardPage'
 import PersonalExpensePage from './pages/Expense/PersonalExpensePage'
+import VacationPage from './pages/Vacation/VacationPage'
 
 function App() {
   return (
@@ -19,6 +20,7 @@ function App() {
         <Route path="/workload/detail/:id" element={<WorkloadDetailPage />} />
         <Route path="/reportcreate" element={<CreationPage />} />
         <Route path="/report" element={<ReportListPage />} />
+        <Route path="/Vacation" element={<VacationPage />} />
         <Route path="/expense" element={<PersonalExpensePage />} />
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
