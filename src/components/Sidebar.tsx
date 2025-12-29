@@ -191,32 +191,57 @@ export default function Sidebar({ onClose, activeMenu = '출장 보고서', acti
         <nav className="flex flex-col gap-2">
           {/* Main Menu Items */}
           {mainMenuItems.map((item) => (
-            <button
-              key={item.label}
-              onClick={() => {
-                // Toggle report submenu for '출장 보고서'
-                if (item.label === '출장 보고서') {
-                  setReportOpen(!reportOpen);
-                  setActiveItem('출장 보고서');
+            <div key={item.label}>
+              <button
+                onClick={() => {
+                  // Toggle report submenu for '출장 보고서'
+                  if (item.label === '출장 보고서') {
+                    setReportOpen(!reportOpen);
+                    setActiveItem('출장 보고서');
+                    setExpenseOpen(false);
+                    return;
+                  }
+                  setActiveItem(item.label);
                   setExpenseOpen(false);
-                  return;
-                }
-                setActiveItem(item.label);
-                setExpenseOpen(false);
-                const path = routeMap[item.label];
-                if (path) navigate(path);
-              }}
-              className={`flex gap-6 items-center p-3 rounded-xl transition-colors ${
-                activeItem === item.label && activeMenu !== '지출 관리'
-                  ? 'bg-[#364153] text-white'
-                  : 'text-[#101828] hover:bg-[#e5e7eb]'
-              }`}
-            >
-              <div className="flex gap-3 items-center w-[162px]">
-                {item.icon}
-                <p className="font-medium text-[16px] leading-[1.5]">{item.label}</p>
-              </div>
-            </button>
+                  const path = routeMap[item.label];
+                  if (path) navigate(path);
+                }}
+                className={`flex gap-6 items-center p-3 rounded-xl transition-colors ${
+                  activeItem === item.label && activeMenu !== '지출 관리'
+                    ? 'bg-[#364153] text-white'
+                    : 'text-[#101828] hover:bg-[#e5e7eb]'
+                }`}
+              >
+                <div className="flex gap-3 items-center w-[162px]">
+                  {item.icon}
+                  <p className="font-medium text-[16px] leading-[1.5]">{item.label}</p>
+                </div>
+              </button>
+              {/* Report submenu directly under '출장 보고서' */}
+              {item.label === '출장 보고서' && reportOpen && (
+                <div className="ml-4 mt-1 flex flex-col gap-1">
+                  {reportSubMenuItems.map((subItem) => (
+                    <button
+                      key={subItem.label}
+                      onClick={() => {
+                        setReportActiveSubItem(subItem.label);
+                        setActiveItem('출장 보고서');
+                        setExpenseOpen(false);
+                        if (subItem.path) navigate(subItem.path);
+                      }}
+                      className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-left ${
+                        reportActiveSubItem === subItem.label
+                          ? 'text-blue-600 font-medium'
+                          : 'text-[#6a7282] hover:text-[#101828] hover:bg-[#e5e7eb]'
+                      }`}
+                    >
+                      <span className="text-gray-400">ㄴ</span>
+                      <p className="text-[14px]">{subItem.label}</p>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           ))}
 
           {/* 지출 관리 with Dropdown */}
@@ -264,30 +289,7 @@ export default function Sidebar({ onClose, activeMenu = '출장 보고서', acti
                 ))}
               </div>
             )}
-            {/* 출장 보고서 Submenu */}
-            {reportOpen && (
-              <div className="ml-4 mt-1 flex flex-col gap-1">
-                {reportSubMenuItems.map((subItem) => (
-                  <button
-                    key={subItem.label}
-                    onClick={() => {
-                      setReportActiveSubItem(subItem.label);
-                      setActiveItem('출장 보고서');
-                      setExpenseOpen(false);
-                      if (subItem.path) navigate(subItem.path);
-                    }}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-left ${
-                      reportActiveSubItem === subItem.label
-                        ? 'text-blue-600 font-medium'
-                        : 'text-[#6a7282] hover:text-[#101828] hover:bg-[#e5e7eb]'
-                    }`}
-                  >
-                    <span className="text-gray-400">ㄴ</span>
-                    <p className="text-[14px]">{subItem.label}</p>
-                  </button>
-                ))}
-              </div>
-            )}
+            {/* report submenu removed from here - rendered inline under main menu item */}
           </div>
 
           {/* Bottom Menu Items */}
