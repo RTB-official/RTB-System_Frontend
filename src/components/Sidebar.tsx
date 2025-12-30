@@ -204,7 +204,10 @@ export default function Sidebar({ onClose, activeMenu = '출장 보고서', acti
                   setActiveItem(item.label);
                   setExpenseOpen(false);
                   const path = routeMap[item.label];
-                  if (path) navigate(path);
+                  if (path) {
+                    navigate(path);
+                    if (onClose) onClose();
+                  }
                 }}
                 className={`flex gap-6 items-center p-3 rounded-xl transition-colors ${
                   activeItem === item.label && activeMenu !== '지출 관리'
@@ -227,7 +230,10 @@ export default function Sidebar({ onClose, activeMenu = '출장 보고서', acti
                         setReportActiveSubItem(subItem.label);
                         setActiveItem('출장 보고서');
                         setExpenseOpen(false);
-                        if (subItem.path) navigate(subItem.path);
+                        if (subItem.path) {
+                          navigate(subItem.path);
+                          if (onClose) onClose();
+                        }
                       }}
                       className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-left ${
                         reportActiveSubItem === subItem.label
@@ -275,6 +281,7 @@ export default function Sidebar({ onClose, activeMenu = '출장 보고서', acti
                       // navigate to expense page when selecting 개인 지출
                       if (subItem.label === '개인 지출') {
                         navigate('/expense');
+                        if (onClose) onClose();
                       }
                     }}
                     className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-left ${
@@ -302,7 +309,10 @@ export default function Sidebar({ onClose, activeMenu = '출장 보고서', acti
                 setActiveSubItem('');
                 setReportActiveSubItem('');
                 const path = routeMap[item.label];
-                if (path) navigate(path);
+                if (path) {
+                  navigate(path);
+                  if (onClose) onClose();
+                }
               }}
               className={`flex gap-6 items-center p-3 rounded-xl transition-colors ${
                 activeItem === item.label && activeMenu !== '지출 관리'
