@@ -1,3 +1,4 @@
+// DashboardPage.tsx
 import React, { useMemo, useState, useEffect } from 'react'
 import Sidebar from '../../components/Sidebar'
 import CalendarMenu from '../../components/CalendarMenu'
@@ -24,20 +25,31 @@ const sampleEvents: Record<string, { title: string; color: string }[]> = {
     { title: '휴가 - 강민지', color: '#60a5fa' },
     { title: '12월12일 양모니아 교육', color: '#fb923c' },
   ],
-  '2024-12-19': [
-    { title: '테크 점검', color: '#bbf7d0' },
-  ],
+  '2024-12-19': [{ title: '테크 점검', color: '#bbf7d0' }],
 }
+
+// ✅ 햄버거 아이콘 (가로줄 3개)
+const IconHamburger = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <path d="M4 6h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    <path d="M4 12h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    <path d="M4 18h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+  </svg>
+)
 
 export default function DashboardPage() {
   const today = new Date()
   const [year, setYear] = useState(2025)
-  const [month, setMonth] = useState(11) // December (0-based)
+  const [month, setMonth] = useState(11)
   const grid = useMemo(() => generateMonthGrid(year, month), [year, month])
+
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+
   const [menuOpen, setMenuOpen] = useState(false)
   const [menuPos, setMenuPos] = useState<{ x: number; y: number } | null>(null)
   const [menuDate, setMenuDate] = useState<string | null>(null)
   const [eventModalOpen, setEventModalOpen] = useState(false)
+
   const menuOpenRef = React.useRef(menuOpen)
   const menuDateRef = React.useRef(menuDate)
 
@@ -50,7 +62,6 @@ export default function DashboardPage() {
     const handler = (e: any) => {
       const d = e.detail
       if (d && d.x != null && d.y != null) {
-        // if clicking the same date again, toggle off the menu
         if (menuOpenRef.current && menuDateRef.current === d.date) {
           setMenuOpen(false)
           setMenuDate(null)
@@ -63,18 +74,29 @@ export default function DashboardPage() {
         setMenuOpen(true)
       }
     }
+
     window.addEventListener('showCalendarMenu', handler as EventListener)
+
     const openHandler = () => {
       setEventModalOpen(true)
       setMenuOpen(false)
       setMenuPos(null)
     }
     window.addEventListener('openEventForm', openHandler as EventListener)
+
     return () => {
       window.removeEventListener('showCalendarMenu', handler as EventListener)
       window.removeEventListener('openEventForm', openHandler as EventListener)
     }
   }, [])
+
+  // (선택) 모바일 사이드바 열릴 때 body 스크롤 잠금
+  useEffect(() => {
+    document.body.style.overflow = sidebarOpen ? 'hidden' : ''
+    return () => {
+      document.body.style.overflow = ''
+    }
+  }, [sidebarOpen])
 
   const prevMonth = () => {
     if (month === 0) {
@@ -101,19 +123,59 @@ export default function DashboardPage() {
 
   return (
     <div className="flex h-screen bg-[#f4f5f7] overflow-hidden font-pretendard">
-      <div className="fixed lg:static inset-y-0 left-0 z-30 w-[239px] h-screen">
-        <Sidebar />
+      {/* Mobile Overlay */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-20 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      {/* Sidebar - 데스크탑 고정, 모바일 슬라이드 */}
+      <div
+        className={`
+          fixed lg:static inset-y-0 left-0 z-30
+          w-[239px] h-screen flex-shrink-0
+          transform transition-transform duration-300 ease-in-out
+          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+        `}
+      >
+        <Sidebar onClose={() => setSidebarOpen(false)} />
       </div>
 
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        {/* ✅ 모바일 상단 바: "메뉴" 텍스트 제거 → 햄버거 버튼 */}
+        <div className="lg:hidden flex items-center justify-between px-4 py-3 bg-white border-b border-gray-100">
+          <button
+            onClick={() => setSidebarOpen(true)}
+            aria-label="사이드바 열기"
+            className="p-2 rounded-lg hover:bg-gray-100 active:bg-gray-200 transition-colors text-[#101828]"
+          >
+            <IconHamburger />
+          </button>
+
+          <div className="text-sm font-semibold text-gray-800">대시보드</div>
+
+          {/* 오른쪽 균형 맞추기용(필요 없으면 삭제 가능) */}
+          <div className="w-10" />
+        </div>
+
         <main className="flex-1 overflow-auto px-4 lg:px-8 py-6 lg:py-10 pt-0">
           <div>
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-3xl font-extrabold">{year}년 {month + 1}월</h2>
+              <h2 className="text-3xl font-extrabold">
+                {year}년 {month + 1}월
+              </h2>
               <div className="flex items-center gap-2">
-                <button onClick={prevMonth} className="px-3 py-1 rounded-md border text-sm bg-white">‹</button>
-                <button onClick={goToday} className="px-3 py-1 rounded-md border text-sm bg-white">오늘</button>
-                <button onClick={nextMonth} className="px-3 py-1 rounded-md border text-sm bg-white">›</button>
+                <button onClick={prevMonth} className="px-3 py-1 rounded-md border text-sm bg-white">
+                  ‹
+                </button>
+                <button onClick={goToday} className="px-3 py-1 rounded-md border text-sm bg-white">
+                  오늘
+                </button>
+                <button onClick={nextMonth} className="px-3 py-1 rounded-md border text-sm bg-white">
+                  ›
+                </button>
               </div>
             </div>
 
@@ -151,25 +213,22 @@ export default function DashboardPage() {
                         const scrollX = window.scrollX || window.pageXOffset
                         const scrollY = window.scrollY || window.pageYOffset
 
-                        // anchor to the date number element inside the cell if present
                         const dateEl = el.querySelector('[data-date-number]') as HTMLElement | null
                         const anchor = dateEl ? dateEl.getBoundingClientRect() : el.getBoundingClientRect()
 
-                        // place the menu to the right-top of the date number (slightly up and to the right)
                         const offsetX = 24
                         const offsetY = 24
                         const cellRect = el.getBoundingClientRect()
                         const desiredX = anchor.right + scrollX + offsetX
-                        // compute max left so popup can fit inside the cell area (so it doesn't fully cover date)
+
                         const maxInsideCellLeft = cellRect.left + scrollX + cellRect.width - menuWidth - 8
                         let x = desiredX
                         if (desiredX > maxInsideCellLeft) {
-                          // try to tuck popup so its right edge aligns with cell's right edge
                           x = Math.max(maxInsideCellLeft, cellRect.left + scrollX + 8)
                         }
+
                         let y = anchor.top + scrollY - offsetY
 
-                        // Prefer to keep the popup within the calendar container rather than the whole viewport
                         const calendarContainer = el.closest('.bg-white') as HTMLElement | null
                         const containerRect = calendarContainer ? calendarContainer.getBoundingClientRect() : null
 
@@ -179,22 +238,17 @@ export default function DashboardPage() {
 
                         const leftLimit = containerRect ? scrollX + containerRect.left + 8 : scrollX + 8
 
-                        // If not enough space on right, place to left of anchor
                         if (x > rightLimit) {
                           x = anchor.left + scrollX - menuWidth - 8
                         }
-                        // clamp horizontally within container/view
                         if (x < leftLimit) x = leftLimit
 
-                        // clamp vertically within viewport
                         const bottomLimit = scrollY + window.innerHeight - menuHeight - 8
                         if (y > bottomLimit) y = bottomLimit
                         const topLimit = scrollY + 8
                         if (y < topLimit) y = topLimit
 
-                        const ev = new CustomEvent('showCalendarMenu', {
-                          detail: { date: key, x, y },
-                        })
+                        const ev = new CustomEvent('showCalendarMenu', { detail: { date: key, x, y } })
                         window.dispatchEvent(ev)
                       }}
                       className={`h-32 p-3 border-r border-b border-gray-100 min-h-[120px] cursor-pointer ${
@@ -226,7 +280,6 @@ export default function DashboardPage() {
 
                       <div className="mt-2 flex items-start justify-between">
                         <div className="flex-1 flex flex-col gap-1">
-                          {/* left column: up to 2 main items with color bar */}
                           {events.slice(0, 2).map((e, i) => (
                             <div key={i} className="flex items-center gap-2">
                               <div style={{ width: 4, height: 18, background: e.color, borderRadius: 2 }} />
@@ -235,14 +288,13 @@ export default function DashboardPage() {
                           ))}
                         </div>
 
-                        {/* right column: small tag pills for remaining events */}
                         <div className="ml-2 flex flex-col items-end gap-1 min-w-[56px]">
                           {events.slice(2, 5).map((e, i) => (
                             <div
                               key={i}
                               className="px-2 py-1 rounded-md text-[11px] text-gray-700 truncate"
                               style={{
-                                background: `${e.color}20`, // add transparency (hex20 ~ 12%); may not work for all colors but ok for demo
+                                background: `${e.color}20`,
                                 borderLeft: `3px solid ${e.color}`,
                                 maxWidth: 120,
                               }}
@@ -252,10 +304,6 @@ export default function DashboardPage() {
                           ))}
                           {events.length > 5 && (
                             <div className="text-[11px] text-gray-400">+ {events.length - 5}개</div>
-                          )}
-                          {events.length > 2 && events.length <= 5 && events.length > 3 && (
-                            /* when 3-5 events, still show count if more than shown */
-                            events.length > 3 ? null : null
                           )}
                         </div>
                       </div>
@@ -267,15 +315,9 @@ export default function DashboardPage() {
           </div>
         </main>
       </div>
+
       {menuOpen && menuPos && (
-        <div
-          style={{
-            position: 'absolute',
-            left: menuPos.x,
-            top: menuPos.y,
-            zIndex: 60,
-          }}
-        >
+        <div style={{ position: 'absolute', left: menuPos.x, top: menuPos.y, zIndex: 60 }}>
           <CalendarMenu
             selectedDate={menuDate}
             onClose={() => {
@@ -286,18 +328,8 @@ export default function DashboardPage() {
           />
         </div>
       )}
-      {eventModalOpen && (
-        <EventModal
-          onClose={() => {
-            setEventModalOpen(false)
-          }}
-        />
-      )}
+
+      {eventModalOpen && <EventModal onClose={() => setEventModalOpen(false)} />}
     </div>
   )
 }
-
-
-
-
-
