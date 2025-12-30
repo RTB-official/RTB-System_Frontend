@@ -70,6 +70,7 @@ export default function Sidebar({ onClose, activeMenu = '출장 보고서', acti
   const [reportActiveSubItem, setReportActiveSubItem] = useState('');
   const navigate = useNavigate();
   const location = useLocation();
+  const shouldCloseOnMobile = () => typeof window !== 'undefined' && window.innerWidth < 1024;
 
   useEffect(() => {
     if (activeMenu === '지출 관리') {
@@ -195,19 +196,19 @@ export default function Sidebar({ onClose, activeMenu = '출장 보고서', acti
               <button
                 onClick={() => {
                   // Toggle report submenu for '출장 보고서'
-                  if (item.label === '출장 보고서') {
-                    setReportOpen(!reportOpen);
-                    setActiveItem('출장 보고서');
-                    setExpenseOpen(false);
-                    return;
-                  }
-                  setActiveItem(item.label);
+                if (item.label === '출장 보고서') {
+                  setReportOpen(!reportOpen);
+                  setActiveItem('출장 보고서');
                   setExpenseOpen(false);
-                  const path = routeMap[item.label];
-                  if (path) {
-                    navigate(path);
-                    if (onClose) onClose();
-                  }
+                  return;
+                }
+                setActiveItem(item.label);
+                setExpenseOpen(false);
+                const path = routeMap[item.label];
+                if (path) {
+                  navigate(path);
+                  if (onClose && shouldCloseOnMobile()) onClose();
+                }
                 }}
                 className={`flex gap-6 items-center p-3 rounded-xl transition-colors ${
                   activeItem === item.label && activeMenu !== '지출 관리'
@@ -230,10 +231,10 @@ export default function Sidebar({ onClose, activeMenu = '출장 보고서', acti
                         setReportActiveSubItem(subItem.label);
                         setActiveItem('출장 보고서');
                         setExpenseOpen(false);
-                        if (subItem.path) {
-                          navigate(subItem.path);
-                          if (onClose) onClose();
-                        }
+                      if (subItem.path) {
+                        navigate(subItem.path);
+                        if (onClose && shouldCloseOnMobile()) onClose();
+                      }
                       }}
                       className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-left ${
                         reportActiveSubItem === subItem.label
@@ -281,7 +282,7 @@ export default function Sidebar({ onClose, activeMenu = '출장 보고서', acti
                       // navigate to expense page when selecting 개인 지출
                       if (subItem.label === '개인 지출') {
                         navigate('/expense');
-                        if (onClose) onClose();
+                        if (onClose && shouldCloseOnMobile()) onClose();
                       }
                     }}
                     className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-left ${
@@ -309,10 +310,10 @@ export default function Sidebar({ onClose, activeMenu = '출장 보고서', acti
                 setActiveSubItem('');
                 setReportActiveSubItem('');
                 const path = routeMap[item.label];
-                if (path) {
-                  navigate(path);
-                  if (onClose) onClose();
-                }
+                  if (path) {
+                    navigate(path);
+                    if (onClose && shouldCloseOnMobile()) onClose();
+                  }
               }}
               className={`flex gap-6 items-center p-3 rounded-xl transition-colors ${
                 activeItem === item.label && activeMenu !== '지출 관리'
