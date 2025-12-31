@@ -84,8 +84,8 @@ export default function Sidebar({ onClose, activeMenu = '출장 보고서', acti
   ];
 
   const expenseSubMenuItems = [
-    { label: '구성원 지출 관리' },
-    { label: '개인 지출' },
+    { label: '구성원 지출 관리', path: '/expense/member' },
+    { label: '개인 지출', path: '/expense' },
   ];
   const reportSubMenuItems = [
     { label: '보고서 작성', path: '/reportcreate' },
@@ -115,9 +115,13 @@ export default function Sidebar({ onClose, activeMenu = '출장 보고서', acti
       setExpenseOpen(label === '지출 관리');
     }
   }, [location.pathname]);
-  // Ensure /expense route highlights 개인 지출 under 지출 관리
+  // Ensure /expense route highlights appropriate submenu under 지출 관리
   useEffect(() => {
-    if (location.pathname.startsWith('/expense')) {
+    if (location.pathname.startsWith('/expense/member')) {
+      setActiveItem('지출 관리');
+      setExpenseOpen(true);
+      setActiveSubItem('구성원 지출 관리');
+    } else if (location.pathname.startsWith('/expense')) {
       setActiveItem('지출 관리');
       setExpenseOpen(true);
       setActiveSubItem('개인 지출');
@@ -272,9 +276,8 @@ export default function Sidebar({ onClose, activeMenu = '출장 보고서', acti
                     onClick={() => {
                       setActiveSubItem(subItem.label);
                       setActiveItem('지출 관리');
-                      // navigate to expense page when selecting 개인 지출
-                      if (subItem.label === '개인 지출') {
-                        navigate('/expense');
+                      if (subItem.path) {
+                        navigate(subItem.path);
                       }
                     }}
                     className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-left ${

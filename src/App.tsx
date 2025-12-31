@@ -7,6 +7,7 @@ import CreationPage from './pages/Creation/CreationPage'
 import ReportListPage from './pages/Report/ReportListPage'
 import DashboardPage from './pages/Dashboard/DashboardPage'
 import PersonalExpensePage from './pages/Expense/PersonalExpensePage'
+import MemberExpensePage from './pages/Expense/MemberExpensePage'
 import VacationPage from './pages/Vacation/VacationPage'
 import MemberManagementPage from "./pages/Member/MemberManagementPage";
 
@@ -23,6 +24,7 @@ function App() {
         <Route path="/report" element={<ReportListPage />} />
         <Route path="/Vacation" element={<VacationPage />} />
         <Route path="/expense" element={<PersonalExpensePage />} />
+        <Route path="/expense/member" element={<MemberExpensePage />} />
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
         <Route path="/members" element={<MemberManagementPage />} />
