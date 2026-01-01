@@ -206,7 +206,10 @@ export default function Sidebar({
             setExpenseOpen(true);
             setReportOpen(false);
             setActiveSubItem("구성원 지출 관리");
-        } else if (location.pathname.startsWith("/expense")) {
+        } else if (
+            location.pathname === "/expense" ||
+            location.pathname.startsWith("/expense/personal")
+        ) {
             setActiveItem("지출 관리");
             setExpenseOpen(true);
             setReportOpen(false);
@@ -384,6 +387,7 @@ export default function Sidebar({
                                         onClick={() => {
                                             setActiveSubItem(subItem.label);
                                             setActiveItem("지출 관리");
+                                            setExpenseOpen(true);
                                             setReportOpen(false);
                                             if (subItem.path) {
                                                 navigate(subItem.path);
