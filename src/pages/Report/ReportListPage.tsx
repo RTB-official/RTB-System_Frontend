@@ -6,7 +6,6 @@ import Table from "../../components/common/Table";
 import Input from "../../components/common/Input";
 import YearMonthSelector from "../../components/common/YearMonthSelector";
 import Button from "../../components/common/Button";
-import Pagination from "../../components/common/Pagination";
 import ActionMenu from "../../components/common/ActionMenu";
 
 type ReportStatus = "submitted" | "pending" | "not_submitted";
@@ -464,12 +463,11 @@ export default function ReportListPage() {
                             data={currentData}
                             rowKey="id"
                             emptyText="결과가 없습니다."
-                        />
-
-                        <Pagination
-                            currentPage={currentPage}
-                            totalPages={totalPages}
-                            onPageChange={setCurrentPage}
+                            pagination={{
+                                currentPage,
+                                totalPages,
+                                onPageChange: setCurrentPage,
+                            }}
                         />
                     </div>
                 </div>

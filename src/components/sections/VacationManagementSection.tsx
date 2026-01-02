@@ -4,7 +4,7 @@ import type {
 } from "../../pages/Vacation/VacationPage";
 import Select from "../common/Select";
 import Tabs from "../common/Tabs";
-import Pagination from "../common/Pagination";
+import Table from "../common/Table";
 
 interface Summary {
     myAnnual: number; // 내 연차
@@ -110,7 +110,7 @@ export default function VacationManagementSection({
                 {summaryCards.map((card) => (
                     <div
                         key={card.label}
-                        className="bg-white rounded-2xl border border-gray-100 p-5"
+                        className="bg-gray-50 rounded-2xl p-5"
                     >
                         <div className="text-[13px] font-semibold text-gray-500">
                             {card.label}
@@ -155,60 +155,79 @@ export default function VacationManagementSection({
 
             {/* table */}
             {tab === "사용 내역" ? (
-                <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-                    <div className="grid grid-cols-12 gap-2 px-5 py-3 bg-gray-50 text-[13px] font-semibold text-gray-600">
-                        <div className="col-span-3">기간</div>
-                        <div className="col-span-2">항목</div>
-                        <div className="col-span-3">사유</div>
-                        <div className="col-span-2">상태</div>
-                        <div className="col-span-1 text-right">사용 일수</div>
-                        <div className="col-span-1 text-right">잔여</div>
-                    </div>
-
-                    <div className="divide-y divide-gray-100">
-                        {rows.map((r) => (
-                            <div
-                                key={r.id}
-                                className="grid grid-cols-12 gap-2 px-5 py-3 text-[13px] items-center"
-                            >
-                                <div className="col-span-3 text-gray-800">
-                                    {r.period}
-                                </div>
-                                <div className="col-span-2 text-gray-800">
-                                    {r.item}
-                                </div>
-                                <div className="col-span-3 text-gray-800">
-                                    {r.reason}
-                                </div>
-                                <div className="col-span-2">
-                                    <StatusPill status={r.status} />
-                                </div>
-                                <div
-                                    className={`col-span-1 text-right font-medium ${
-                                        r.usedDays < 0
+                <Table
+                    columns={[
+                        {
+                            key: "period",
+                            label: "기간",
+                            width: "25%",
+                        },
+                        {
+                            key: "item",
+                            label: "항목",
+                            width: "16.67%",
+                        },
+                        {
+                            key: "reason",
+                            label: "사유",
+                            width: "25%",
+                        },
+                        {
+                            key: "status",
+                            label: "상태",
+                            width: "16.67%",
+                            render: (_value, row: VacationRow) => (
+                                <StatusPill status={row.status} />
+                            ),
+                        },
+                        {
+                            key: "usedDays",
+                            label: "사용 일수",
+                            width: "8.33%",
+                            align: "right",
+                            render: (_value, row: VacationRow) => (
+                                <span
+                                    className={`font-medium ${
+                                        row.usedDays < 0
                                             ? "text-red-600"
                                             : "text-gray-800"
                                     }`}
                                 >
-                                    {formatUsedDays(r.usedDays)}
-                                </div>
-                                <div className="col-span-1 text-right font-medium text-gray-900">
-                                    {r.remainDays}일
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
+                                    {formatUsedDays(row.usedDays)}
+                                </span>
+                            ),
+                        },
+                        {
+                            key: "remainDays",
+                            label: "잔여",
+                            width: "8.33%",
+                            align: "right",
+                            render: (_value, row: VacationRow) => (
+                                <span className="font-medium text-gray-900">
+                                    {row.remainDays}일
+                                </span>
+                            ),
+                        },
+                    ]}
+                    data={rows}
+                    rowKey="id"
+                    className="text-[13px]"
+                    pagination={{
+                        currentPage: page,
+                        totalPages,
+                        onPageChange,
+                    }}
+                />
             ) : (
-                <GrantExpireTable rows={grantExpireRows ?? []} />
+                <GrantExpireTable
+                    rows={grantExpireRows ?? []}
+                    pagination={{
+                        currentPage: page,
+                        totalPages,
+                        onPageChange,
+                    }}
+                />
             )}
-
-            {/* pagination */}
-            <Pagination
-                currentPage={page}
-                totalPages={totalPages}
-                onPageChange={onPageChange}
-            />
         </div>
     );
 }
@@ -228,6 +247,7 @@ function formatBalanceOrDash(v?: number) {
 
 function GrantExpireTable({
     rows,
+    pagination,
 }: {
     rows: {
         id: string;
@@ -237,63 +257,84 @@ function GrantExpireTable({
         used?: number;
         balance?: number;
     }[];
+    pagination?: {
+        currentPage: number;
+        totalPages: number;
+        onPageChange: (page: number) => void;
+    };
 }) {
     return (
-        <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-            <div className="grid grid-cols-12 gap-2 px-6 py-4 bg-gray-50 text-[13px] font-semibold text-gray-600">
-                <div className="col-span-3">날짜</div>
-                <div className="col-span-2">지급</div>
-                <div className="col-span-2">소멸</div>
-                <div className="col-span-2">사용</div>
-                <div className="col-span-3 text-right">잔여</div>
-            </div>
-
-            <div className="divide-y divide-gray-100">
-                {rows.map((r) => (
-                    <div
-                        key={r.id}
-                        className="grid grid-cols-12 gap-2 px-6 py-4 text-[13px] items-center"
-                    >
-                        <div className="col-span-3 text-gray-800">
-                            {r.monthLabel}
-                        </div>
-
-                        <div
-                            className={`col-span-2 font-medium ${
-                                r.granted && r.granted > 0
+        <Table
+            columns={[
+                {
+                    key: "monthLabel",
+                    label: "날짜",
+                    width: "25%",
+                },
+                {
+                    key: "granted",
+                    label: "지급",
+                    width: "16.67%",
+                    render: (_value, row: GrantExpireRow) => (
+                        <span
+                            className={`font-medium ${
+                                row.granted && row.granted > 0
                                     ? "text-gray-900"
                                     : "text-gray-400"
                             }`}
                         >
-                            {formatDaysOrDash(r.granted)}
-                        </div>
-
-                        <div
-                            className={`col-span-2 font-medium ${
-                                r.expired && r.expired < 0
+                            {formatDaysOrDash(row.granted)}
+                        </span>
+                    ),
+                },
+                {
+                    key: "expired",
+                    label: "소멸",
+                    width: "16.67%",
+                    render: (_value, row: GrantExpireRow) => (
+                        <span
+                            className={`font-medium ${
+                                row.expired && row.expired < 0
                                     ? "text-gray-900"
                                     : "text-gray-400"
                             }`}
                         >
-                            {formatDaysOrDash(r.expired)}
-                        </div>
-
-                        <div
-                            className={`col-span-2 font-medium ${
-                                r.used && r.used < 0
+                            {formatDaysOrDash(row.expired)}
+                        </span>
+                    ),
+                },
+                {
+                    key: "used",
+                    label: "사용",
+                    width: "16.67%",
+                    render: (_value, row: GrantExpireRow) => (
+                        <span
+                            className={`font-medium ${
+                                row.used && row.used < 0
                                     ? "text-gray-900"
                                     : "text-gray-400"
                             }`}
                         >
-                            {formatDaysOrDash(r.used)}
-                        </div>
-
-                        <div className="col-span-3 text-right font-medium text-gray-900">
-                            {formatBalanceOrDash(r.balance)}
-                        </div>
-                    </div>
-                ))}
-            </div>
-        </div>
+                            {formatDaysOrDash(row.used)}
+                        </span>
+                    ),
+                },
+                {
+                    key: "balance",
+                    label: "잔여",
+                    width: "25%",
+                    align: "right",
+                    render: (_value, row: GrantExpireRow) => (
+                        <span className="font-medium text-gray-900">
+                            {formatBalanceOrDash(row.balance)}
+                        </span>
+                    ),
+                },
+            ]}
+            data={rows}
+            rowKey="id"
+            className="text-[13px]"
+            pagination={pagination}
+        />
     );
 }

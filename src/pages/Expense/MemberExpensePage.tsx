@@ -799,6 +799,11 @@ export default function MemberExpensePage() {
                                             ? [selectedEmployeeId]
                                             : []
                                     }
+                                    pagination={{
+                                        currentPage,
+                                        totalPages,
+                                        onPageChange: setCurrentPage,
+                                    }}
                                     expandableRowRender={(row) => {
                                         if (selectedEmployeeId !== row.id)
                                             return null;
@@ -914,52 +919,6 @@ export default function MemberExpensePage() {
                                         );
                                     }}
                                 />
-
-                                {/* 페이지네이션 */}
-                                <div className="flex items-center justify-center gap-2 mt-4 text-sm text-gray-600">
-                                    <button
-                                        onClick={() =>
-                                            setCurrentPage((prev) =>
-                                                Math.max(1, prev - 1)
-                                            )
-                                        }
-                                        disabled={currentPage === 1}
-                                        className="px-2 py-1 rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
-                                    >
-                                        &lt;
-                                    </button>
-                                    <div className="flex items-center gap-1">
-                                        {Array.from(
-                                            { length: totalPages },
-                                            (_, i) => i + 1
-                                        ).map((page) => (
-                                            <button
-                                                key={page}
-                                                onClick={() =>
-                                                    setCurrentPage(page)
-                                                }
-                                                className={`w-8 h-8 flex items-center justify-center rounded-full font-medium ${
-                                                    currentPage === page
-                                                        ? "bg-gray-100 text-gray-800"
-                                                        : "hover:bg-gray-100"
-                                                }`}
-                                            >
-                                                {page}
-                                            </button>
-                                        ))}
-                                    </div>
-                                    <button
-                                        onClick={() =>
-                                            setCurrentPage((prev) =>
-                                                Math.min(totalPages, prev + 1)
-                                            )
-                                        }
-                                        disabled={currentPage === totalPages}
-                                        className="px-2 py-1 rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
-                                    >
-                                        &gt;
-                                    </button>
-                                </div>
                             </div>
                         ) : (
                             /* 특정 사용자 선택 시 청구서 상세 직접 표시 */

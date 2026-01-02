@@ -4,9 +4,9 @@ import Sidebar from "../../components/Sidebar";
 import Header from "../../components/common/Header";
 import Button from "../../components/common/Button";
 import Tabs from "../../components/common/Tabs";
-import Pagination from "../../components/common/Pagination";
 import ActionMenu from "../../components/common/ActionMenu";
 import AddMemberModal from "../../components/modals/AddMemberModal";
+import Table from "../../components/common/Table";
 
 type Member = {
   id: string;
@@ -171,78 +171,76 @@ export default function MembersPage() {
 
             {/* Table Card */}
             <div className="bg-white border border-[#e5e7eb] rounded-2xl overflow-hidden">
-              {/* 가로 스크롤 안전장치 */}
               <div className="overflow-x-auto">
                 <div className="min-w-[980px]">
-                  {/* Table header */}
-                  <div className="px-4 py-3 bg-[#f9fafb] border-b border-[#e5e7eb]">
-                    <div
-                      className="grid items-center text-[14px] font-semibold text-[#101828]"
-                      style={{
-                        gridTemplateColumns:
-                          "2.2fr 1.1fr 1.6fr 3.6fr 1.1fr 1.1fr 1.6fr",
-                      }}
-                    >
-                      <div>이름</div>
-                      <div>직급</div>
-                      <div>전화번호</div>
-                      <div>주소</div>
-                      <div>입사일</div>
-                      <div>생년월일</div>
-                      <div>여권정보</div>
-                    </div>
-                  </div>
-
-                  {/* Table body */}
-                  <div className="divide-y divide-[#f2f4f7]">
-                    {members.map((m) => (
-                      <div key={m.id} className="px-4 py-4">
-                        <div
-                          className="grid items-center"
-                          style={{
-                            gridTemplateColumns:
-                              "2.2fr 1.1fr 1.6fr 3.6fr 1.1fr 1.1fr 1.6fr",
-                          }}
-                        >
-                          {/* name */}
+                  <Table
+                    columns={[
+                      {
+                        key: "name",
+                        label: "이름",
+                        render: (value, row) => (
                           <div className="flex items-center gap-3">
-                            <BadgeAvatar name={m.name} />
+                            <BadgeAvatar name={row.name} />
                             <div className="leading-tight">
                               <div className="text-[14px] font-semibold text-[#101828]">
-                                {m.name}
+                                {row.name}
                               </div>
-                              <div className="text-[12px] text-[#6a7282]">{m.username}</div>
+                              <div className="text-[12px] text-[#6a7282]">{row.username}</div>
                             </div>
                           </div>
-
-                          {/* role */}
-                          <div className="text-[14px] text-[#101828]">{m.role}</div>
-
-                          {/* phone */}
-                          <div className="text-[14px] text-[#101828]">{m.phone}</div>
-
-                          {/* address */}
+                        ),
+                      },
+                      {
+                        key: "role",
+                        label: "직급",
+                        render: (value) => (
+                          <div className="text-[14px] text-[#101828]">{value}</div>
+                        ),
+                      },
+                      {
+                        key: "phone",
+                        label: "전화번호",
+                        render: (value) => (
+                          <div className="text-[14px] text-[#101828]">{value}</div>
+                        ),
+                      },
+                      {
+                        key: "address",
+                        label: "주소",
+                        render: (value, row) => (
                           <div className="text-[14px] text-[#101828] min-w-0">
-                            <div>{m.address1}</div>
-                            <div className="text-[12px] text-[#6a7282] mt-1">{m.address2}</div>
+                            <div>{row.address1}</div>
+                            <div className="text-[12px] text-[#6a7282] mt-1">{row.address2}</div>
                           </div>
-
-                          {/* join */}
-                          <div className="text-[14px] text-[#101828]">{m.joinDate}</div>
-
-                          {/* birth */}
-                          <div className="text-[14px] text-[#101828]">{m.birth}</div>
-
-                          {/* passport / etc + kebab */}
+                        ),
+                      },
+                      {
+                        key: "joinDate",
+                        label: "입사일",
+                        render: (value) => (
+                          <div className="text-[14px] text-[#101828]">{value}</div>
+                        ),
+                      },
+                      {
+                        key: "birth",
+                        label: "생년월일",
+                        render: (value) => (
+                          <div className="text-[14px] text-[#101828]">{value}</div>
+                        ),
+                      },
+                      {
+                        key: "etc",
+                        label: "여권정보",
+                        render: (value, row) => (
                           <div className="flex items-start pr-2">
                             <div className="flex-1 min-w-0 whitespace-pre-line text-[12px] text-[#6a7282]">
-                              {m.etc}
+                              {row.etc}
                             </div>
-
                             <button
                               className="ml-3 flex-none w-8 h-8 rounded-lg hover:bg-[#f2f4f7] transition flex items-center justify-center text-[#6a7282]"
                               onClick={(e) => {
-                                setSelectedMemberId(m.id);
+                                e.stopPropagation();
+                                setSelectedMemberId(row.id);
                                 setActionAnchor(e.currentTarget);
                                 setActionOpen((prev) => !prev);
                               }}
@@ -251,19 +249,17 @@ export default function MembersPage() {
                               <span className="text-[18px] leading-none">···</span>
                             </button>
                           </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Pagination */}
-                  <div className="px-4 py-4">
-                    <Pagination
-                      currentPage={page}
-                      totalPages={pageCount}
-                      onPageChange={setPage}
-                    />
-                  </div>
+                        ),
+                      },
+                    ]}
+                    data={members}
+                    rowKey="id"
+                    pagination={{
+                      currentPage: page,
+                      totalPages: pageCount,
+                      onPageChange: setPage,
+                    }}
+                  />
                 </div>
               </div>
             </div>
