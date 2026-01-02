@@ -153,7 +153,7 @@ export default function MembersPage() {
           ${sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
         `}
       >
-        <Sidebar onClose={() => setSidebarOpen(false)} activeMenu="구성원 관리" />
+        <Sidebar onClose={() => setSidebarOpen(false)} />
       </div>
 
 

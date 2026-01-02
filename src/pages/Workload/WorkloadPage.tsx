@@ -12,23 +12,9 @@ import {
 import Sidebar from "../../components/Sidebar";
 import Header from "../../components/common/Header";
 import Table from "../../components/common/Table";
+import YearMonthSelector from "../../components/common/YearMonthSelector";
 
 // 아이콘 컴포넌트
-const IconChevronDown = () => (
-    <svg
-        width="24"
-        height="24"
-        viewBox="0 0 24 24"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-    >
-        <path
-            d="M7.41 8.59L12 13.17L16.59 8.59L18 10L12 16L6 10L7.41 8.59Z"
-            fill="currentColor"
-        />
-    </svg>
-);
-
 const IconChevronLeft = () => (
     <svg
         width="16"
@@ -230,7 +216,6 @@ export default function WorkloadPage() {
             >
                 <Sidebar
                     onClose={() => setSidebarOpen(false)}
-                    activeMenu="워크로드"
                 />
             </div>
 
@@ -249,22 +234,12 @@ export default function WorkloadPage() {
                             <h1 className="text-[28px] font-bold text-gray-700 tracking-tight">
                                 조회 기간
                             </h1>
-                            <div className="flex gap-2">
-                                {/* 년도 선택 */}
-                                <div className="relative">
-                                    <button className="flex items-center gap-1 px-4 py-3 bg-white border border-gray-200 rounded-xl text-gray-800 font-semibold">
-                                        {selectedYear}
-                                        <IconChevronDown />
-                                    </button>
-                                </div>
-                                {/* 월 선택 */}
-                                <div className="relative">
-                                    <button className="flex items-center gap-1 px-4 py-3 bg-white border border-gray-200 rounded-xl text-gray-800 font-semibold">
-                                        {selectedMonth}
-                                        <IconChevronDown />
-                                    </button>
-                                </div>
-                            </div>
+                            <YearMonthSelector
+                                year={selectedYear}
+                                month={selectedMonth}
+                                onYearChange={setSelectedYear}
+                                onMonthChange={setSelectedMonth}
+                            />
                         </div>
 
                         {/* 인원별 작업시간 차트 */}

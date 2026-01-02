@@ -2,6 +2,8 @@ import { useState, useEffect, useMemo } from "react";
 import Sidebar from "../../components/Sidebar";
 import Header from "../../components/common/Header";
 import Table, { TableColumn } from "../../components/common/Table";
+import YearMonthSelector from "../../components/common/YearMonthSelector";
+import Select from "../../components/common/Select";
 
 interface EmployeeExpenseSummary {
     id: number;
@@ -696,7 +698,7 @@ export default function MemberExpensePage() {
             <div
                 className={`
             fixed lg:static inset-y-0 left-0 z-30
-            w-[239px] h-screen flex-shrink-0
+            w-[239px] h-screen shrink-0
             transform transition-transform duration-300 ease-in-out
             ${
                 sidebarOpen
@@ -705,11 +707,7 @@ export default function MemberExpensePage() {
             }
           `}
             >
-                <Sidebar
-                    onClose={() => setSidebarOpen(false)}
-                    activeMenu="지출 관리"
-                    activeSubMenu="구성원 지출 관리"
-                />
+                <Sidebar onClose={() => setSidebarOpen(false)} />
             </div>
 
             {/* ✅ Main Content */}
@@ -723,55 +721,53 @@ export default function MemberExpensePage() {
                     <div className="flex flex-col gap-4">
                         {/* 필터 섹션 */}
                         <div className="bg-white border border-gray-200 rounded-2xl p-4 lg:p-6">
-                            <div className="flex flex-wrap items-center gap-3">
+                            <div className="flex items-center gap-3">
                                 <span className="text-base font-semibold text-gray-700">
                                     조회 기간
                                 </span>
-                                <select
-                                    value={year}
-                                    onChange={(e) => setYear(e.target.value)}
-                                    className="rounded-lg border border-gray-200 px-4 py-2 text-base focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white"
-                                >
-                                    <option>2025년</option>
-                                    <option>2024년</option>
-                                    <option>2026년</option>
-                                </select>
-                                <select
-                                    value={month}
-                                    onChange={(e) => setMonth(e.target.value)}
-                                    className="rounded-lg border border-gray-200 px-4 py-2 text-base focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white"
-                                >
-                                    <option>12월</option>
-                                    <option>1월</option>
-                                    <option>2월</option>
-                                    <option>3월</option>
-                                    <option>4월</option>
-                                    <option>5월</option>
-                                    <option>6월</option>
-                                    <option>7월</option>
-                                    <option>8월</option>
-                                    <option>9월</option>
-                                    <option>10월</option>
-                                    <option>11월</option>
-                                </select>
+                                <YearMonthSelector
+                                    year={year}
+                                    month={month}
+                                    onYearChange={setYear}
+                                    onMonthChange={setMonth}
+                                    yearOptions={[
+                                        { value: "2025년", label: "2025년" },
+                                        { value: "2024년", label: "2024년" },
+                                        { value: "2026년", label: "2026년" },
+                                    ]}
+                                    monthOptions={[
+                                        { value: "1월", label: "1월" },
+                                        { value: "2월", label: "2월" },
+                                        { value: "3월", label: "3월" },
+                                        { value: "4월", label: "4월" },
+                                        { value: "5월", label: "5월" },
+                                        { value: "6월", label: "6월" },
+                                        { value: "7월", label: "7월" },
+                                        { value: "8월", label: "8월" },
+                                        { value: "9월", label: "9월" },
+                                        { value: "10월", label: "10월" },
+                                        { value: "11월", label: "11월" },
+                                        { value: "12월", label: "12월" },
+                                    ]}
+                                />
                                 <span className="text-base font-semibold text-gray-700 ml-4">
                                     사용자
                                 </span>
-                                <select
-                                    value={user}
-                                    onChange={(e) => setUser(e.target.value)}
-                                    className="rounded-lg border border-gray-200 px-4 py-2 text-base focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white"
-                                >
-                                    <option value="전체">전체</option>
-                                    {userList.map((userName) => (
-                                        <option key={userName} value={userName}>
-                                            {userName.replace(
+                                <Select
+                                    options={[
+                                        { value: "전체", label: "전체" },
+                                        ...userList.map((userName) => ({
+                                            value: userName,
+                                            label: userName.replace(
                                                 /^[A-Z]{2,3} /,
                                                 ""
-                                            )}
-                                        </option>
-                                    ))}
-                                </select>
+                                            ),
+                                        })),
+                                    ]}
+                                    value={user}
+                                    onChange={setUser}
+                                    className="w-auto min-w-[120px] max-w-[200px]"
+                                />
                             </div>
                         </div>
 

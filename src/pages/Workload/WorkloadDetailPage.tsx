@@ -267,10 +267,7 @@ export default function WorkloadDetailPage() {
         transition-transform duration-300 ease-in-out
       `}
             >
-                <Sidebar
-                    onClose={() => setSidebarOpen(false)}
-                    activeMenu="워크로드"
-                />
+                <Sidebar onClose={() => setSidebarOpen(false)} />
             </div>
 
             {/* Main Content */}

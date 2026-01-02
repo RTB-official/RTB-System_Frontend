@@ -1,6 +1,6 @@
 import { useState } from "react";
 import SectionCard from "../ui/SectionCard";
-import Select from "../ui/Select";
+import Select from "../common/Select";
 import Chip from "../ui/Chip";
 import {
     useWorkReportStore,

@@ -1,7 +1,7 @@
 import { useState, useMemo, useRef } from "react";
 import SectionCard from "../ui/SectionCard";
 import TextInput from "../ui/TextInput";
-import Select from "../ui/Select";
+import Select from "../common/Select";
 import Chip from "../ui/Chip";
 import DatePicker from "../ui/DatePicker";
 import {
