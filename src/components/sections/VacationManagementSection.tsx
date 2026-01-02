@@ -4,7 +4,7 @@ import type {
 } from "../../pages/Vacation/VacationPage";
 import Select from "../common/Select";
 import Tabs from "../common/Tabs";
-import Button from "../common/Button";
+import Pagination from "../common/Pagination";
 
 interface Summary {
     myAnnual: number; // 내 연차
@@ -80,50 +80,53 @@ export default function VacationManagementSection({
     totalPages,
     onPageChange,
 }: Props) {
+    const summaryCards = [
+        {
+            label: "내 연차",
+            value: `${summary.myAnnual}일`,
+            color: "text-gray-900",
+        },
+        {
+            label: "지급",
+            value: `+ ${summary.granted}일`,
+            color: "text-green-600",
+        },
+        {
+            label: "사용",
+            value: `-${summary.used}일`,
+            color: "text-gray-900",
+        },
+        {
+            label: "소멸",
+            value: `- ${summary.expired}일`,
+            color: "text-red-600",
+        },
+    ];
+
     return (
         <div className="flex flex-col gap-4 md:gap-6">
             {/* 4 cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-                <div className="bg-white rounded-2xl border border-gray-100 p-5">
-                    <div className="text-[13px] font-bold text-gray-500">
-                        내 연차
+                {summaryCards.map((card) => (
+                    <div
+                        key={card.label}
+                        className="bg-white rounded-2xl border border-gray-100 p-5"
+                    >
+                        <div className="text-[13px] font-semibold text-gray-500">
+                            {card.label}
+                        </div>
+                        <div
+                            className={`mt-2 text-[26px] font-bold ${card.color}`}
+                        >
+                            {card.value}
+                        </div>
                     </div>
-                    <div className="mt-2 text-[26px] font-black text-gray-900">
-                        {summary.myAnnual}일
-                    </div>
-                </div>
-
-                <div className="bg-white rounded-2xl border border-gray-100 p-5">
-                    <div className="text-[13px] font-bold text-gray-500">
-                        지급
-                    </div>
-                    <div className="mt-2 text-[26px] font-black text-green-600">
-                        + {summary.granted}일
-                    </div>
-                </div>
-
-                <div className="bg-white rounded-2xl border border-gray-100 p-5">
-                    <div className="text-[13px] font-bold text-gray-500">
-                        사용
-                    </div>
-                    <div className="mt-2 text-[26px] font-black text-gray-900">
-                        -{summary.used}일
-                    </div>
-                </div>
-
-                <div className="bg-white rounded-2xl border border-gray-100 p-5">
-                    <div className="text-[13px] font-bold text-gray-500">
-                        소멸
-                    </div>
-                    <div className="mt-2 text-[26px] font-black text-red-600">
-                        - {summary.expired}일
-                    </div>
-                </div>
+                ))}
             </div>
 
             {/* filter */}
             <div className="flex items-center gap-3">
-                <div className="text-[18px] font-extrabold text-gray-900">
+                <div className="text-[18px] font-semibold text-gray-900">
                     조회기간
                 </div>
                 <Select
@@ -134,7 +137,7 @@ export default function VacationManagementSection({
                     ]}
                     value={year}
                     onChange={onYearChange}
-                    className="w-auto min-w-[120px]"
+                    className="w-auto min-w-[140px]"
                 />
             </div>
 
@@ -153,7 +156,7 @@ export default function VacationManagementSection({
             {/* table */}
             {tab === "사용 내역" ? (
                 <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-                    <div className="grid grid-cols-12 gap-2 px-5 py-3 bg-gray-50 text-[13px] font-extrabold text-gray-600">
+                    <div className="grid grid-cols-12 gap-2 px-5 py-3 bg-gray-50 text-[13px] font-semibold text-gray-600">
                         <div className="col-span-3">기간</div>
                         <div className="col-span-2">항목</div>
                         <div className="col-span-3">사유</div>
@@ -181,7 +184,7 @@ export default function VacationManagementSection({
                                     <StatusPill status={r.status} />
                                 </div>
                                 <div
-                                    className={`col-span-1 text-right font-extrabold ${
+                                    className={`col-span-1 text-right font-medium ${
                                         r.usedDays < 0
                                             ? "text-red-600"
                                             : "text-gray-800"
@@ -189,7 +192,7 @@ export default function VacationManagementSection({
                                 >
                                     {formatUsedDays(r.usedDays)}
                                 </div>
-                                <div className="col-span-1 text-right font-extrabold text-gray-900">
+                                <div className="col-span-1 text-right font-medium text-gray-900">
                                     {r.remainDays}일
                                 </div>
                             </div>
@@ -201,51 +204,11 @@ export default function VacationManagementSection({
             )}
 
             {/* pagination */}
-            <div className="flex justify-center items-center gap-2 pt-1">
-                <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => onPageChange(Math.max(1, page - 1))}
-                    disabled={page === 1}
-                    className="rounded-lg"
-                    aria-label="prev"
-                >
-                    &lt;
-                </Button>
-
-                <div className="flex items-center gap-1">
-                    {Array.from({ length: totalPages }).map((_, i) => {
-                        const p = i + 1;
-                        const active = p === page;
-                        return (
-                            <Button
-                                key={p}
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => onPageChange(p)}
-                                className={`rounded-lg ${
-                                    active
-                                        ? "bg-gray-100 text-gray-900"
-                                        : "text-gray-500 hover:bg-gray-100"
-                                }`}
-                            >
-                                {p}
-                            </Button>
-                        );
-                    })}
-                </div>
-
-                <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => onPageChange(Math.min(totalPages, page + 1))}
-                    disabled={page === totalPages}
-                    className="rounded-lg"
-                    aria-label="next"
-                >
-                    &gt;
-                </Button>
-            </div>
+            <Pagination
+                currentPage={page}
+                totalPages={totalPages}
+                onPageChange={onPageChange}
+            />
         </div>
     );
 }
@@ -277,7 +240,7 @@ function GrantExpireTable({
 }) {
     return (
         <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-            <div className="grid grid-cols-12 gap-2 px-6 py-4 bg-gray-50 text-[13px] font-extrabold text-gray-600">
+            <div className="grid grid-cols-12 gap-2 px-6 py-4 bg-gray-50 text-[13px] font-semibold text-gray-600">
                 <div className="col-span-3">날짜</div>
                 <div className="col-span-2">지급</div>
                 <div className="col-span-2">소멸</div>
@@ -296,7 +259,7 @@ function GrantExpireTable({
                         </div>
 
                         <div
-                            className={`col-span-2 font-extrabold ${
+                            className={`col-span-2 font-medium ${
                                 r.granted && r.granted > 0
                                     ? "text-gray-900"
                                     : "text-gray-400"
@@ -306,7 +269,7 @@ function GrantExpireTable({
                         </div>
 
                         <div
-                            className={`col-span-2 font-extrabold ${
+                            className={`col-span-2 font-medium ${
                                 r.expired && r.expired < 0
                                     ? "text-gray-900"
                                     : "text-gray-400"
@@ -316,7 +279,7 @@ function GrantExpireTable({
                         </div>
 
                         <div
-                            className={`col-span-2 font-extrabold ${
+                            className={`col-span-2 font-medium ${
                                 r.used && r.used < 0
                                     ? "text-gray-900"
                                     : "text-gray-400"
@@ -325,7 +288,7 @@ function GrantExpireTable({
                             {formatDaysOrDash(r.used)}
                         </div>
 
-                        <div className="col-span-3 text-right font-extrabold text-gray-900">
+                        <div className="col-span-3 text-right font-medium text-gray-900">
                             {formatBalanceOrDash(r.balance)}
                         </div>
                     </div>

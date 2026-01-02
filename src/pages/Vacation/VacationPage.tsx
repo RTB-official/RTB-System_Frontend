@@ -227,7 +227,7 @@ export default function VacationPage() {
     };
 
     return (
-        <div className="flex h-screen bg-[#f9fafb] overflow-hidden">
+        <div className="flex h-screen bg-white overflow-hidden">
             {/* Mobile Overlay */}
             {sidebarOpen && (
                 <div

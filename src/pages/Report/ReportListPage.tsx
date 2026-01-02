@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "../../components/Sidebar";
 import Header from "../../components/common/Header";
@@ -6,17 +6,19 @@ import Table from "../../components/common/Table";
 import Input from "../../components/common/Input";
 import YearMonthSelector from "../../components/common/YearMonthSelector";
 import Button from "../../components/common/Button";
+import Pagination from "../../components/common/Pagination";
+import ActionMenu from "../../components/common/ActionMenu";
 
 type ReportStatus = "submitted" | "pending" | "not_submitted";
 
 interface ReportItem {
-  id: number;
-  title: string;
-  place: string;
-  supervisor: string;
-  owner: string;
-  date: string;
-  status: ReportStatus;
+    id: number;
+    title: string;
+    place: string;
+    supervisor: string;
+    owner: string;
+    date: string;
+    status: ReportStatus;
 }
 
 const STATUS_LABEL: Record<ReportStatus, string> = {
@@ -149,36 +151,37 @@ const MOCK_REPORTS: ReportItem[] = [
         date: "2025.11.24",
         status: "submitted",
     },
-  {
-    id: 12,
+    {
+        id: 12,
         title: "11월26일~11월27일 SH8218 Replacement of guide tool for LGI Connector Pipe, Installation of blow off Valves Leakage test",
         place: "S-OIL 온산",
         supervisor: "—",
         owner: "강민지",
         date: "2025.11.24",
         status: "submitted",
-  },
+    },
 ];
 
 export default function ReportListPage() {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [sidebarOpen, setSidebarOpen] = useState(false);
     const [search, setSearch] = useState("");
     const [year, setYear] = useState("2025년");
     const [month, setMonth] = useState("11월");
-  const [openMenuId, setOpenMenuId] = useState<number | null>(null);
+    const [openMenuId, setOpenMenuId] = useState<number | null>(null);
+    const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
-  const navigate = useNavigate();
+    const navigate = useNavigate();
 
-  const filtered = useMemo(() => {
-    return MOCK_REPORTS.filter((r) => {
+    const filtered = useMemo(() => {
+        return MOCK_REPORTS.filter((r) => {
             const matchSearch =
                 r.title.includes(search) ||
                 r.owner.includes(search) ||
                 r.place.includes(search);
-      return matchSearch;
-    });
-  }, [search]);
+            return matchSearch;
+        });
+    }, [search]);
 
     const totalPages = Math.ceil(filtered.length / itemsPerPage);
     const currentData = useMemo(() => {
@@ -187,14 +190,8 @@ export default function ReportListPage() {
         return filtered.slice(startIndex, endIndex);
     }, [filtered, currentPage, itemsPerPage]);
 
-  useEffect(() => {
-    const handleClickOutside = () => setOpenMenuId(null);
-        document.addEventListener("click", handleClickOutside);
-        return () => document.removeEventListener("click", handleClickOutside);
-  }, []);
-
-  return (
-    <div className="flex h-screen bg-[#f4f5f7] overflow-hidden">
+    return (
+        <div className="flex h-screen bg-[#f4f5f7] overflow-hidden">
             {sidebarOpen && (
                 <div
                     className="fixed inset-0 bg-black/50 z-20 lg:hidden"
@@ -209,12 +206,10 @@ export default function ReportListPage() {
                         : "-translate-x-full lg:translate-x-0"
                 }`}
             >
-                <Sidebar
-                    onClose={() => setSidebarOpen(false)}
-                />
-      </div>
+                <Sidebar onClose={() => setSidebarOpen(false)} />
+            </div>
 
-      <div className="flex-1 flex flex-col h-screen overflow-hidden w-full">
+            <div className="flex-1 flex flex-col h-screen overflow-hidden w-full">
                 <Header
                     title="출장 보고서"
                     onMenuClick={() => setSidebarOpen(true)}
@@ -237,21 +232,21 @@ export default function ReportListPage() {
                                         strokeWidth="2"
                                         strokeLinecap="round"
                                     />
-              </svg>
+                                </svg>
                             }
-          >
-            새 보고서 작성
+                        >
+                            새 보고서 작성
                         </Button>
                     }
                 />
 
-        <div className="flex-1 overflow-y-auto px-4 lg:px-12 py-6">
-          <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-4 lg:p-6 flex flex-col gap-4">
-            <div className="flex flex-wrap items-center gap-3 justify-between">
+                <div className="flex-1 overflow-y-auto px-4 lg:px-12 py-6">
+                    <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-4 lg:p-6 flex flex-col gap-4">
+                        <div className="flex flex-wrap items-center gap-3 justify-between">
                             <Input
-                  value={search}
+                                value={search}
                                 onChange={setSearch}
-                  placeholder="검색어를 입력해 주세요"
+                                placeholder="검색어를 입력해 주세요"
                                 icon={
                                     <svg
                                         width="16"
@@ -268,12 +263,12 @@ export default function ReportListPage() {
                                             x2="21"
                                             y2="21"
                                         />
-                  </svg>
+                                    </svg>
                                 }
                                 iconPosition="left"
                                 className="max-w-md flex-1 min-w-[220px]"
                             />
-              <div className="flex items-center gap-2 flex-wrap justify-end">
+                            <div className="flex items-center gap-2 flex-wrap justify-end">
                                 <YearMonthSelector
                                     year={year}
                                     month={month}
@@ -298,8 +293,8 @@ export default function ReportListPage() {
                                         { value: "12월", label: "12월" },
                                     ]}
                                 />
-              </div>
-            </div>
+                            </div>
+                        </div>
 
                         <Table
                             className="text-[12.5px]"
@@ -309,14 +304,14 @@ export default function ReportListPage() {
                                     label: "작성자",
                                     width: "96px",
                                     render: (_, row: ReportItem) => (
-                          <div className="flex items-center gap-2">
-                            <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-orange-100 text-[11px] text-orange-600 font-semibold">
+                                        <div className="flex items-center gap-2">
+                                            <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-orange-100 text-[11px] text-orange-600 font-semibold">
                                                 {row.owner.slice(0, 2)}
                                             </span>
                                             <span className="text-gray-900">
                                                 {row.owner}
-                            </span>
-                          </div>
+                                            </span>
+                                        </div>
                                     ),
                                 },
                                 {
@@ -363,14 +358,14 @@ export default function ReportListPage() {
                                             STATUS_COLOR[row.status] ??
                                             STATUS_COLOR.pending;
                                         return (
-                      <span
-                        className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-[12px] font-semibold border ${colors.bg} ${colors.text} ${colors.border}`}
-                      >
+                                            <span
+                                                className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-[12px] font-semibold border ${colors.bg} ${colors.text} ${colors.border}`}
+                                            >
                                                 <span
                                                     className={`h-2 w-2 rounded-full ${colors.dot}`}
                                                 />
                                                 {STATUS_LABEL[row.status]}
-                      </span>
+                                            </span>
                                         );
                                     },
                                 },
@@ -380,19 +375,24 @@ export default function ReportListPage() {
                                     width: "40px",
                                     align: "right",
                                     render: (_, row: ReportItem) => (
-                      <div className="relative inline-flex">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
+                                        <div className="relative inline-flex">
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
                                                     setOpenMenuId(
                                                         openMenuId === row.id
                                                             ? null
                                                             : row.id
                                                     );
-                          }}
-                          className="p-2 rounded hover:bg-gray-100 text-gray-600"
-                          aria-label="행 메뉴"
-                        >
+                                                    setMenuAnchor(
+                                                        openMenuId === row.id
+                                                            ? null
+                                                            : e.currentTarget
+                                                    );
+                                                }}
+                                                className="p-2 rounded hover:bg-gray-100 text-gray-600"
+                                                aria-label="행 메뉴"
+                                            >
                                                 <svg
                                                     width="18"
                                                     height="18"
@@ -416,62 +416,48 @@ export default function ReportListPage() {
                                                         cy="12"
                                                         r="1.3"
                                                     />
-                          </svg>
-                        </button>
-                                            {openMenuId === row.id && (
-                          <div
-                                                    onClick={(e) =>
-                                                        e.stopPropagation()
+                                                </svg>
+                                            </button>
+                                            <ActionMenu
+                                                isOpen={openMenuId === row.id}
+                                                anchorEl={menuAnchor}
+                                                onClose={() => {
+                                                    setOpenMenuId(null);
+                                                    setMenuAnchor(null);
+                                                }}
+                                                onEdit={() => {
+                                                    console.log(
+                                                        "수정:",
+                                                        row.id
+                                                    );
+                                                    alert(`수정: ${row.id}`);
+                                                }}
+                                                onDelete={() => {
+                                                    if (
+                                                        confirm(
+                                                            "정말 삭제하시겠습니까?"
+                                                        )
+                                                    ) {
+                                                        console.log(
+                                                            "삭제:",
+                                                            row.id
+                                                        );
+                                                        alert(
+                                                            `삭제 완료: ${row.id}`
+                                                        );
                                                     }
-                            className="absolute right-0 mt-2 w-44 rounded-lg border border-gray-200 bg-white shadow-lg ring-1 ring-black/5 overflow-hidden z-10"
-                          >
-                            <button className="w-full px-4 py-3 text-left text-[13px] hover:bg-gray-50 text-gray-800 flex items-center gap-3">
-                                                        <svg
-                                                            width="16"
-                                                            height="16"
-                                                            viewBox="0 0 24 24"
-                                                            fill="none"
-                                                            stroke="currentColor"
-                                                            strokeWidth="1.5"
-                                                        >
-                                <path d="M4 21v-3.5L17.5 4.5a2 2 0 012.8 0l0 0a2 2 0 010 2.8L7.5 20.5H4z" />
-                              </svg>
-                              수정
-                            </button>
-                            <button className="w-full px-4 py-3 text-left text-[13px] hover:bg-gray-50 text-gray-800 flex items-center gap-3">
-                                                        <svg
-                                                            width="16"
-                                                            height="16"
-                                                            viewBox="0 0 24 24"
-                                                            fill="none"
-                                                            stroke="currentColor"
-                                                            strokeWidth="1.5"
-                                                        >
-                                <path d="M3 6h18" />
-                                <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" />
-                                <path d="M10 11v6M14 11v6" />
-                                <path d="M9 6V4h6v2" />
-                              </svg>
-                              삭제
-                            </button>
-                            <button className="w-full px-4 py-3 text-left text-[13px] bg-gray-50 hover:bg-gray-100 text-gray-800 flex items-center gap-3">
-                                                        <svg
-                                                            width="16"
-                                                            height="16"
-                                                            viewBox="0 0 24 24"
-                                                            fill="none"
-                                                            stroke="currentColor"
-                                                            strokeWidth="1.5"
-                                                        >
-                                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
-                                <path d="M7 10l5 5 5-5" />
-                                <path d="M12 15V3" />
-                              </svg>
-                              PDF 다운로드
-                            </button>
-                          </div>
-                        )}
-                      </div>
+                                                }}
+                                                onDownload={() => {
+                                                    console.log(
+                                                        "PDF 다운로드:",
+                                                        row.id
+                                                    );
+                                                    alert(
+                                                        `PDF 다운로드: ${row.id}`
+                                                    );
+                                                }}
+                                            />
+                                        </div>
                                     ),
                                 },
                             ]}
@@ -480,56 +466,14 @@ export default function ReportListPage() {
                             emptyText="결과가 없습니다."
                         />
 
-                        <div className="flex items-center justify-center gap-2 pt-1">
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() =>
-                                    setCurrentPage(Math.max(1, currentPage - 1))
-                                }
-                                disabled={currentPage === 1}
-                                className="rounded-lg"
-                            >
-                                &lt;
-                            </Button>
-                            <div className="flex items-center gap-1">
-                                {Array.from({ length: totalPages }).map((_, i) => {
-                                    const p = i + 1;
-                                    const active = p === currentPage;
-                                    return (
-                                        <Button
-                                            key={p}
-                                            variant="ghost"
-                                            size="sm"
-                                            onClick={() => setCurrentPage(p)}
-                                            className={`rounded-lg ${
-                                                active
-                                                    ? "bg-gray-100 text-gray-900"
-                                                    : "text-gray-500 hover:bg-gray-100"
-                                            }`}
-                                        >
-                                            {p}
-                                        </Button>
-                    );
-                  })}
+                        <Pagination
+                            currentPage={currentPage}
+                            totalPages={totalPages}
+                            onPageChange={setCurrentPage}
+                        />
+                    </div>
+                </div>
             </div>
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() =>
-                                    setCurrentPage(
-                                        Math.min(totalPages, currentPage + 1)
-                                    )
-                                }
-                                disabled={currentPage === totalPages}
-                                className="rounded-lg"
-                            >
-                                &gt;
-                            </Button>
-            </div>
-          </div>
         </div>
-      </div>
-    </div>
-  );
+    );
 }

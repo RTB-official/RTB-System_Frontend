@@ -1,9 +1,12 @@
 //MembersPage.tsx
 import { useMemo, useState } from "react";
 import Sidebar from "../../components/Sidebar";
-import AppHeader from "../../layout/headers/AppHeader";
+import Header from "../../components/common/Header";
+import Button from "../../components/common/Button";
+import Tabs from "../../components/common/Tabs";
+import Pagination from "../../components/common/Pagination";
+import ActionMenu from "../../components/common/ActionMenu";
 import AddMemberModal from "../../components/modals/AddMemberModal";
-import MemberActionMenu from "../../components/modals/MemberActionMenu";
 
 type Member = {
   id: string;
@@ -55,57 +58,6 @@ function BadgeAvatar({ name }: { name: string }) {
   );
 }
 
-function Header({ onAdd }: { onAdd: () => void }) {
-  return (
-    <div className="sticky top-0 z-10 bg-white border-b border-[#e5e7eb]">
-      <div className="px-6 py-4 flex items-center justify-between">
-        <h1 className="text-[20px] font-semibold text-[#101828]">구성원 관리</h1>
-        <button
-          onClick={onAdd}
-          className="h-10 px-4 rounded-xl bg-[#364153] text-white text-[14px] font-medium hover:opacity-90 transition"
-        >
-          <span className="inline-flex items-center gap-2">
-            <span className="text-[18px] leading-none">+</span>
-            구성원 추가
-          </span>
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function Tabs({
-  active,
-  onChange,
-  total,
-  admin,
-  staff,
-}: {
-  active: "ALL" | "ADMIN" | "STAFF";
-  onChange: (v: "ALL" | "ADMIN" | "STAFF") => void;
-  total: number;
-  admin: number;
-  staff: number;
-}) {
-  const tabClass = (isActive: boolean) =>
-    `text-[14px] font-medium ${
-      isActive ? "text-[#101828]" : "text-[#6a7282] hover:text-[#101828]"
-    }`;
-
-  return (
-    <div className="flex items-center gap-4">
-      <button className={tabClass(active === "ALL")} onClick={() => onChange("ALL")}>
-        전체 <span className="text-[#101828]">{total}</span>
-      </button>
-      <button className={tabClass(active === "ADMIN")} onClick={() => onChange("ADMIN")}>
-        공무팀 <span className="text-[#101828]">{admin}</span>
-      </button>
-      <button className={tabClass(active === "STAFF")} onClick={() => onChange("STAFF")}>
-        공사팀 <span className="text-[#101828]">{staff}</span>
-      </button>
-    </div>
-  );
-}
 
 export default function MembersPage() {
   const [activeTab, setActiveTab] = useState<"ALL" | "ADMIN" | "STAFF">("ALL");
@@ -148,7 +100,7 @@ export default function MembersPage() {
       <div
         className={`
           fixed lg:static inset-y-0 left-0 z-30
-          w-[239px] h-screen flex-shrink-0
+          w-[239px] h-screen shrink-0
           transform transition-transform duration-300 ease-in-out
           ${sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
         `}
@@ -159,22 +111,35 @@ export default function MembersPage() {
 
       {/* Main */}
       <div className="flex-1 flex flex-col h-screen overflow-hidden">
-        {/* Header */}
-        <div className="sticky top-0 z-10 flex-shrink-0">
-          <AppHeader
-            title="구성원 관리"
-            onMenuClick={() => setSidebarOpen(true)}
-            actions={
-              <button
-                onClick={handleAdd}
-                className="h-9 px-3 rounded-lg bg-[#364153] text-white text-[13px] font-medium hover:opacity-90 transition inline-flex items-center gap-2"
-              >
-                <span className="text-[18px] leading-none">+</span>
-                구성원 추가
-              </button>
-            }
-          />
-        </div>
+        <Header
+          title="구성원 관리"
+          onMenuClick={() => setSidebarOpen(true)}
+          rightContent={
+            <Button
+              variant="primary"
+              size="md"
+              onClick={handleAdd}
+              icon={
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M12 5V19M5 12H19"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                  />
+                </svg>
+              }
+            >
+              구성원 추가
+            </Button>
+          }
+        />
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto">
@@ -182,14 +147,25 @@ export default function MembersPage() {
             {/* Tabs row */}
             <div className="mb-4">
               <Tabs
-                active={activeTab}
+                items={[
+                  {
+                    value: "ALL",
+                    label: `전체 ${totalCount}`,
+                  },
+                  {
+                    value: "ADMIN",
+                    label: `공무팀 ${adminCount}`,
+                  },
+                  {
+                    value: "STAFF",
+                    label: `공사팀 ${staffCount}`,
+                  },
+                ]}
+                value={activeTab}
                 onChange={(v) => {
-                  setActiveTab(v);
+                  setActiveTab(v as "ALL" | "ADMIN" | "STAFF");
                   setPage(1);
                 }}
-                total={totalCount}
-                admin={adminCount}
-                staff={staffCount}
               />
             </div>
 
@@ -281,40 +257,12 @@ export default function MembersPage() {
                   </div>
 
                   {/* Pagination */}
-                  <div className="px-4 py-4 flex items-center justify-center gap-3">
-                    <button
-                      className="w-8 h-8 rounded-full hover:bg-[#f2f4f7] text-[#6a7282] disabled:opacity-40"
-                      disabled={page === 1}
-                      onClick={() => setPage((p) => Math.max(1, p - 1))}
-                    >
-                      ‹
-                    </button>
-
-                    {Array.from({ length: pageCount }).map((_, idx) => {
-                      const n = idx + 1;
-                      const active = n === page;
-                      return (
-                        <button
-                          key={n}
-                          onClick={() => setPage(n)}
-                          className={`w-8 h-8 rounded-full text-[14px] ${
-                            active
-                              ? "bg-[#f2f4f7] text-[#101828] font-semibold"
-                              : "text-[#6a7282] hover:bg-[#f2f4f7]"
-                          }`}
-                        >
-                          {n}
-                        </button>
-                      );
-                    })}
-
-                    <button
-                      className="w-8 h-8 rounded-full hover:bg-[#f2f4f7] text-[#6a7282] disabled:opacity-40"
-                      disabled={page === pageCount}
-                      onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
-                    >
-                      ›
-                    </button>
+                  <div className="px-4 py-4">
+                    <Pagination
+                      currentPage={page}
+                      totalPages={pageCount}
+                      onPageChange={setPage}
+                    />
                   </div>
                 </div>
               </div>
@@ -336,8 +284,8 @@ export default function MembersPage() {
         }}
       />
 
-      {/* ... Action Menu (수정/삭제) */}
-      <MemberActionMenu
+      {/* Action Menu (수정/삭제) */}
+      <ActionMenu
         isOpen={actionOpen}
         anchorEl={actionAnchor}
         onClose={() => {
