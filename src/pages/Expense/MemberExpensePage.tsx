@@ -3,6 +3,40 @@ import Sidebar from "../../components/Sidebar";
 import Header from "../../components/common/Header";
 import Table, { TableColumn } from "../../components/common/Table";
 import ExpenseFilterBar from "../../components/common/ExpenseFilterBar";
+import Button from "../../components/common/Button";
+
+// 다운로드 아이콘 컴포넌트
+const IconDownload = () => (
+    <svg
+        width="16"
+        height="16"
+        viewBox="0 0 24 24"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+    >
+        <path
+            d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+        />
+        <path
+            d="M7 10l5 5 5-5"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+        />
+        <path
+            d="M12 15V3"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+        />
+    </svg>
+);
 
 interface EmployeeExpenseSummary {
     id: number;
@@ -353,6 +387,57 @@ export default function MemberExpensePage() {
         return amount.toLocaleString("ko-KR") + "원";
     };
 
+    // 마일리지 내역 테이블 컬럼
+    const mileageColumns: TableColumn<MileageDetail>[] = [
+        {
+            key: "date",
+            label: "날짜",
+        },
+        {
+            key: "route",
+            label: "경로",
+        },
+        {
+            key: "distance",
+            label: "거리",
+            render: (value) => `${value}km`,
+        },
+        {
+            key: "amount",
+            label: "금액",
+            render: (value) => formatCurrency(value),
+        },
+        {
+            key: "details",
+            label: "상세 내용",
+        },
+    ];
+
+    // 카드 지출 내역 테이블 컬럼
+    const cardColumns: TableColumn<CardExpenseDetail>[] = [
+        {
+            key: "date",
+            label: "날짜",
+        },
+        {
+            key: "merchant",
+            label: "가맹점",
+        },
+        {
+            key: "category",
+            label: "카테고리",
+        },
+        {
+            key: "amount",
+            label: "금액",
+            render: (value) => formatCurrency(value),
+        },
+        {
+            key: "details",
+            label: "상세 내용",
+        },
+    ];
+
     const columns: TableColumn<EmployeeExpenseSummary>[] = [
         {
             key: "name",
@@ -499,44 +584,18 @@ export default function MemberExpensePage() {
                                                     {year} {month}
                                                 </p>
                                             </div>
-                                            <button
+                                            <Button
                                                 onClick={(e) => {
                                                     e.stopPropagation();
                                                     alert("PDF 다운로드");
                                                 }}
-                                                className="px-4 py-2 rounded-lg bg-gray-100 text-gray-700 text-sm font-medium hover:bg-gray-200 transition-colors flex items-center gap-2"
+                                                variant="primary"
+                                                size="sm"
+                                                icon={<IconDownload />}
+                                                className="bg-gray-800 hover:bg-gray-900"
                                             >
-                                                <svg
-                                                    width="16"
-                                                    height="16"
-                                                    viewBox="0 0 24 24"
-                                                    fill="none"
-                                                    xmlns="http://www.w3.org/2000/svg"
-                                                >
-                                                    <path
-                                                        d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"
-                                                        stroke="currentColor"
-                                                        strokeWidth="1.5"
-                                                        strokeLinecap="round"
-                                                        strokeLinejoin="round"
-                                                    />
-                                                    <path
-                                                        d="M7 10l5 5 5-5"
-                                                        stroke="currentColor"
-                                                        strokeWidth="1.5"
-                                                        strokeLinecap="round"
-                                                        strokeLinejoin="round"
-                                                    />
-                                                    <path
-                                                        d="M12 15V3"
-                                                        stroke="currentColor"
-                                                        strokeWidth="1.5"
-                                                        strokeLinecap="round"
-                                                        strokeLinejoin="round"
-                                                    />
-                                                </svg>
                                                 PDF 다운로드
-                                            </button>
+                                            </Button>
                                         </div>
 
                                         {/* 탭 */}
@@ -569,161 +628,24 @@ export default function MemberExpensePage() {
 
                                         {/* 마일리지 내역 테이블 */}
                                         {activeTab === "mileage" && (
-                                            <div className="overflow-auto border border-gray-200 rounded-xl">
-                                                <table className="min-w-full text-sm text-gray-800">
-                                                    <thead className="bg-gray-50 border-b border-gray-200">
-                                                        <tr>
-                                                            <th className="px-4 py-3 font-semibold text-gray-600 text-left">
-                                                                날짜
-                                                            </th>
-                                                            <th className="px-4 py-3 font-semibold text-gray-600 text-left">
-                                                                경로
-                                                            </th>
-                                                            <th className="px-4 py-3 font-semibold text-gray-600 text-left">
-                                                                거리
-                                                            </th>
-                                                            <th className="px-4 py-3 font-semibold text-gray-600 text-left">
-                                                                금액
-                                                            </th>
-                                                            <th className="px-4 py-3 font-semibold text-gray-600 text-left">
-                                                                상세 내용
-                                                            </th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                        {mileageDetails.length >
-                                                        0 ? (
-                                                            mileageDetails.map(
-                                                                (detail) => (
-                                                                    <tr
-                                                                        key={
-                                                                            detail.id
-                                                                        }
-                                                                        className="border-b border-gray-100"
-                                                                    >
-                                                                        <td className="px-4 py-3 text-gray-900">
-                                                                            {
-                                                                                detail.date
-                                                                            }
-                                                                        </td>
-                                                                        <td className="px-4 py-3 text-gray-900">
-                                                                            {
-                                                                                detail.route
-                                                                            }
-                                                                        </td>
-                                                                        <td className="px-4 py-3 text-gray-900">
-                                                                            {
-                                                                                detail.distance
-                                                                            }
-                                                                            km
-                                                                        </td>
-                                                                        <td className="px-4 py-3 text-gray-900">
-                                                                            {formatCurrency(
-                                                                                detail.amount
-                                                                            )}
-                                                                        </td>
-                                                                        <td className="px-4 py-3 text-gray-900">
-                                                                            {
-                                                                                detail.details
-                                                                            }
-                                                                        </td>
-                                                                    </tr>
-                                                                )
-                                                            )
-                                                        ) : (
-                                                            <tr>
-                                                                <td
-                                                                    colSpan={5}
-                                                                    className="px-4 py-10 text-center text-gray-500"
-                                                                >
-                                                                    마일리지
-                                                                    내역이
-                                                                    없습니다.
-                                                                </td>
-                                                            </tr>
-                                                        )}
-                                                    </tbody>
-                                                </table>
-                                            </div>
+                                            <Table
+                                                columns={mileageColumns}
+                                                data={mileageDetails}
+                                                rowKey="id"
+                                                emptyText="마일리지 내역이 없습니다."
+                                                className="border-gray-200"
+                                            />
                                         )}
 
                                         {/* 카드 지출 내역 테이블 */}
                                         {activeTab === "card" && (
-                                            <div className="overflow-auto border border-gray-200 rounded-xl">
-                                                <table className="min-w-full text-sm text-gray-800">
-                                                    <thead className="bg-gray-50 border-b border-gray-200">
-                                                        <tr>
-                                                            <th className="px-4 py-3 font-semibold text-gray-600 text-left">
-                                                                날짜
-                                                            </th>
-                                                            <th className="px-4 py-3 font-semibold text-gray-600 text-left">
-                                                                가맹점
-                                                            </th>
-                                                            <th className="px-4 py-3 font-semibold text-gray-600 text-left">
-                                                                카테고리
-                                                            </th>
-                                                            <th className="px-4 py-3 font-semibold text-gray-600 text-left">
-                                                                금액
-                                                            </th>
-                                                            <th className="px-4 py-3 font-semibold text-gray-600 text-left">
-                                                                상세 내용
-                                                            </th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                        {cardDetails.length >
-                                                        0 ? (
-                                                            cardDetails.map(
-                                                                (detail) => (
-                                                                    <tr
-                                                                        key={
-                                                                            detail.id
-                                                                        }
-                                                                        className="border-b border-gray-100"
-                                                                    >
-                                                                        <td className="px-4 py-3 text-gray-900">
-                                                                            {
-                                                                                detail.date
-                                                                            }
-                                                                        </td>
-                                                                        <td className="px-4 py-3 text-gray-900">
-                                                                            {
-                                                                                detail.merchant
-                                                                            }
-                                                                        </td>
-                                                                        <td className="px-4 py-3 text-gray-900">
-                                                                            {
-                                                                                detail.category
-                                                                            }
-                                                                        </td>
-                                                                        <td className="px-4 py-3 text-gray-900">
-                                                                            {formatCurrency(
-                                                                                detail.amount
-                                                                            )}
-                                                                        </td>
-                                                                        <td className="px-4 py-3 text-gray-900">
-                                                                            {
-                                                                                detail.details
-                                                                            }
-                                                                        </td>
-                                                                    </tr>
-                                                                )
-                                                            )
-                                                        ) : (
-                                                            <tr>
-                                                                <td
-                                                                    colSpan={5}
-                                                                    className="px-4 py-10 text-center text-gray-500"
-                                                                >
-                                                                    카드 지출
-                                                                    내역이
-                                                                    없습니다.
-                                                                </td>
-                                                            </tr>
-                                                        )}
-                                                    </tbody>
-                                                </table>
-                                            </div>
+                                            <Table
+                                                columns={cardColumns}
+                                                data={cardDetails}
+                                                rowKey="id"
+                                                emptyText="카드 지출 내역이 없습니다."
+                                                className="border-gray-200"
+                                            />
                                         )}
                                     </div>
                                 );
@@ -802,7 +724,7 @@ export default function MemberExpensePage() {
                                                                 "PDF 다운로드"
                                                             );
                                                         }}
-                                                        className="px-4 py-2 rounded-lg bg-gray-100 text-gray-700 text-sm font-medium hover:bg-gray-200 transition-colors flex items-center gap-2"
+                                                        className="px-4 py-2 rounded-lg bg-gray-800 text-white text-sm font-medium hover:bg-gray-900 transition-colors flex items-center gap-2"
                                                     >
                                                         <svg
                                                             width="16"
@@ -874,172 +796,24 @@ export default function MemberExpensePage() {
 
                                                 {/* 마일리지 내역 테이블 */}
                                                 {activeTab === "mileage" && (
-                                                    <div className="overflow-auto border border-gray-200 rounded-xl">
-                                                        <table className="min-w-full text-sm text-gray-800">
-                                                            <thead className="bg-gray-50 border-b border-gray-200">
-                                                                <tr>
-                                                                    <th className="px-4 py-3 font-semibold text-gray-600 text-left">
-                                                                        날짜
-                                                                    </th>
-                                                                    <th className="px-4 py-3 font-semibold text-gray-600 text-left">
-                                                                        경로
-                                                                    </th>
-                                                                    <th className="px-4 py-3 font-semibold text-gray-600 text-left">
-                                                                        거리
-                                                                    </th>
-                                                                    <th className="px-4 py-3 font-semibold text-gray-600 text-left">
-                                                                        금액
-                                                                    </th>
-                                                                    <th className="px-4 py-3 font-semibold text-gray-600 text-left">
-                                                                        상세
-                                                                        내용
-                                                                    </th>
-                                                                </tr>
-                                                            </thead>
-                                                            <tbody>
-                                                                {mileageDetails.length >
-                                                                0 ? (
-                                                                    mileageDetails.map(
-                                                                        (
-                                                                            detail
-                                                                        ) => (
-                                                                            <tr
-                                                                                key={
-                                                                                    detail.id
-                                                                                }
-                                                                                className="border-b border-gray-100"
-                                                                            >
-                                                                                <td className="px-4 py-3 text-gray-900">
-                                                                                    {
-                                                                                        detail.date
-                                                                                    }
-                                                                                </td>
-                                                                                <td className="px-4 py-3 text-gray-900">
-                                                                                    {
-                                                                                        detail.route
-                                                                                    }
-                                                                                </td>
-                                                                                <td className="px-4 py-3 text-gray-900">
-                                                                                    {
-                                                                                        detail.distance
-                                                                                    }
-                                                                                    km
-                                                                                </td>
-                                                                                <td className="px-4 py-3 text-gray-900">
-                                                                                    {formatCurrency(
-                                                                                        detail.amount
-                                                                                    )}
-                                                                                </td>
-                                                                                <td className="px-4 py-3 text-gray-900">
-                                                                                    {
-                                                                                        detail.details
-                                                                                    }
-                                                                                </td>
-                                                                            </tr>
-                                                                        )
-                                                                    )
-                                                                ) : (
-                                                                    <tr>
-                                                                        <td
-                                                                            colSpan={
-                                                                                5
-                                                                            }
-                                                                            className="px-4 py-10 text-center text-gray-500"
-                                                                        >
-                                                                            마일리지
-                                                                            내역이
-                                                                            없습니다.
-                                                                        </td>
-                                                                    </tr>
-                                                                )}
-                                                            </tbody>
-                                                        </table>
-                                                    </div>
+                                                    <Table
+                                                        columns={mileageColumns}
+                                                        data={mileageDetails}
+                                                        rowKey="id"
+                                                        emptyText="마일리지 내역이 없습니다."
+                                                        className="border-gray-200"
+                                                    />
                                                 )}
 
                                                 {/* 카드 지출 내역 테이블 */}
                                                 {activeTab === "card" && (
-                                                    <div className="overflow-auto border border-gray-200 rounded-xl">
-                                                        <table className="min-w-full text-sm text-gray-800">
-                                                            <thead className="bg-gray-50 border-b border-gray-200">
-                                                                <tr>
-                                                                    <th className="px-4 py-3 font-semibold text-gray-600 text-left">
-                                                                        날짜
-                                                                    </th>
-                                                                    <th className="px-4 py-3 font-semibold text-gray-600 text-left">
-                                                                        가맹점
-                                                                    </th>
-                                                                    <th className="px-4 py-3 font-semibold text-gray-600 text-left">
-                                                                        카테고리
-                                                                    </th>
-                                                                    <th className="px-4 py-3 font-semibold text-gray-600 text-left">
-                                                                        금액
-                                                                    </th>
-                                                                    <th className="px-4 py-3 font-semibold text-gray-600 text-left">
-                                                                        상세
-                                                                        내용
-                                                                    </th>
-                                                                </tr>
-                                                            </thead>
-                                                            <tbody>
-                                                                {cardDetails.length >
-                                                                0 ? (
-                                                                    cardDetails.map(
-                                                                        (
-                                                                            detail
-                                                                        ) => (
-                                                                            <tr
-                                                                                key={
-                                                                                    detail.id
-                                                                                }
-                                                                                className="border-b border-gray-100"
-                                                                            >
-                                                                                <td className="px-4 py-3 text-gray-900">
-                                                                                    {
-                                                                                        detail.date
-                                                                                    }
-                                                                                </td>
-                                                                                <td className="px-4 py-3 text-gray-900">
-                                                                                    {
-                                                                                        detail.merchant
-                                                                                    }
-                                                                                </td>
-                                                                                <td className="px-4 py-3 text-gray-900">
-                                                                                    {
-                                                                                        detail.category
-                                                                                    }
-                                                                                </td>
-                                                                                <td className="px-4 py-3 text-gray-900">
-                                                                                    {formatCurrency(
-                                                                                        detail.amount
-                                                                                    )}
-                                                                                </td>
-                                                                                <td className="px-4 py-3 text-gray-900">
-                                                                                    {
-                                                                                        detail.details
-                                                                                    }
-                                                                                </td>
-                                                                            </tr>
-                                                                        )
-                                                                    )
-                                                                ) : (
-                                                                    <tr>
-                                                                        <td
-                                                                            colSpan={
-                                                                                5
-                                                                            }
-                                                                            className="px-4 py-10 text-center text-gray-500"
-                                                                        >
-                                                                            카드
-                                                                            지출
-                                                                            내역이
-                                                                            없습니다.
-                                                                        </td>
-                                                                    </tr>
-                                                                )}
-                                                            </tbody>
-                                                        </table>
-                                                    </div>
+                                                    <Table
+                                                        columns={cardColumns}
+                                                        data={cardDetails}
+                                                        rowKey="id"
+                                                        emptyText="카드 지출 내역이 없습니다."
+                                                        className="border-gray-200"
+                                                    />
                                                 )}
                                             </div>
                                         );
