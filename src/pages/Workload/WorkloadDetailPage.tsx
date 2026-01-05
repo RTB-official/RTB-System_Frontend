@@ -256,8 +256,8 @@ export default function WorkloadDetailPage() {
                 />
 
                 {/* Content */}
-                <main className="flex-1 overflow-auto px-6 lg:px-12 pt-6 pb-24">
-                    <div className="flex flex-col gap-6 max-w-[1200px]">
+                <main className="flex-1 overflow-auto pt-6 pb-24 px-9">
+                    <div className="flex flex-col gap-6 w-full">
                         {/* 요약 카드 (Icon 기반) */}
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             {[
@@ -304,7 +304,7 @@ export default function WorkloadDetailPage() {
 
                         {/* 조회 기간 */}
                         <div className="flex flex-wrap items-center gap-5">
-                            <h2 className="text-[26px] font-bold text-gray-700 tracking-tight">
+                            <h2 className="text-[24px] font-semibold text-gray-900">
                                 조회 기간
                             </h2>
                             <YearMonthSelector

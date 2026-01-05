@@ -285,8 +285,8 @@ export default function VacationPage() {
                 />
 
                 {/* Content */}
-                <div className="flex-1 overflow-y-auto px-6 md:px-8 lg:px-10 py-6 md:py-9">
-                    <div className="max-w-[1200px] mx-auto flex flex-col gap-4 md:gap-6">
+                <div className="flex-1 overflow-y-auto px-9 py-6 md:py-9">
+                    <div className="flex flex-col gap-4 md:gap-6 w-full">
                         <VacationManagementSection
                             summary={summary}
                             year={year}

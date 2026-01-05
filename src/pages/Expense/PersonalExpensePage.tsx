@@ -110,7 +110,7 @@ export default function PersonalExpensePage() {
     );
 
     return (
-        <div className="flex h-screen bg-gray-50 overflow-hidden">
+        <div className="flex h-screen bg-white overflow-hidden">
             {sidebarOpen && (
                 <div
                     className="fixed inset-0 bg-black/50 z-20 lg:hidden"
@@ -142,7 +142,7 @@ export default function PersonalExpensePage() {
                 <div className="flex-1 overflow-y-auto py-4 lg:py-9 px-9">
                     {/* 조회 기간 */}
                     <div className="mb-8 flex flex-wrap items-center gap-4">
-                        <h2 className="text-[18px] md:text-[22px] font-semibold text-gray-900">
+                        <h2 className="text-[24px] font-semibold text-gray-900">
                             조회 기간
                         </h2>
                         <YearMonthSelector
