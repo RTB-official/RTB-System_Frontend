@@ -32,7 +32,7 @@ export default function Button({
     const sizeStyles = {
         sm: "h-10 px-3 text-sm rounded-lg",
         md: "h-12 px-4 text-base rounded-xl",
-        lg: "h-14 px-6 text-lg rounded-xl",
+        lg: "h-14 px-6 text-lg rounded-2xl",
     };
 
     const widthStyle = fullWidth ? "w-full" : "";

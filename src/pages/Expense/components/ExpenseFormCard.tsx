@@ -56,11 +56,11 @@ export default function ExpenseFormCard({
                     개인 카드/현금 지출내역
                 </span>
             }
-            className="h-full shadow-[0_24px_60px_rgba(15,23,42,0.08)] border-gray-100"
+            className="h-full border-gray-200"
         >
             <div className="flex-1 flex flex-col justify-between gap-6">
                 <div className="space-y-6">
-                    <div>
+                    <div className="relative">
                         <Input
                             label="날짜"
                             value={date}
@@ -85,7 +85,7 @@ export default function ExpenseFormCard({
                         {showPicker && (
                             <div
                                 ref={wrapperRef}
-                                className="absolute z-40 right-0 mt-2"
+                                className="absolute z-40 top-full right-0 mt-2"
                             >
                                 <DatePickerPanel
                                     selected={date || null}

@@ -19,8 +19,9 @@ export default function PersonalExpensePage() {
     const [rightItems, setRightItems] = useState<any[]>([]);
 
     const [sidebarOpen, setSidebarOpen] = useState(false);
-    const [year, setYear] = useState("2025년");
-    const [month, setMonth] = useState("11월");
+    const currentDate = new Date();
+    const [year, setYear] = useState(`${currentDate.getFullYear()}년`);
+    const [month, setMonth] = useState(`${currentDate.getMonth() + 1}월`);
     const [submittedIds, setSubmittedIds] = useState<number[]>([]);
 
     useEffect(() => {
@@ -44,6 +45,26 @@ export default function PersonalExpensePage() {
         }));
     }, []);
 
+    // 날짜 필터링 함수
+    const matchesFilter = (dateStr: string) => {
+        if (!dateStr) return false;
+        try {
+            const date = new Date(dateStr);
+            // Invalid date 체크
+            if (isNaN(date.getTime())) return false;
+
+            const selectedYear = parseInt(year.replace("년", ""));
+            const selectedMonth = parseInt(month.replace("월", ""));
+
+            return (
+                date.getFullYear() === selectedYear &&
+                date.getMonth() + 1 === selectedMonth
+            );
+        } catch (e) {
+            return false;
+        }
+    };
+
     const handleRemoveLeftItem = (id: number) => {
         setLeftItems((prev) => prev.filter((item) => item.id !== id));
         setSubmittedIds((prev) => prev.filter((itemId) => itemId !== id));
@@ -56,34 +77,40 @@ export default function PersonalExpensePage() {
 
     const mileageHistory = useMemo<ExpenseHistoryItem[]>(
         () =>
-            leftItems.map((it) => ({
-                id: it.id,
-                variant: "mileage" as const,
-                date: it.date || "",
-                amount: `${(it.cost || 0).toLocaleString("ko-KR")}원`,
-                routeLabel: `${it.from || "출발지"} → ${it.to || "도착지"}`,
-                distanceLabel: `${it.distance || 0}km`,
-                desc: it.note || "",
-            })),
-        [leftItems]
+            leftItems
+                .filter((it) => matchesFilter(it.date || ""))
+                .map((it) => ({
+                    id: it.id,
+                    variant: "mileage" as const,
+                    date: it.date || "",
+                    amount: `${(it.cost || 0).toLocaleString("ko-KR")}원`,
+                    routeLabel: `${it.from || "출발지"} → ${it.to || "도착지"}`,
+                    distanceLabel: `${it.distance || 0}km`,
+                    desc: it.note || "",
+                })),
+        [leftItems, year, month]
     );
 
     const cardHistory = useMemo<ExpenseHistoryItem[]>(
         () =>
-            rightItems.map((it) => ({
-                id: it.id,
-                variant: "card" as const,
-                date: it.date || "",
-                amount: `${Number(it.amount || 0).toLocaleString("ko-KR")}원`,
-                tag: it.type || "기타",
-                desc: it.detail || "",
-                img: it.img || null,
-            })),
-        [rightItems]
+            rightItems
+                .filter((it) => matchesFilter(it.date || ""))
+                .map((it) => ({
+                    id: it.id,
+                    variant: "card" as const,
+                    date: it.date || "",
+                    amount: `${Number(it.amount || 0).toLocaleString(
+                        "ko-KR"
+                    )}원`,
+                    tag: it.type || "기타",
+                    desc: it.detail || "",
+                    img: it.img || null,
+                })),
+        [rightItems, year, month]
     );
 
     return (
-        <div className="flex h-screen bg-[#f5f7fb] overflow-hidden">
+        <div className="flex h-screen bg-gray-50 overflow-hidden">
             {sidebarOpen && (
                 <div
                     className="fixed inset-0 bg-black/50 z-20 lg:hidden"
@@ -112,11 +139,11 @@ export default function PersonalExpensePage() {
                     onMenuClick={() => setSidebarOpen(true)}
                 />
 
-                <div className="flex-1 overflow-y-auto p-4 lg:p-9">
+                <div className="flex-1 overflow-y-auto p-4 lg:p-9 mx-9">
                     <div className="max-w-7xl mx-auto">
                         {/* 조회 기간 */}
-                        <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-[0px_12px_35px_rgba(15,23,42,0.06)] mb-8 flex flex-wrap items-center gap-4">
-                            <h2 className="text-lg font-semibold text-gray-900">
+                        <div className="mb-8 flex flex-wrap items-center gap-4">
+                            <h2 className="text-[18px] md:text-[22px] font-semibold text-gray-900">
                                 조회 기간
                             </h2>
                             <YearMonthSelector
@@ -144,7 +171,7 @@ export default function PersonalExpensePage() {
                             />
                         </div>
 
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 items-start">
                             <ExpenseHistorySection
                                 title="개인 차량 마일리지 내역"
                                 items={mileageHistory}
@@ -161,7 +188,7 @@ export default function PersonalExpensePage() {
                             />
                         </div>
 
-                        <div className="fixed bottom-6 left-6 right-6 lg:left-[239px]">
+                        <div className="fixed bottom-6 left-6 right-6 lg:left-[239px] mx-9">
                             <Button
                                 variant="primary"
                                 size="lg"
