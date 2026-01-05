@@ -46,7 +46,7 @@ export default function ExpenseFilterBar({
 
   return (
       <div className="flex flex-wrap items-center gap-3">
-        <span className="text-[20px] font-semibold text-gray-700">
+        <span className="text-[24px] font-semibold text-gray-900">
           조회 기간
         </span>
         <Select
