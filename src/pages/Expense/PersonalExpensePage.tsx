@@ -139,81 +139,77 @@ export default function PersonalExpensePage() {
                     onMenuClick={() => setSidebarOpen(true)}
                 />
 
-                <div className="flex-1 overflow-y-auto p-4 lg:p-9 mx-9">
-                    <div className="max-w-7xl mx-auto">
-                        {/* 조회 기간 */}
-                        <div className="mb-8 flex flex-wrap items-center gap-4">
-                            <h2 className="text-[18px] md:text-[22px] font-semibold text-gray-900">
-                                조회 기간
-                            </h2>
-                            <YearMonthSelector
-                                year={year}
-                                month={month}
-                                onYearChange={setYear}
-                                onMonthChange={setMonth}
-                                yearOptions={yearOptions}
-                                monthOptions={monthOptions}
-                            />
-                        </div>
-
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-6 items-stretch">
-                            <MileageCard
-                                initialDate={preselectedDate || undefined}
-                                onAdd={(item) =>
-                                    setLeftItems((prev) => [item, ...prev])
-                                }
-                            />
-                            <ExpenseFormCard
-                                initialDate={preselectedDate || undefined}
-                                onAdd={(item) =>
-                                    setRightItems((prev) => [item, ...prev])
-                                }
-                            />
-                        </div>
-
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 items-start">
-                            <ExpenseHistorySection
-                                title="개인 차량 마일리지 내역"
-                                items={mileageHistory}
-                                emptyMessage="등록된 마일리지 내역이 없습니다."
-                                submittedIds={submittedIds}
-                                onRemove={handleRemoveLeftItem}
-                            />
-                            <ExpenseHistorySection
-                                title="개인 카드/현금 지출내역"
-                                items={cardHistory}
-                                emptyMessage="등록된 지출 내역이 없습니다."
-                                submittedIds={submittedIds}
-                                onRemove={handleRemoveRightItem}
-                            />
-                        </div>
-
-                        <div className="fixed bottom-6 left-6 right-6 lg:left-[239px] mx-9">
-                            <Button
-                                variant="primary"
-                                size="lg"
-                                fullWidth
-                                onClick={() => {
-                                    alert(
-                                        "제출 처리: " +
-                                            (leftItems.length +
-                                                rightItems.length) +
-                                            "개"
-                                    );
-                                    const allIds = [
-                                        ...leftItems.map((i) => i.id),
-                                        ...rightItems.map((i) => i.id),
-                                    ];
-                                    setSubmittedIds(allIds);
-                                }}
-                            >
-                                모두 제출 (
-                                {leftItems.length + rightItems.length}개)
-                            </Button>
-                        </div>
-
-                        <div className="h-24" />
+                <div className="flex-1 overflow-y-auto py-4 lg:py-9 px-9">
+                    {/* 조회 기간 */}
+                    <div className="mb-8 flex flex-wrap items-center gap-4">
+                        <h2 className="text-[18px] md:text-[22px] font-semibold text-gray-900">
+                            조회 기간
+                        </h2>
+                        <YearMonthSelector
+                            year={year}
+                            month={month}
+                            onYearChange={setYear}
+                            onMonthChange={setMonth}
+                            yearOptions={yearOptions}
+                            monthOptions={monthOptions}
+                        />
                     </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-6 items-stretch w-full">
+                        <MileageCard
+                            initialDate={preselectedDate || undefined}
+                            onAdd={(item) =>
+                                setLeftItems((prev) => [item, ...prev])
+                            }
+                        />
+                        <ExpenseFormCard
+                            initialDate={preselectedDate || undefined}
+                            onAdd={(item) =>
+                                setRightItems((prev) => [item, ...prev])
+                            }
+                        />
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 items-start w-full">
+                        <ExpenseHistorySection
+                            title="개인 차량 마일리지 내역"
+                            items={mileageHistory}
+                            emptyMessage="등록된 마일리지 내역이 없습니다."
+                            submittedIds={submittedIds}
+                            onRemove={handleRemoveLeftItem}
+                        />
+                        <ExpenseHistorySection
+                            title="개인 카드/현금 지출내역"
+                            items={cardHistory}
+                            emptyMessage="등록된 지출 내역이 없습니다."
+                            submittedIds={submittedIds}
+                            onRemove={handleRemoveRightItem}
+                        />
+                    </div>
+
+                    <div className="fixed bottom-6 left-6 right-6 lg:left-[239px] mx-9">
+                        <Button
+                            variant="primary"
+                            size="lg"
+                            fullWidth
+                            onClick={() => {
+                                alert(
+                                    "제출 처리: " +
+                                        (leftItems.length + rightItems.length) +
+                                        "개"
+                                );
+                                const allIds = [
+                                    ...leftItems.map((i) => i.id),
+                                    ...rightItems.map((i) => i.id),
+                                ];
+                                setSubmittedIds(allIds);
+                            }}
+                        >
+                            모두 제출 ({leftItems.length + rightItems.length}개)
+                        </Button>
+                    </div>
+
+                    <div className="h-24" />
                 </div>
             </div>
         </div>
