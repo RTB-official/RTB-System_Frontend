@@ -1,3 +1,4 @@
+//TimelineSummarySection.tsx
 import { useMemo, useState } from 'react';
 import { useWorkReportStore, calcDurationHours, REGION_GROUPS } from '../../store/workReportStore';
 
@@ -365,8 +366,16 @@ export default function TimelineSummarySection({ onDraftSave, onSubmit }: Timeli
                   const left = (seg.startMin / 1440) * 100;
                   const width = Math.max(((seg.endMin - seg.startMin) / 1440) * 100, 0.5);
                   const color = getTypeColor(seg.type);
-                  const laneHeight = 28;
-                  const topOffset = 4 + seg.lane * (laneHeight + 4);
+
+                  // ✅ 같은 시간대에 겹치는 세그먼트가 있는지 체크
+                  const hasOverlap = lanesSegments.some(other => {
+                    if (other === seg) return false;
+                    return seg.startMin < other.endMin && seg.endMin > other.startMin;
+                  });
+
+                  // 겹침이 없으면 트랙 높이를 꽉 채움
+                  const laneHeight = hasOverlap ? 28 : Math.max(28, trackHeight - 8);
+                  const topOffset = hasOverlap ? (4 + seg.lane * (28 + 4)) : 4;
 
                   return (
                     <div
@@ -381,6 +390,7 @@ export default function TimelineSummarySection({ onDraftSave, onSubmit }: Timeli
                         border: `1px solid ${color.border}`,
                         boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
                       }}
+
                       onMouseEnter={(e) => setHoveredSegment({ 
                         segment: seg, 
                         position: { x: e.clientX, y: e.clientY } 
@@ -512,21 +522,7 @@ export default function TimelineSummarySection({ onDraftSave, onSubmit }: Timeli
         <Popover segment={hoveredSegment.segment} position={hoveredSegment.position} />
       )}
 
-      {/* 하단 액션바 */}
-      <div className="mt-6 p-4 bg-[#f9fafb] border border-[#e5e7eb] rounded-xl flex justify-between items-center">
-        <button
-          onClick={onDraftSave}
-          className="px-5 py-2.5 bg-white border border-[#e5e7eb] rounded-full font-semibold text-[14px] hover:border-[#93c5fd] hover:shadow-md hover:-translate-y-0.5 transition-all"
-        >
-          임시저장
-        </button>
-        <button
-          onClick={onSubmit}
-          className="px-6 py-2.5 bg-[#3b82f6] text-white rounded-full font-bold text-[14px] hover:bg-[#2563eb] hover:brightness-105 transition-all"
-        >
-          제출하기
-        </button>
-      </div>
+
     </div>
   );
 }

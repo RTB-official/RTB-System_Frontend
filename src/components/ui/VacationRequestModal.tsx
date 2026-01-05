@@ -1,4 +1,6 @@
+//VacationRequestModal.tsx
 import { useEffect, useMemo, useState } from "react";
+import DatePickerPanel from "../DatePickerPanel";
 
 type LeaveType = "FULL" | "AM" | "PM";
 
@@ -120,32 +122,20 @@ export default function VacationRequestModal({
               날짜
             </div>
 
-            <div className="relative">
-              {/* 실제 입력은 date */}
-              <input
-                type="date"
-                value={dateISO}
-                onChange={(e) => setDateISO(e.target.value)}
-                className="w-full h-12 rounded-xl border border-gray-200 px-4 pr-12 font-bold text-gray-900 bg-white outline-none focus:ring-2 focus:ring-gray-200"
+            <div className="flex gap-3 items-start">
+              {/* 선택된 날짜 표시(기존 피그마 느낌 유지) */}
+              <div className="flex-1 h-12 rounded-xl border border-gray-200 px-4 font-bold text-gray-900 bg-white flex items-center justify-between">
+                <span className="text-[14px]">
+                  {formatKoreanDate(dateISO)}
+                </span>
+                <span className="text-gray-500">📅</span>
+              </div>
+
+              {/* 달력 패널 */}
+              <DatePickerPanel
+                selected={dateISO}
+                onSelect={(yMd) => setDateISO(yMd)}
               />
-
-               {/* 표시용 텍스트 (피그마처럼 보이게) */}
-               <div className="pointer-events-none absolute inset-y-0 left-4 flex items-center text-[14px] font-bold text-gray-900">
-                {formatKoreanDate(dateISO)}
-              </div>
-
-              {/* 아이콘 느낌 */}
-              <div className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-gray-500">
-                📅
-              </div>
-
-              {/* date input 기본 텍스트 숨기기용: 브라우저마다 다름 */}
-              <style>
-                {`
-                  input[type="date"]::-webkit-datetime-edit { opacity: 0; }
-                  input[type="date"]::-webkit-calendar-picker-indicator { opacity: 0; }
-                `}
-              </style>
             </div>
           </div>
 
