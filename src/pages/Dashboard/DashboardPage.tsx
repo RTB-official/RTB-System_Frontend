@@ -6,10 +6,13 @@ import CalendarMenu from "../../components/CalendarMenu";
 import EventModal from "../../components/EventModal";
 import Button from "../../components/common/Button";
 import CalendarTag from "../../components/common/CalendarTag";
+import BaseModal from "../../components/ui/BaseModal";
 
 // 공휴일 API 정보
-const HOLIDAY_API_KEY = "cac7adf961a1b55472fa90319e4cb89dde6c04242edcb3d3970ae9e09c931e98";
-const HOLIDAY_API_ENDPOINT = "https://apis.data.go.kr/B090041/openapi/service/SpcdeInfoService/getRestDeInfo";
+const HOLIDAY_API_KEY =
+    "cac7adf961a1b55472fa90319e4cb89dde6c04242edcb3d3970ae9e09c931e98";
+const HOLIDAY_API_ENDPOINT =
+    "https://apis.data.go.kr/B090041/openapi/service/SpcdeInfoService/getRestDeInfo";
 
 function generateMonthGrid(year: number, month: number) {
     const first = new Date(year, month, 1);
@@ -34,6 +37,7 @@ interface CalendarEvent {
     color: string;
     startDate: string; // YYYY-MM-DD 형식
     endDate: string; // YYYY-MM-DD 형식
+    isHoliday?: boolean;
 }
 
 const sampleEvents: CalendarEvent[] = [
@@ -78,33 +82,36 @@ export default function DashboardPage() {
     useEffect(() => {
         const fetchYearHolidays = async (targetYear: number) => {
             try {
-                // 한 번에 일년치를 가져오려면 반복문이 필요할 수 있으나, 
+                // 한 번에 일년치를 가져오려면 반복문이 필요할 수 있으나,
                 // 해당 API는 월별 조회가 기본이므로 현재 연도의 1~12월을 가져옵니다.
                 const results: Record<string, string> = {};
-                
+
                 // 성능을 위해 병렬 처리
                 const fetchPromises = Array.from({ length: 12 }, (_, i) => {
                     const month = String(i + 1).padStart(2, "0");
                     const url = `${HOLIDAY_API_ENDPOINT}?serviceKey=${HOLIDAY_API_KEY}&solYear=${targetYear}&solMonth=${month}&_type=json&numOfRows=100`;
-                    return fetch(url).then(res => res.json());
+                    return fetch(url).then((res) => res.json());
                 });
 
                 const responses = await Promise.all(fetchPromises);
-                
-                responses.forEach(data => {
+
+                responses.forEach((data) => {
                     const items = data.response?.body?.items?.item;
                     if (items) {
                         const itemList = Array.isArray(items) ? items : [items];
                         itemList.forEach((item: any) => {
                             // locdate: 20250101 -> 2025-01-01
                             const dateStr = String(item.locdate);
-                            const formattedDate = `${dateStr.slice(0, 4)}-${dateStr.slice(4, 6)}-${dateStr.slice(6, 8)}`;
+                            const formattedDate = `${dateStr.slice(
+                                0,
+                                4
+                            )}-${dateStr.slice(4, 6)}-${dateStr.slice(6, 8)}`;
                             results[formattedDate] = item.dateName;
                         });
                     }
                 });
 
-                setHolidays(prev => ({ ...prev, ...results }));
+                setHolidays((prev) => ({ ...prev, ...results }));
             } catch (error) {
                 console.error("공휴일 정보를 가져오는데 실패했습니다:", error);
             }
@@ -126,6 +133,13 @@ export default function DashboardPage() {
     const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(
         null
     );
+    const [hiddenEventsModalOpen, setHiddenEventsModalOpen] = useState(false);
+    const [hiddenEventsDate, setHiddenEventsDate] = useState<string | null>(
+        null
+    );
+    const [eventDetailModalOpen, setEventDetailModalOpen] = useState(false);
+    const [selectedEventForDetail, setSelectedEventForDetail] =
+        useState<CalendarEvent | null>(null);
 
     const menuOpenRef = React.useRef(menuOpen);
     const menuDateRef = React.useRef(menuDate);
@@ -222,9 +236,78 @@ export default function DashboardPage() {
     // 이벤트를 날짜별로 그룹화
     const [allEvents, setAllEvents] = useState<CalendarEvent[]>(sampleEvents);
 
+    // 공휴일 데이터를 연속된 일정으로 병합
+    const mergedHolidays = useMemo(() => {
+        const merged: CalendarEvent[] = [];
+        const sortedKeys = Object.keys(holidays).sort();
+
+        let currentHoliday: {
+            title: string;
+            start: string;
+            end: string;
+        } | null = null;
+
+        for (const key of sortedKeys) {
+            const title = holidays[key];
+            if (!currentHoliday) {
+                currentHoliday = { title, start: key, end: key };
+            } else if (currentHoliday.title === title) {
+                // 다음 날인지 확인
+                const prevEndDate = new Date(currentHoliday.end);
+                const currentDate = new Date(key);
+                const diffTime = currentDate.getTime() - prevEndDate.getTime();
+                const diffDays = diffTime / (1000 * 60 * 60 * 24);
+
+                if (diffDays === 1) {
+                    currentHoliday.end = key;
+                } else {
+                    merged.push({
+                        id: `holiday-${currentHoliday.start}`,
+                        title: currentHoliday.title,
+                        color: "#ef4444",
+                        startDate: currentHoliday.start,
+                        endDate: currentHoliday.end,
+                        isHoliday: true,
+                    });
+                    currentHoliday = { title, start: key, end: key };
+                }
+            } else {
+                merged.push({
+                    id: `holiday-${currentHoliday.start}`,
+                    title: currentHoliday.title,
+                    color: "#ef4444",
+                    startDate: currentHoliday.start,
+                    endDate: currentHoliday.end,
+                    isHoliday: true,
+                });
+                currentHoliday = { title, start: key, end: key };
+            }
+        }
+
+        if (currentHoliday) {
+            merged.push({
+                id: `holiday-${currentHoliday.start}`,
+                title: currentHoliday.title,
+                color: "#ef4444",
+                startDate: currentHoliday.start,
+                endDate: currentHoliday.end,
+                isHoliday: true,
+            });
+        }
+
+        return merged;
+
+        return merged;
+    }, [holidays]);
+
     // 태그 우선순위에 따른 정렬된 이벤트
     const sortedEvents = useMemo(() => {
-        return [...allEvents].sort((a, b) => {
+        const combined = [...allEvents, ...mergedHolidays];
+        return combined.sort((a, b) => {
+            // 0. 공휴일 우선 순위 (공휴일은 항상 맨 위)
+            if (a.isHoliday && !b.isHoliday) return -1;
+            if (!a.isHoliday && b.isHoliday) return 1;
+
             const aStart = new Date(a.startDate).getTime();
             const bStart = new Date(b.startDate).getTime();
             const aEnd = new Date(a.endDate).getTime();
@@ -239,7 +322,7 @@ export default function DashboardPage() {
             // 2. 시간이 빠른 일정 - 시작일이 빠른 순서
             return aStart - bStart;
         });
-    }, [allEvents]);
+    }, [allEvents, mergedHolidays]);
 
     // 주 단위로 그리드 데이터 나누기
     const weeks = useMemo(() => {
@@ -364,6 +447,16 @@ export default function DashboardPage() {
         }).length;
     };
 
+    // 특정 날짜의 이벤트 목록 가져오기
+    const getEventsForDate = (dateKey: string): CalendarEvent[] => {
+        return sortedEvents.filter((event) => {
+            const eventStart = new Date(event.startDate);
+            const eventEnd = new Date(event.endDate);
+            const current = new Date(dateKey);
+            return current >= eventStart && current <= eventEnd;
+        });
+    };
+
     // 주 단위 이벤트 렌더링 함수
     const renderWeekRowEvents = (week: { date: Date; inMonth: boolean }[]) => {
         const weekStart = new Date(week[0].date);
@@ -415,51 +508,13 @@ export default function DashboardPage() {
                         s.startOffset < segment.startOffset + segment.duration
                 );
 
-                // 공휴일이 있는 날짜의 첫 번째 슬롯(0번 행)은 비워둠
-                const overlapsHoliday = (() => {
-                    for (let d = 0; d < segment.duration; d++) {
-                        const dayIdx = segment.startOffset + d;
-                        const date = week[dayIdx].date;
-                        const dateKey = `${date.getFullYear()}-${String(
-                            date.getMonth() + 1
-                        ).padStart(2, "0")}-${String(date.getDate()).padStart(
-                            2,
-                            "0"
-                        )}`;
-                        if (holidays[dateKey] && i === 0) return true;
-                    }
-                    return false;
-                })();
-
-                if (canFit && !overlapsHoliday) {
+                if (canFit) {
                     rows[i].push(segment);
                     assigned = true;
                     break;
                 }
             }
             if (!assigned) {
-                // 새로운 행을 추가할 때도 공휴일 체크
-                // 단순히 rows.push([segment]) 대신, 0번 행에 공휴일이 있는 경우 1번 행부터 시작하도록 처리
-                // 하지만 rows는 배열이므로 i=0, 1, 2... 순서대로 채워짐.
-                // 위 루프에서 i=0을 건너뛰었으므로 여기서 rows.length가 0이면 rows.push([])를 먼저 해서 0번을 비워야 함.
-                if (rows.length === 0) {
-                    const hasHolidayInStart = (() => {
-                        for (let d = 0; d < segment.duration; d++) {
-                            const dayIdx = segment.startOffset + d;
-                            const date = week[dayIdx].date;
-                            const dateKey = `${date.getFullYear()}-${String(
-                                date.getMonth() + 1
-                            ).padStart(2, "0")}-${String(
-                                date.getDate()
-                            ).padStart(2, "0")}`;
-                            if (holidays[dateKey]) return true;
-                        }
-                        return false;
-                    })();
-                    if (hasHolidayInStart) {
-                        rows.push([]); // 0번 행 비우기 (공휴일용)
-                    }
-                }
                 rows.push([segment]);
             }
         });
@@ -480,39 +535,55 @@ export default function DashboardPage() {
                             const left = (segment.startOffset / 7) * 100;
                             const width = (segment.duration / 7) * 100;
 
+                            // 안전하게 날짜 키 생성
+                            const getSafeDateKey = (d: Date) => {
+                                const y = d.getFullYear();
+                                const m = String(d.getMonth() + 1).padStart(
+                                    2,
+                                    "0"
+                                );
+                                const day = String(d.getDate()).padStart(
+                                    2,
+                                    "0"
+                                );
+                                return `${y}-${m}-${day}`;
+                            };
+
+                            const startDayDate =
+                                week[segment.startOffset]?.date;
+                            const endDayDate =
+                                week[
+                                    Math.min(
+                                        6,
+                                        segment.startOffset +
+                                            segment.duration -
+                                            1
+                                    )
+                                ]?.date;
+
+                            if (!startDayDate || !endDayDate) return null;
+
                             const isEventStart =
                                 segment.event.startDate ===
-                                `${week[
-                                    segment.startOffset
-                                ].date.getFullYear()}-${String(
-                                    week[segment.startOffset].date.getMonth() +
-                                        1
-                                ).padStart(2, "0")}-${String(
-                                    week[segment.startOffset].date.getDate()
-                                ).padStart(2, "0")}`;
-
+                                getSafeDateKey(startDayDate);
                             const isEventEnd =
                                 segment.event.endDate ===
-                                `${week[
-                                    segment.startOffset + segment.duration - 1
-                                ].date.getFullYear()}-${String(
-                                    week[
-                                        segment.startOffset +
-                                            segment.duration -
-                                            1
-                                    ].date.getMonth() + 1
-                                ).padStart(2, "0")}-${String(
-                                    week[
-                                        segment.startOffset +
-                                            segment.duration -
-                                            1
-                                    ].date.getDate()
-                                ).padStart(2, "0")}`;
+                                getSafeDateKey(endDayDate);
 
                             return (
                                 <CalendarTag
                                     key={`${segment.event.id}-${segment.startOffset}`}
-                                    title={isEventStart ? segment.event.title : ""}
+                                    title={
+                                        isEventStart ||
+                                        segment.startOffset === 0
+                                            ? segment.event.title
+                                            : ""
+                                    }
+                                    variant={
+                                        segment.event.isHoliday
+                                            ? "holiday"
+                                            : "event"
+                                    }
                                     color={segment.event.color}
                                     isStart={isEventStart}
                                     isEnd={isEventEnd}
@@ -520,54 +591,84 @@ export default function DashboardPage() {
                                     width={`calc(${width}% - ${
                                         isEventStart ? 12 : 0
                                     }px - ${isEventEnd ? 12 : 0}px)`}
-                                    onEdit={() => {
-                                        setEditingEvent(segment.event);
-                                        setSelectedDateForModal(
-                                            segment.event.startDate
-                                        );
-                                        setSelectedEndDateForModal(
-                                            segment.event.endDate
-                                        );
-                                        setEventModalOpen(true);
-                                    }}
-                                    onDelete={() =>
-                                        handleEventDelete(segment.event.id)
+                                    onEdit={
+                                        segment.event.isHoliday
+                                            ? undefined
+                                            : () => {
+                                                  setEditingEvent(
+                                                      segment.event
+                                                  );
+                                                  setSelectedDateForModal(
+                                                      segment.event.startDate
+                                                  );
+                                                  setSelectedEndDateForModal(
+                                                      segment.event.endDate
+                                                  );
+                                                  setEventModalOpen(true);
+                                              }
+                                    }
+                                    onDelete={
+                                        segment.event.isHoliday
+                                            ? undefined
+                                            : () =>
+                                                  handleEventDelete(
+                                                      segment.event.id
+                                                  )
+                                    }
+                                    onClick={
+                                        segment.event.isHoliday
+                                            ? undefined
+                                            : () => {
+                                                  setSelectedEventForDetail(
+                                                      segment.event
+                                                  );
+                                                  setEventDetailModalOpen(true);
+                                              }
                                     }
                                     details={
-                                        <>
-                                            <div className="flex items-center gap-2 mb-2">
-                                                <svg
-                                                    className="w-5 h-5 text-blue-600"
-                                                    fill="none"
-                                                    stroke="currentColor"
-                                                    viewBox="0 0 24 24"
-                                                >
-                                                    <path
-                                                        strokeLinecap="round"
-                                                        strokeLinejoin="round"
-                                                        strokeWidth={2}
-                                                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                                                    />
-                                                </svg>
+                                        segment.event.isHoliday ? (
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-1 h-5 rounded-full bg-red-500 mr-2" />
                                                 <span className="text-base font-bold text-gray-900">
                                                     {segment.event.title}
                                                 </span>
                                             </div>
-                                            <div className="text-sm text-gray-500 mb-3">
-                                                {formatDateRange(
-                                                    segment.event.startDate,
-                                                    segment.event.endDate
-                                                )}
-                                            </div>
-                                            <div className="flex items-center gap-2 mb-3">
-                                                <div className="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center text-white text-xs font-bold">
-                                                    MK
+                                        ) : (
+                                            <>
+                                                <div className="flex items-center gap-2 mb-2">
+                                                    <svg
+                                                        className="w-5 h-5 text-blue-600"
+                                                        fill="none"
+                                                        stroke="currentColor"
+                                                        viewBox="0 0 24 24"
+                                                    >
+                                                        <path
+                                                            strokeLinecap="round"
+                                                            strokeLinejoin="round"
+                                                            strokeWidth={2}
+                                                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                                                        />
+                                                    </svg>
+                                                    <span className="text-base font-bold text-gray-900">
+                                                        {segment.event.title}
+                                                    </span>
                                                 </div>
-                                                <span className="text-sm text-gray-900">
-                                                    강민지
-                                                </span>
-                                            </div>
-                                        </>
+                                                <div className="text-sm text-gray-500 mb-3">
+                                                    {formatDateRange(
+                                                        segment.event.startDate,
+                                                        segment.event.endDate
+                                                    )}
+                                                </div>
+                                                <div className="flex items-center gap-2 mb-3">
+                                                    <div className="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center text-white text-xs font-bold">
+                                                        MK
+                                                    </div>
+                                                    <span className="text-sm text-gray-900">
+                                                        강민지
+                                                    </span>
+                                                </div>
+                                            </>
+                                        )
                                     }
                                 />
                             );
@@ -889,37 +990,20 @@ export default function DashboardPage() {
                                                                 </div>
                                                             </div>
                                                         </div>
-                                                        {/* 공휴일 태그 */}
-                                                        {holidays[key] && (
-                                                            <div className="absolute top-[50px] left-0 right-0 pointer-events-none z-20">
-                                                                <CalendarTag
-                                                                    title={holidays[key]}
-                                                                    variant="holiday"
-                                                                    left="0%"
-                                                                    width="100%"
-                                                                />
-                                                            </div>
-                                                        )}
                                                         {/* 태그 개수 표시 (+N개) */}
                                                         {(() => {
                                                             const eventCount =
                                                                 getEventCountForDate(
                                                                     key
                                                                 );
-                                                            const holidayOffset =
-                                                                holidays[key]
-                                                                    ? 1
-                                                                    : 0;
-                                                            const threshold =
-                                                                3 -
-                                                                holidayOffset;
+                                                            const threshold = 3;
                                                             if (
                                                                 eventCount >
                                                                 threshold
                                                             ) {
                                                                 return (
                                                                     <div
-                                                                        className={`absolute ${columnPadding} pointer-events-none z-20`}
+                                                                        className={`absolute ${columnPadding} pointer-events-auto z-20 cursor-pointer`}
                                                                         style={{
                                                                             top: `${
                                                                                 50 +
@@ -927,8 +1011,19 @@ export default function DashboardPage() {
                                                                                     28
                                                                             }px`,
                                                                         }}
+                                                                        onClick={(
+                                                                            e
+                                                                        ) => {
+                                                                            e.stopPropagation();
+                                                                            setHiddenEventsDate(
+                                                                                key
+                                                                            );
+                                                                            setHiddenEventsModalOpen(
+                                                                                true
+                                                                            );
+                                                                        }}
                                                                     >
-                                                                        <div className="text-[13px] text-gray-400">
+                                                                        <div className="text-[13px] text-gray-400 hover:text-gray-600 transition-colors">
                                                                             +{" "}
                                                                             {eventCount -
                                                                                 threshold}{" "}
@@ -1003,6 +1098,132 @@ export default function DashboardPage() {
                     setScheduleModalOpen(false);
                 }}
             />
+
+            {/* 숨겨진 일정 목록 모달 */}
+            <BaseModal
+                isOpen={hiddenEventsModalOpen}
+                onClose={() => {
+                    setHiddenEventsModalOpen(false);
+                    setHiddenEventsDate(null);
+                }}
+                title="일정 목록"
+                maxWidth="max-w-md"
+            >
+                {hiddenEventsDate && (
+                    <div className="space-y-3">
+                        {getEventsForDate(hiddenEventsDate)
+                            .slice(3)
+                            .map((event) => (
+                                <div
+                                    key={event.id}
+                                    className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+                                    onClick={() => {
+                                        setSelectedEventForDetail(event);
+                                        setHiddenEventsModalOpen(false);
+                                        setEventDetailModalOpen(true);
+                                    }}
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <div
+                                            className="w-4 h-4 rounded-full shrink-0"
+                                            style={{
+                                                backgroundColor: event.color,
+                                            }}
+                                        />
+                                        <div className="flex-1">
+                                            <p className="font-medium text-gray-900">
+                                                {event.title}
+                                            </p>
+                                            <p className="text-sm text-gray-500 mt-1">
+                                                {formatDateRange(
+                                                    event.startDate,
+                                                    event.endDate
+                                                )}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                    </div>
+                )}
+            </BaseModal>
+
+            {/* 일정 상세 정보 모달 */}
+            <BaseModal
+                isOpen={eventDetailModalOpen}
+                onClose={() => {
+                    setEventDetailModalOpen(false);
+                    setSelectedEventForDetail(null);
+                }}
+                title="일정 상세"
+                maxWidth="max-w-md"
+                footer={
+                    selectedEventForDetail &&
+                    !selectedEventForDetail.isHoliday ? (
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => {
+                                    setEventDetailModalOpen(false);
+                                    setEditingEvent(selectedEventForDetail);
+                                    setSelectedDateForModal(
+                                        selectedEventForDetail.startDate
+                                    );
+                                    setSelectedEndDateForModal(
+                                        selectedEventForDetail.endDate
+                                    );
+                                    setEventModalOpen(true);
+                                }}
+                                className="flex-1 h-11 rounded-xl border border-gray-300 text-gray-700 text-[14px] font-medium hover:bg-gray-50 transition-colors"
+                            >
+                                수정
+                            </button>
+                            <button
+                                onClick={() => {
+                                    handleEventDelete(
+                                        selectedEventForDetail.id
+                                    );
+                                    setEventDetailModalOpen(false);
+                                    setSelectedEventForDetail(null);
+                                }}
+                                className="flex-1 h-11 rounded-xl bg-red-50 text-red-600 text-[14px] font-medium hover:bg-red-100 transition-colors"
+                            >
+                                삭제
+                            </button>
+                        </div>
+                    ) : undefined
+                }
+            >
+                {selectedEventForDetail && (
+                    <div className="space-y-4">
+                        <div className="flex items-center gap-3">
+                            <div
+                                className="w-4 h-4 rounded-full shrink-0"
+                                style={{
+                                    backgroundColor:
+                                        selectedEventForDetail.color,
+                                }}
+                            />
+                            <h3 className="text-lg font-semibold text-gray-900">
+                                {selectedEventForDetail.title}
+                            </h3>
+                        </div>
+                        <div className="text-sm text-gray-500">
+                            {formatDateRange(
+                                selectedEventForDetail.startDate,
+                                selectedEventForDetail.endDate
+                            )}
+                        </div>
+                        <div className="flex items-center gap-2 pt-4 border-t border-gray-200">
+                            <div className="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center text-white text-xs font-bold">
+                                MK
+                            </div>
+                            <span className="text-sm text-gray-900">
+                                강민지
+                            </span>
+                        </div>
+                    </div>
+                )}
+            </BaseModal>
         </div>
     );
 }

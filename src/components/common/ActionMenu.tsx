@@ -7,8 +7,10 @@ interface ActionMenuProps {
     onEdit: () => void;
     onDelete: () => void;
     onResetPassword?: () => void;
+    onLogout?: () => void;
     onDownload?: () => void;
     downloadLabel?: string;
+    showDelete?: boolean;
 }
 
 const IconEdit = () => (
@@ -69,6 +71,21 @@ const IconLock = () => (
     </svg>
 );
 
+const IconLogout = () => (
+    <svg
+        width="16"
+        height="16"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+    >
+        <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
+        <path d="M16 17l5-5-5-5" />
+        <path d="M21 12H9" />
+    </svg>
+);
+
 export default function ActionMenu({
     isOpen,
     anchorEl,
@@ -76,8 +93,10 @@ export default function ActionMenu({
     onEdit,
     onDelete,
     onResetPassword,
+    onLogout,
     onDownload,
     downloadLabel = "PDF 다운로드",
+    showDelete = true,
 }: ActionMenuProps) {
     const menuRef = useRef<HTMLDivElement>(null);
 
@@ -142,16 +161,30 @@ export default function ActionMenu({
                         비밀번호 재설정
                     </button>
                 )}
-                <button
-                    className="w-full px-4 py-3 text-left text-[13px] hover:bg-gray-50 text-gray-800 flex items-center gap-3"
-                    onClick={() => {
-                        onDelete();
-                        onClose();
-                    }}
-                >
-                    <IconTrash />
-                    삭제
-                </button>
+                {onLogout && (
+                    <button
+                        className="w-full px-4 py-3 text-left text-[13px] hover:bg-gray-50 text-gray-800 flex items-center gap-3"
+                        onClick={() => {
+                            onLogout();
+                            onClose();
+                        }}
+                    >
+                        <IconLogout />
+                        로그아웃
+                    </button>
+                )}
+                {showDelete && (
+                    <button
+                        className="w-full px-4 py-3 text-left text-[13px] hover:bg-gray-50 text-gray-800 flex items-center gap-3"
+                        onClick={() => {
+                            onDelete();
+                            onClose();
+                        }}
+                    >
+                        <IconTrash />
+                        삭제
+                    </button>
+                )}
                 {onDownload && (
                     <button
                         className="w-full px-4 py-3 text-left text-[13px] bg-gray-50 hover:bg-gray-100 text-gray-800 flex items-center gap-3"

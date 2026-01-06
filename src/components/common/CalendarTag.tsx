@@ -11,7 +11,9 @@ interface CalendarTagProps {
     left?: string;
     onEdit?: () => void;
     onDelete?: () => void;
+    onClick?: () => void;
     details?: React.ReactNode;
+    isFirstInRow?: boolean;
 }
 
 const CalendarTag: React.FC<CalendarTagProps> = ({
@@ -24,15 +26,17 @@ const CalendarTag: React.FC<CalendarTagProps> = ({
     left = "0%",
     onEdit,
     onDelete,
+    onClick,
     details,
+    isFirstInRow = false,
 }) => {
     const isHoliday = variant === "holiday";
 
     return (
         <div
-            className={`absolute h-6 px-1.5 rounded-sm flex items-center truncate pointer-events-auto group z-10
-                ${isStart ? "ml-3" : ""}
-                ${isEnd ? "mr-3" : ""}
+            className={`absolute h-6 flex items-center truncate pointer-events-auto group z-10 cursor-pointer
+                ${isStart ? "ml-3 rounded-l-sm" : "rounded-l-none"}
+                ${isEnd ? "mr-3 rounded-r-sm" : "rounded-r-none"}
                 ${isHoliday ? "bg-red-100 text-gray-900" : "text-gray-800"}
             `}
             style={{
@@ -40,16 +44,29 @@ const CalendarTag: React.FC<CalendarTagProps> = ({
                 width,
                 background: isHoliday ? undefined : `${color}15`,
             }}
+            onClick={(e) => {
+                if (onClick && !isHoliday) {
+                    e.stopPropagation();
+                    onClick();
+                }
+            }}
         >
             <div
-                className="w-1 h-5 rounded-full shrink-0 mr-2"
-                style={{
-                    backgroundColor: isHoliday ? "#ef4444" : color,
-                }}
-            />
-            <span className="text-[15px] font-semibold truncate leading-none">
-                {title}
-            </span>
+                className={`flex items-center w-full h-full
+                    ${!isStart && isFirstInRow ? "pl-9" : "pl-1.5"}
+                    ${isEnd ? "pr-1.5" : "pr-0"}
+                `}
+            >
+                <div
+                    className="w-1 h-5 rounded-full shrink-0 mr-2"
+                    style={{
+                        backgroundColor: isHoliday ? "#ef4444" : color,
+                    }}
+                />
+                <span className="text-[15px] font-semibold truncate leading-none">
+                    {title}
+                </span>
+            </div>
 
             {/* 툴팁/상세 정보 (onEdit, onDelete가 있을 때만 표시) */}
             {(onEdit || onDelete || details) && (

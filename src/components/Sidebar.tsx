@@ -1,6 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { NavLink, useLocation, matchPath, useNavigate } from "react-router-dom";
 import NotificationPopup from "./ui/NotificationPopup";
+import ActionMenu from "./common/ActionMenu";
+import ResetPasswordModal from "./modals/ResetPasswordModal";
 
 // 아이콘 컴포넌트들
 const IconHome = () => (
@@ -169,6 +171,11 @@ export default function Sidebar({ onClose }: SidebarProps) {
     // ✅ notification 브랜치 기능 이식: 알림 패널 토글
     const [showNotifications, setShowNotifications] = useState(false);
 
+    // 사용자 메뉴 상태
+    const [userMenuOpen, setUserMenuOpen] = useState(false);
+    const [resetPasswordModalOpen, setResetPasswordModalOpen] = useState(false);
+    const usernameRef = useRef<HTMLDivElement>(null);
+
     // 라우트 변경 시: 해당 라우트의 메뉴는 자동으로 열림 + 포커스 자동 정렬
     useEffect(() => {
         if (isReportRoute) {
@@ -309,12 +316,53 @@ export default function Sidebar({ onClose }: SidebarProps) {
 
                 {/* User Section */}
                 <div className="flex flex-col gap-3">
-                    <div className="flex gap-2 items-center p-2">
+                    <div
+                        ref={usernameRef}
+                        className="flex gap-2 items-center p-2 cursor-pointer hover:bg-[#e5e7eb] rounded-xl transition-colors"
+                        onClick={() => setUserMenuOpen(true)}
+                    >
                         <div className="w-7 h-7 rounded-full bg-[#101828]" />
                         <p className="font-semibold text-[16px] text-[#101828] leading-[1.5]">
                             user name
                         </p>
                     </div>
+
+                    {/* 사용자 액션 메뉴 */}
+                    <ActionMenu
+                        isOpen={userMenuOpen}
+                        anchorEl={usernameRef.current}
+                        onClose={() => setUserMenuOpen(false)}
+                        onEdit={() => {
+                            // 프로필 수정 기능 (필요시 구현)
+                            setUserMenuOpen(false);
+                        }}
+                        onDelete={() => {
+                            // 삭제 기능은 사용하지 않음
+                        }}
+                        showDelete={false}
+                        onResetPassword={() => {
+                            setResetPasswordModalOpen(true);
+                            setUserMenuOpen(false);
+                        }}
+                        onLogout={() => {
+                            if (confirm("로그아웃 하시겠습니까?")) {
+                                // 로그아웃 로직 구현
+                                console.log("로그아웃");
+                                setUserMenuOpen(false);
+                            }
+                        }}
+                    />
+
+                    {/* 비밀번호 재설정 모달 */}
+                    <ResetPasswordModal
+                        isOpen={resetPasswordModalOpen}
+                        onClose={() => setResetPasswordModalOpen(false)}
+                        onSubmit={(payload) => {
+                            console.log("비밀번호 재설정:", payload);
+                            // 비밀번호 재설정 로직 구현
+                            setResetPasswordModalOpen(false);
+                        }}
+                    />
 
                     {/* Notifications */}
                     <div className="relative">
