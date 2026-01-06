@@ -11,7 +11,9 @@ interface ChipProps {
         | "region-ul"
         | "region-jy"
         | "region-gj"
-        | "submitted";
+        | "submitted"
+        | "pending"
+        | "not_submitted";
     size?: "sm" | "md" | "lg";
     onClick?: () => void;
     onRemove?: () => void;
@@ -35,15 +37,17 @@ export default function Chip({
 
     const variantClasses: Record<string, string> = {
         default:
-            "bg-white border border-[#e5e7eb] text-[#364153] hover:bg-[#f3f4f6]",
-        selected: "bg-[#2b7fff] text-white",
-        gray: "bg-[#f3f4f6] text-[#4a5565] hover:bg-[#e5e7eb]",
-        tag: "bg-[#eff6ff] text-[#2b7fff] rounded-full",
-        submitted: "bg-blue-600/[0.08] text-blue-600 rounded-lg",
-        "region-bc": "bg-[#2563eb] text-white hover:bg-[#1d4ed8]",
-        "region-ul": "bg-[#10b981] text-white hover:bg-[#059669]",
-        "region-jy": "bg-[#f59e0b] text-white hover:bg-[#d97706]",
-        "region-gj": "bg-[#8b5cf6] text-white hover:bg-[#7c3aed]",
+            "bg-white border border-gray-200 text-gray-700 hover:bg-gray-100",
+        selected: "bg-blue-600 text-white",
+        gray: "bg-gray-100 text-gray-600 hover:bg-gray-200",
+        tag: "bg-blue-50 text-blue-600 rounded-full",
+        submitted: "bg-blue-500/[0.08] text-blue-600 rounded-lg",
+        pending: "bg-green-500/[0.08] text-green-700 rounded-lg",
+        not_submitted: "bg-gray-500/[0.08] text-gray-700 rounded-lg",
+        "region-bc": "bg-blue-600 text-white hover:bg-blue-700",
+        "region-ul": "bg-emerald-500 text-white hover:bg-emerald-600",
+        "region-jy": "bg-amber-500 text-white hover:bg-amber-600",
+        "region-gj": "bg-violet-500 text-white hover:bg-violet-600",
     };
 
     const sizeClasses = {
@@ -52,14 +56,17 @@ export default function Chip({
         lg: "h-12 px-4 py-3 text-[16px]",
     };
 
-    // submitted variant는 작은 크기로 고정
-    const isSubmitted = variant === "submitted";
-    const finalSizeClasses = isSubmitted
+    // 상태 칩 variant들(submitted, pending, not_submitted)은 작은 크기로 고정
+    const isStatusChip =
+        variant === "submitted" ||
+        variant === "pending" ||
+        variant === "not_submitted";
+    const finalSizeClasses = isStatusChip
         ? "h-7 px-2 text-[13px] font-medium leading-[18px]"
         : sizeClasses[size];
 
-    // submitted variant는 클릭 불가능한 정보 표시용
-    if (isSubmitted) {
+    // 상태 칩 variant들은 클릭 불가능한 정보 표시용
+    if (isStatusChip) {
         return (
             <span
                 className={`inline-flex items-center justify-center ${variantClasses[variant]} ${finalSizeClasses} ${className}`}
