@@ -5,6 +5,11 @@ import Sidebar from "../../components/Sidebar";
 import CalendarMenu from "../../components/CalendarMenu";
 import EventModal from "../../components/EventModal";
 import Button from "../../components/common/Button";
+import CalendarTag from "../../components/common/CalendarTag";
+
+// 공휴일 API 정보
+const HOLIDAY_API_KEY = "cac7adf961a1b55472fa90319e4cb89dde6c04242edcb3d3970ae9e09c931e98";
+const HOLIDAY_API_ENDPOINT = "https://apis.data.go.kr/B090041/openapi/service/SpcdeInfoService/getRestDeInfo";
 
 function generateMonthGrid(year: number, month: number) {
     const first = new Date(year, month, 1);
@@ -55,68 +60,6 @@ const sampleEvents: CalendarEvent[] = [
     },
 ];
 
-// 공휴일 데이터
-const holidays: Record<string, string> = {
-    // 2024년
-    "2024-01-01": "신정",
-    "2024-02-09": "설날",
-    "2024-02-10": "설날",
-    "2024-02-11": "설날",
-    "2024-02-12": "대체공휴일",
-    "2024-03-01": "삼일절",
-    "2024-04-10": "제22대 국회의원선거",
-    "2024-05-05": "어린이날",
-    "2024-05-06": "대체공휴일",
-    "2024-05-15": "부처님오신날",
-    "2024-06-06": "현충일",
-    "2024-08-15": "광복절",
-    "2024-09-16": "추석",
-    "2024-09-17": "추석",
-    "2024-09-18": "추석",
-    "2024-10-01": "국군의 날",
-    "2024-10-03": "개천절",
-    "2024-10-09": "한글날",
-    "2024-12-25": "크리스마스",
-    // 2025년
-    "2025-01-01": "신정",
-    "2025-01-28": "설날",
-    "2025-01-29": "설날",
-    "2025-01-30": "설날",
-    "2025-03-01": "삼일절",
-    "2025-03-03": "대체공휴일",
-    "2025-05-05": "어린이날 / 부처님오신날",
-    "2025-05-06": "대체공휴일",
-    "2025-06-06": "현충일",
-    "2025-08-15": "광복절",
-    "2025-10-03": "개천절",
-    "2025-10-05": "추석",
-    "2025-10-06": "추석",
-    "2025-10-07": "추석",
-    "2025-10-08": "대체공휴일",
-    "2025-10-09": "한글날",
-    "2025-12-25": "크리스마스",
-    // 2026년
-    "2026-01-01": "신정",
-    "2026-02-16": "설날",
-    "2026-02-17": "설날",
-    "2026-02-18": "설날",
-    "2026-03-01": "삼일절",
-    "2026-03-02": "대체공휴일",
-    "2026-05-05": "어린이날",
-    "2026-05-24": "부처님오신날",
-    "2026-05-25": "대체공휴일",
-    "2026-06-06": "현충일",
-    "2026-08-15": "광복절",
-    "2026-08-17": "대체공휴일",
-    "2026-09-24": "추석",
-    "2026-09-25": "추석",
-    "2026-09-26": "추석",
-    "2026-10-03": "개천절",
-    "2026-10-05": "대체공휴일",
-    "2026-10-09": "한글날",
-    "2026-12-25": "크리스마스",
-};
-
 export default function DashboardPage() {
     const today = new Date();
 
@@ -127,6 +70,49 @@ export default function DashboardPage() {
     };
     const [year, setYear] = useState(today.getFullYear());
     const [month, setMonth] = useState(today.getMonth());
+
+    // 공휴일 상태
+    const [holidays, setHolidays] = useState<Record<string, string>>({});
+
+    // 공휴일 데이터 가져오기
+    useEffect(() => {
+        const fetchYearHolidays = async (targetYear: number) => {
+            try {
+                // 한 번에 일년치를 가져오려면 반복문이 필요할 수 있으나, 
+                // 해당 API는 월별 조회가 기본이므로 현재 연도의 1~12월을 가져옵니다.
+                const results: Record<string, string> = {};
+                
+                // 성능을 위해 병렬 처리
+                const fetchPromises = Array.from({ length: 12 }, (_, i) => {
+                    const month = String(i + 1).padStart(2, "0");
+                    const url = `${HOLIDAY_API_ENDPOINT}?serviceKey=${HOLIDAY_API_KEY}&solYear=${targetYear}&solMonth=${month}&_type=json&numOfRows=100`;
+                    return fetch(url).then(res => res.json());
+                });
+
+                const responses = await Promise.all(fetchPromises);
+                
+                responses.forEach(data => {
+                    const items = data.response?.body?.items?.item;
+                    if (items) {
+                        const itemList = Array.isArray(items) ? items : [items];
+                        itemList.forEach((item: any) => {
+                            // locdate: 20250101 -> 2025-01-01
+                            const dateStr = String(item.locdate);
+                            const formattedDate = `${dateStr.slice(0, 4)}-${dateStr.slice(4, 6)}-${dateStr.slice(6, 8)}`;
+                            results[formattedDate] = item.dateName;
+                        });
+                    }
+                });
+
+                setHolidays(prev => ({ ...prev, ...results }));
+            } catch (error) {
+                console.error("공휴일 정보를 가져오는데 실패했습니다:", error);
+            }
+        };
+
+        fetchYearHolidays(year);
+        // 연도가 바뀌면 해당 연도 공휴일도 추가로 가져옴
+    }, [year]);
     const grid = useMemo(() => generateMonthGrid(year, month), [year, month]);
 
     const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -453,16 +439,6 @@ export default function DashboardPage() {
             }
             if (!assigned) {
                 // 새로운 행을 추가할 때도 공휴일 체크
-                const startRow = holidays[
-                    `${week[segment.startOffset].date.getFullYear()}-${String(
-                        week[segment.startOffset].date.getMonth() + 1
-                    ).padStart(2, "0")}-${String(
-                        week[segment.startOffset].date.getDate()
-                    ).padStart(2, "0")}`
-                ]
-                    ? 1
-                    : 0;
-
                 // 단순히 rows.push([segment]) 대신, 0번 행에 공휴일이 있는 경우 1번 행부터 시작하도록 처리
                 // 하지만 rows는 배열이므로 i=0, 1, 2... 순서대로 채워짐.
                 // 위 루프에서 i=0을 건너뛰었으므로 여기서 rows.length가 0이면 rows.push([])를 먼저 해서 0번을 비워야 함.
@@ -534,99 +510,66 @@ export default function DashboardPage() {
                                 ).padStart(2, "0")}`;
 
                             return (
-                                <div
+                                <CalendarTag
                                     key={`${segment.event.id}-${segment.startOffset}`}
-                                    className={`absolute h-6 px-1.5 rounded-sm flex items-center text-gray-800 truncate pointer-events-auto group z-10
-                                        ${isEventStart ? "ml-3" : ""}
-                                        ${isEventEnd ? "mr-3" : ""}
-                                        `}
-                                    style={{
-                                        left: `${left}%`,
-                                        width: `calc(${width}% - ${
-                                            isEventStart ? 12 : 0
-                                        }px - ${isEventEnd ? 12 : 0}px)`,
-                                        background: `${segment.event.color}15`,
+                                    title={isEventStart ? segment.event.title : ""}
+                                    color={segment.event.color}
+                                    isStart={isEventStart}
+                                    isEnd={isEventEnd}
+                                    left={`${left}%`}
+                                    width={`calc(${width}% - ${
+                                        isEventStart ? 12 : 0
+                                    }px - ${isEventEnd ? 12 : 0}px)`}
+                                    onEdit={() => {
+                                        setEditingEvent(segment.event);
+                                        setSelectedDateForModal(
+                                            segment.event.startDate
+                                        );
+                                        setSelectedEndDateForModal(
+                                            segment.event.endDate
+                                        );
+                                        setEventModalOpen(true);
                                     }}
-                                >
-                                    {isEventStart && (
-                                        <div
-                                            className="w-1 h-5 rounded-full shrink-0 mr-2"
-                                            style={{
-                                                backgroundColor:
-                                                    segment.event.color,
-                                            }}
-                                        />
-                                    )}
-                                    <span className="text-[15px] font-semibold truncate leading-none">
-                                        {isEventStart
-                                            ? segment.event.title
-                                            : ""}
-                                    </span>
-                                    {/* 호버 시 상세 정보 툴팁 */}
-                                    <div className="absolute bottom-full left-0 mb-2 hidden group-hover:block z-50 w-64 bg-white rounded-lg shadow-lg border border-gray-200 p-4">
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <svg
-                                                className="w-5 h-5 text-blue-600"
-                                                fill="none"
-                                                stroke="currentColor"
-                                                viewBox="0 0 24 24"
-                                            >
-                                                <path
-                                                    strokeLinecap="round"
-                                                    strokeLinejoin="round"
-                                                    strokeWidth={2}
-                                                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                                                />
-                                            </svg>
-                                            <span className="text-base font-bold text-gray-900">
-                                                {segment.event.title}
-                                            </span>
-                                        </div>
-                                        <div className="text-sm text-gray-500 mb-3">
-                                            {formatDateRange(
-                                                segment.event.startDate,
-                                                segment.event.endDate
-                                            )}
-                                        </div>
-                                        <div className="flex items-center gap-2 mb-3">
-                                            <div className="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center text-white text-xs font-bold">
-                                                MK
+                                    onDelete={() =>
+                                        handleEventDelete(segment.event.id)
+                                    }
+                                    details={
+                                        <>
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <svg
+                                                    className="w-5 h-5 text-blue-600"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    viewBox="0 0 24 24"
+                                                >
+                                                    <path
+                                                        strokeLinecap="round"
+                                                        strokeLinejoin="round"
+                                                        strokeWidth={2}
+                                                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                                                    />
+                                                </svg>
+                                                <span className="text-base font-bold text-gray-900">
+                                                    {segment.event.title}
+                                                </span>
                                             </div>
-                                            <span className="text-sm text-gray-900">
-                                                강민지
-                                            </span>
-                                        </div>
-                                        <div className="flex gap-2">
-                                            <button
-                                                onClick={() => {
-                                                    setEditingEvent(
-                                                        segment.event
-                                                    );
-                                                    setSelectedDateForModal(
-                                                        segment.event.startDate
-                                                    );
-                                                    setSelectedEndDateForModal(
-                                                        segment.event.endDate
-                                                    );
-                                                    setEventModalOpen(true);
-                                                }}
-                                                className="flex-1 px-3 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
-                                            >
-                                                수정
-                                            </button>
-                                            <button
-                                                onClick={() =>
-                                                    handleEventDelete(
-                                                        segment.event.id
-                                                    )
-                                                }
-                                                className="flex-1 px-3 py-2 text-sm font-medium text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-colors"
-                                            >
-                                                삭제
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
+                                            <div className="text-sm text-gray-500 mb-3">
+                                                {formatDateRange(
+                                                    segment.event.startDate,
+                                                    segment.event.endDate
+                                                )}
+                                            </div>
+                                            <div className="flex items-center gap-2 mb-3">
+                                                <div className="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center text-white text-xs font-bold">
+                                                    MK
+                                                </div>
+                                                <span className="text-sm text-gray-900">
+                                                    강민지
+                                                </span>
+                                            </div>
+                                        </>
+                                    }
+                                />
                             );
                         })}
                     </div>
@@ -949,20 +892,12 @@ export default function DashboardPage() {
                                                         {/* 공휴일 태그 */}
                                                         {holidays[key] && (
                                                             <div className="absolute top-[50px] left-0 right-0 pointer-events-none z-20">
-                                                                <div
-                                                                    className={`${columnPadding}`}
-                                                                >
-                                                                    <div className="h-6 px-1.5 mx-3 rounded-sm flex items-center bg-red-100 text-gray-900">
-                                                                        <div className="w-1 h-5 rounded-full shrink-0 mr-2 bg-red-500" />
-                                                                        <span className="text-[15px] font-semibold truncate leading-none">
-                                                                            {
-                                                                                holidays[
-                                                                                    key
-                                                                                ]
-                                                                            }
-                                                                        </span>
-                                                                    </div>
-                                                                </div>
+                                                                <CalendarTag
+                                                                    title={holidays[key]}
+                                                                    variant="holiday"
+                                                                    left="0%"
+                                                                    width="100%"
+                                                                />
                                                             </div>
                                                         )}
                                                         {/* 태그 개수 표시 (+N개) */}
