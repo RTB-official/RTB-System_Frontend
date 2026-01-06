@@ -1,16 +1,21 @@
 import { useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 
 interface ActionMenuProps {
     isOpen: boolean;
     anchorEl: HTMLElement | null;
     onClose: () => void;
-    onEdit: () => void;
-    onDelete: () => void;
+    onEdit?: () => void;
+    onDelete?: () => void;
     onResetPassword?: () => void;
     onLogout?: () => void;
     onDownload?: () => void;
     downloadLabel?: string;
     showDelete?: boolean;
+    headerContent?: React.ReactNode;
+    showLogout?: boolean;
+    placement?: "right" | "bottom-right" | "bottom-left";
+    width?: string;
 }
 
 const IconEdit = () => (
@@ -97,6 +102,10 @@ export default function ActionMenu({
     onDownload,
     downloadLabel = "PDF 다운로드",
     showDelete = true,
+    headerContent,
+    showLogout = true,
+    placement = "bottom-right",
+    width = "w-64",
 }: ActionMenuProps) {
     const menuRef = useRef<HTMLDivElement>(null);
 
@@ -128,76 +137,127 @@ export default function ActionMenu({
 
     if (!isOpen || !anchorEl) return null;
 
-    const rect = anchorEl.getBoundingClientRect();
-    const top = rect.bottom + 8;
-    const left = rect.right - 176; // 메뉴 폭 기준으로 오른쪽 정렬
+    // width 값에서 숫자 추출 (w-64 -> 256px 등)
+    const getWidthValue = (w: string) => {
+        const match = w.match(/w-\[(\d+)px\]/);
+        if (match) return parseInt(match[1]);
+        const tailwindWidths: Record<string, number> = {
+            "w-44": 176,
+            "w-48": 192,
+            "w-56": 224,
+            "w-60": 240,
+            "w-64": 256,
+            "w-72": 288,
+            "w-80": 320,
+        };
+        return tailwindWidths[w] || 256;
+    };
 
-    return (
-        <div className="fixed inset-0 z-[60]">
-            <div
-                ref={menuRef}
-                className="fixed w-44 rounded-xl border border-gray-200 bg-white shadow-lg ring-1 ring-black/5 overflow-hidden"
-                style={{ top, left }}
-            >
+    const menuWidthPx = getWidthValue(width);
+    const rect = anchorEl.getBoundingClientRect();
+    let top = rect.bottom + 8;
+    let left = rect.right - menuWidthPx;
+
+    if (placement === "right") {
+        top = rect.top;
+        left = rect.right + 12;
+    } else if (placement === "bottom-left") {
+        top = rect.bottom + 8;
+        left = rect.left;
+    }
+
+    // 화면 밖으로 나가는 것 방지
+    if (left < 12) left = 12;
+    if (left + menuWidthPx > window.innerWidth - 12) {
+        left = window.innerWidth - menuWidthPx - 12;
+    }
+
+    return createPortal(
+        <div
+            ref={menuRef}
+            className={`fixed ${width} rounded-2xl border border-gray-200 bg-white shadow-xl ring-1 ring-black/5 p-3 flex flex-col gap-1 z-[9999]`}
+            style={{
+                top,
+                left,
+            }}
+        >
+            {headerContent && (
+                <>
+                    <div className="px-2 py-2 mb-1">{headerContent}</div>
+                    <div className="h-px bg-gray-300 mx-2 mb-2" />
+                </>
+            )}
+            {onEdit && (
                 <button
-                    className="w-full px-4 py-3 text-left text-[13px] hover:bg-gray-50 text-gray-800 flex items-center gap-3"
+                    className="w-full px-3 py-2.5 text-left text-[15px] hover:bg-gray-50 active:bg-gray-100 text-gray-800 flex items-center gap-3 rounded-lg transition-colors cursor-pointer"
                     onClick={() => {
                         onEdit();
                         onClose();
                     }}
                 >
-                    <IconEdit />
+                    <div className="text-gray-500">
+                        <IconEdit />
+                    </div>
                     수정
                 </button>
-                {onResetPassword && (
-                    <button
-                        className="w-full px-4 py-3 text-left text-[13px] hover:bg-gray-50 text-gray-800 flex items-center gap-3"
-                        onClick={() => {
-                            onResetPassword();
-                            onClose();
-                        }}
-                    >
+            )}
+            {onResetPassword && (
+                <button
+                    className="w-full px-3 py-2.5 text-left text-[15px] hover:bg-gray-50 active:bg-gray-100 text-gray-800 flex items-center gap-3 rounded-lg transition-colors cursor-pointer"
+                    onClick={() => {
+                        onResetPassword();
+                        onClose();
+                    }}
+                >
+                    <div className="text-gray-500">
                         <IconLock />
-                        비밀번호 재설정
-                    </button>
-                )}
-                {onLogout && (
-                    <button
-                        className="w-full px-4 py-3 text-left text-[13px] hover:bg-gray-50 text-gray-800 flex items-center gap-3"
-                        onClick={() => {
-                            onLogout();
-                            onClose();
-                        }}
-                    >
-                        <IconLogout />
-                        로그아웃
-                    </button>
-                )}
-                {showDelete && (
-                    <button
-                        className="w-full px-4 py-3 text-left text-[13px] hover:bg-gray-50 text-gray-800 flex items-center gap-3"
-                        onClick={() => {
-                            onDelete();
-                            onClose();
-                        }}
-                    >
-                        <IconTrash />
-                        삭제
-                    </button>
-                )}
-                {onDownload && (
-                    <button
-                        className="w-full px-4 py-3 text-left text-[13px] bg-gray-50 hover:bg-gray-100 text-gray-800 flex items-center gap-3"
-                        onClick={() => {
-                            onDownload();
-                            onClose();
-                        }}
-                    >
+                    </div>
+                    비밀번호 재설정
+                </button>
+            )}
+            {onDownload && (
+                <button
+                    className="w-full px-3 py-2.5 text-left text-[15px] hover:bg-gray-50 active:bg-gray-100 text-gray-800 flex items-center gap-3 rounded-lg transition-colors cursor-pointer"
+                    onClick={() => {
+                        onDownload();
+                        onClose();
+                    }}
+                >
+                    <div className="text-gray-500">
                         <IconDownload />
-                        {downloadLabel}
-                    </button>
-                )}
-            </div>
-        </div>
+                    </div>
+                    {downloadLabel}
+                </button>
+            )}
+            {showDelete && onDelete && (
+                <button
+                    className="w-full px-3 py-2.5 text-left text-[15px] hover:bg-red-50 active:bg-red-100 text-red-600 flex items-center gap-3 rounded-lg transition-colors cursor-pointer"
+                    onClick={() => {
+                        onDelete();
+                        onClose();
+                    }}
+                >
+                    <div className="text-red-400">
+                        <IconTrash />
+                    </div>
+                    삭제
+                </button>
+            )}
+            {showLogout && onLogout && (
+                <button
+                    className="w-full px-3 py-2.5 text-left text-[15px] hover:bg-gray-50 active:bg-gray-100 text-gray-800 flex items-center gap-3 border-t border-gray-100 mt-1 pt-3 rounded-none rounded-b-lg cursor-pointer"
+                    onClick={() => {
+                        onLogout();
+                        onClose();
+                    }}
+                >
+                    <div className="text-gray-500">
+                        <IconLogout />
+                    </div>
+                    로그아웃
+                </button>
+            )}
+        </div>,
+        document.body
     );
 }

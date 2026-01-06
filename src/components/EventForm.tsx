@@ -5,14 +5,21 @@ import DatePickerPanel from "./DatePickerPanel";
 import Button from "./common/Button";
 import Input from "./common/Input";
 import Select from "./common/Select";
+import Chip from "./ui/Chip";
+import { CalendarEvent } from "../pages/Dashboard/DashboardPage";
 
-interface CalendarEvent {
-    id: string;
-    title: string;
-    color: string;
-    startDate: string;
-    endDate: string;
-}
+const dummyMembers = [
+    "강민지",
+    "홍길동",
+    "김철수",
+    "이영희",
+    "박지민",
+    "최수연",
+    "정우성",
+    "한소희",
+    "김태리",
+    "남주혁",
+];
 
 interface EventFormProps {
     onClose?: () => void;
@@ -26,6 +33,7 @@ interface EventFormProps {
         endDate: string;
         endTime?: string;
         allDay: boolean;
+        attendees: string[];
     }) => void;
 }
 
@@ -38,6 +46,17 @@ export default function EventForm({
 }: EventFormProps) {
     const [title, setTitle] = useState(editingEvent?.title || "");
     const [allDay, setAllDay] = useState(false);
+    const [attendeeInput, setAttendeeInput] = useState("");
+    const [attendees, setAttendees] = useState<string[]>(
+        editingEvent?.attendees || []
+    );
+    const [showResults, setShowResults] = useState(false);
+    const filteredMembers = dummyMembers.filter(
+        (m) =>
+            m.includes(attendeeInput) &&
+            !attendees.includes(m) &&
+            attendeeInput.length > 0
+    );
 
     const pad = (n: number) => (n < 10 ? "0" + n : String(n));
 
@@ -121,20 +140,30 @@ export default function EventForm({
     }, [initialDate]);
 
     React.useEffect(() => {
-        if (initialEndDate) {
-            setEndDate(formatDateForInput(initialEndDate));
-        }
-    }, [initialEndDate]);
-
-    React.useEffect(() => {
         if (editingEvent) {
             setTitle(editingEvent.title);
             setStartDate(formatDateForInput(editingEvent.startDate));
             setEndDate(formatDateForInput(editingEvent.endDate));
+            setAttendees(editingEvent.attendees || []);
         }
     }, [editingEvent]);
 
-    return (
+    const handleAddAttendee = (name?: string) => {
+        const targetName = name || attendeeInput;
+        if (targetName && !attendees.includes(targetName)) {
+            setAttendees((prev) => [...prev, targetName]);
+            setAttendeeInput("");
+            setShowResults(false);
+        }
+    };
+
+    const handleRemoveAttendee = (attendeeToRemove: string) => {
+        setAttendees((prev) =>
+            prev.filter((attendee) => attendee !== attendeeToRemove)
+        );
+    };
+
+  return (
         <div className="space-y-4">
             <Input
                 label="일정 제목"
@@ -157,11 +186,11 @@ export default function EventForm({
                     className="ml-2 text-sm text-gray-700 cursor-pointer select-none"
                 >
                     하루종일
-                </label>
-            </div>
+        </label>
+      </div>
 
             <div className="space-y-4">
-                <div>
+        <div>
                     <label className="text-sm font-medium text-gray-700 mb-2 block">
                         시작
                     </label>
@@ -199,8 +228,8 @@ export default function EventForm({
                                 </div>
                             )}
                         </div>
-                        {!allDay && (
-                            <div className="flex gap-1 items-center">
+            {!allDay && (
+              <div className="flex gap-1 items-center">
                                 <Select
                                     value={startHour}
                                     onChange={setStartHour}
@@ -221,12 +250,12 @@ export default function EventForm({
                                     className="w-[80px]"
                                 />
                                 <IconClock className="w-4 h-4 text-gray-400 ml-1" />
-                            </div>
-                        )}
-                    </div>
-                </div>
+              </div>
+            )}
+          </div>
+        </div>
 
-                <div>
+        <div>
                     <label className="text-sm font-medium text-gray-700 mb-2 block">
                         종료
                     </label>
@@ -257,8 +286,8 @@ export default function EventForm({
                                 </div>
                             )}
                         </div>
-                        {!allDay && (
-                            <div className="flex gap-1 items-center">
+            {!allDay && (
+              <div className="flex gap-1 items-center">
                                 <Select
                                     value={endHour}
                                     onChange={setEndHour}
@@ -279,13 +308,69 @@ export default function EventForm({
                                     className="w-[80px]"
                                 />
                                 <IconClock className="w-4 h-4 text-gray-400 ml-1" />
-                            </div>
-                        )}
-                    </div>
-                </div>
+              </div>
+            )}
+          </div>
+        </div>
             </div>
 
-            <Input label="참가자" placeholder="참가자" />
+            <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700 block">
+                    참가자
+                </label>
+                <div className="relative">
+                    <div className="flex gap-2">
+                        <Input
+                            value={attendeeInput}
+                            onChange={(val) => {
+                                setAttendeeInput(val);
+                                setShowResults(true);
+                            }}
+                            placeholder="참가자 이름 입력"
+                            className="flex-1"
+                            onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                    e.preventDefault();
+                                    if (filteredMembers.length > 0) {
+                                        handleAddAttendee(filteredMembers[0]);
+                                    } else {
+                                        handleAddAttendee();
+                                    }
+                                }
+                            }}
+                            onFocus={() => setShowResults(true)}
+                        />
+                        <Button type="button" onClick={() => handleAddAttendee()}>
+                            추가
+                        </Button>
+                    </div>
+
+                    {showResults && filteredMembers.length > 0 && (
+                        <div className="absolute z-[60] top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-40 overflow-y-auto">
+                            {filteredMembers.map((member) => (
+                                <div
+                                    key={member}
+                                    className="px-4 py-2 hover:bg-gray-50 cursor-pointer text-sm text-gray-700"
+                                    onClick={() => handleAddAttendee(member)}
+                                >
+                                    {member}
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+                <div className="flex flex-wrap gap-2">
+                    {attendees.map((attendee) => (
+                        <Chip
+                            key={attendee}
+                            onRemove={() => handleRemoveAttendee(attendee)}
+                            size="sm"
+                        >
+                            {attendee}
+                        </Chip>
+                    ))}
+                </div>
+            </div>
 
             <div className="flex justify-end gap-3 pt-2">
                 <Button variant="outline" onClick={onClose}>
@@ -311,6 +396,7 @@ export default function EventForm({
                             endDate,
                             endTime,
                             allDay,
+                            attendees,
                         });
                         onClose?.();
                     }}

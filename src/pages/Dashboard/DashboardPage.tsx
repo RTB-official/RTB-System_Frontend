@@ -7,6 +7,7 @@ import EventModal from "../../components/EventModal";
 import Button from "../../components/common/Button";
 import CalendarTag from "../../components/common/CalendarTag";
 import BaseModal from "../../components/ui/BaseModal";
+import EventDetailMenu from "../../components/common/EventDetailMenu";
 
 // 공휴일 API 정보
 const HOLIDAY_API_KEY =
@@ -38,6 +39,7 @@ interface CalendarEvent {
     startDate: string; // YYYY-MM-DD 형식
     endDate: string; // YYYY-MM-DD 형식
     isHoliday?: boolean;
+    attendees?: string[]; // 참가자 추가
 }
 
 const sampleEvents: CalendarEvent[] = [
@@ -137,8 +139,12 @@ export default function DashboardPage() {
     const [hiddenEventsDate, setHiddenEventsDate] = useState<string | null>(
         null
     );
-    const [eventDetailModalOpen, setEventDetailModalOpen] = useState(false);
-    const [selectedEventForDetail, setSelectedEventForDetail] =
+    const [eventDetailMenuOpen, setEventDetailMenuOpen] = useState(false);
+    const [eventDetailMenuPos, setEventDetailMenuPos] = useState<{
+        x: number;
+        y: number;
+    } | null>(null);
+    const [selectedEventForMenu, setSelectedEventForMenu] =
         useState<CalendarEvent | null>(null);
 
     const menuOpenRef = React.useRef(menuOpen);
@@ -435,6 +441,7 @@ export default function DashboardPage() {
         setAllEvents((prev) => prev.filter((event) => event.id !== eventId));
         setEditingEvent(null);
         setEventModalOpen(false);
+        setEventDetailMenuOpen(false); // 상세 메뉴도 닫기
     };
 
     // 특정 날짜의 이벤트 개수 확인 함수
@@ -619,56 +626,24 @@ export default function DashboardPage() {
                                         segment.event.isHoliday
                                             ? undefined
                                             : () => {
-                                                  setSelectedEventForDetail(
+                                                  const el =
+                                                      e.currentTarget as HTMLElement;
+                                                  const rect =
+                                                      el.getBoundingClientRect();
+                                                  setEventDetailMenuPos({
+                                                      x:
+                                                          rect.left +
+                                                          window.pageXOffset,
+                                                      y:
+                                                          rect.bottom +
+                                                          window.pageYOffset +
+                                                          8,
+                                                  });
+                                                  setSelectedEventForMenu(
                                                       segment.event
                                                   );
-                                                  setEventDetailModalOpen(true);
+                                                  setEventDetailMenuOpen(true);
                                               }
-                                    }
-                                    details={
-                                        segment.event.isHoliday ? (
-                                            <div className="flex items-center gap-2">
-                                                <div className="w-1 h-5 rounded-full bg-red-500 mr-2" />
-                                                <span className="text-base font-bold text-gray-900">
-                                                    {segment.event.title}
-                                                </span>
-                                            </div>
-                                        ) : (
-                                            <>
-                                                <div className="flex items-center gap-2 mb-2">
-                                                    <svg
-                                                        className="w-5 h-5 text-blue-600"
-                                                        fill="none"
-                                                        stroke="currentColor"
-                                                        viewBox="0 0 24 24"
-                                                    >
-                                                        <path
-                                                            strokeLinecap="round"
-                                                            strokeLinejoin="round"
-                                                            strokeWidth={2}
-                                                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                                                        />
-                                                    </svg>
-                                                    <span className="text-base font-bold text-gray-900">
-                                                        {segment.event.title}
-                                                    </span>
-                                                </div>
-                                                <div className="text-sm text-gray-500 mb-3">
-                                                    {formatDateRange(
-                                                        segment.event.startDate,
-                                                        segment.event.endDate
-                                                    )}
-                                                </div>
-                                                <div className="flex items-center gap-2 mb-3">
-                                                    <div className="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center text-white text-xs font-bold">
-                                                        MK
-                                                    </div>
-                                                    <span className="text-sm text-gray-900">
-                                                        강민지
-                                                    </span>
-                                                </div>
-                                            </>
-                                        )
                                     }
                                 />
                             );
@@ -1118,9 +1093,19 @@ export default function DashboardPage() {
                                     key={event.id}
                                     className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
                                     onClick={() => {
-                                        setSelectedEventForDetail(event);
+                                        const el =
+                                            e.currentTarget as HTMLElement;
+                                        const rect = el.getBoundingClientRect();
+                                        setEventDetailMenuPos({
+                                            x: rect.left + window.pageXOffset,
+                                            y:
+                                                rect.bottom +
+                                                window.pageYOffset +
+                                                8,
+                                        });
+                                        setSelectedEventForMenu(event);
                                         setHiddenEventsModalOpen(false);
-                                        setEventDetailModalOpen(true);
+                                        setEventDetailMenuOpen(true);
                                     }}
                                 >
                                     <div className="flex items-center gap-3">
@@ -1148,82 +1133,24 @@ export default function DashboardPage() {
                 )}
             </BaseModal>
 
-            {/* 일정 상세 정보 모달 */}
-            <BaseModal
-                isOpen={eventDetailModalOpen}
-                onClose={() => {
-                    setEventDetailModalOpen(false);
-                    setSelectedEventForDetail(null);
+            {/* 일정 상세 정보 액션 메뉴 */}
+            <EventDetailMenu
+                isOpen={eventDetailMenuOpen}
+                anchorEl={eventDetailMenuPos ? document.body : null} // 실제 anchorEl은 클릭된 태그의 DOM 노드가 되어야 함
+                onClose={() => setEventDetailMenuOpen(false)}
+                event={selectedEventForMenu}
+                onEdit={(eventToEdit) => {
+                    setEventDetailMenuOpen(false);
+                    setEditingEvent(eventToEdit);
+                    setSelectedDateForModal(eventToEdit.startDate);
+                    setSelectedEndDateForModal(eventToEdit.endDate);
+                    setEventModalOpen(true);
                 }}
-                title="일정 상세"
-                maxWidth="max-w-md"
-                footer={
-                    selectedEventForDetail &&
-                    !selectedEventForDetail.isHoliday ? (
-                        <div className="flex gap-3">
-                            <button
-                                onClick={() => {
-                                    setEventDetailModalOpen(false);
-                                    setEditingEvent(selectedEventForDetail);
-                                    setSelectedDateForModal(
-                                        selectedEventForDetail.startDate
-                                    );
-                                    setSelectedEndDateForModal(
-                                        selectedEventForDetail.endDate
-                                    );
-                                    setEventModalOpen(true);
-                                }}
-                                className="flex-1 h-11 rounded-xl border border-gray-300 text-gray-700 text-[14px] font-medium hover:bg-gray-50 transition-colors"
-                            >
-                                수정
-                            </button>
-                            <button
-                                onClick={() => {
-                                    handleEventDelete(
-                                        selectedEventForDetail.id
-                                    );
-                                    setEventDetailModalOpen(false);
-                                    setSelectedEventForDetail(null);
-                                }}
-                                className="flex-1 h-11 rounded-xl bg-red-50 text-red-600 text-[14px] font-medium hover:bg-red-100 transition-colors"
-                            >
-                                삭제
-                            </button>
-                        </div>
-                    ) : undefined
-                }
-            >
-                {selectedEventForDetail && (
-                    <div className="space-y-4">
-                        <div className="flex items-center gap-3">
-                            <div
-                                className="w-4 h-4 rounded-full shrink-0"
-                                style={{
-                                    backgroundColor:
-                                        selectedEventForDetail.color,
-                                }}
-                            />
-                            <h3 className="text-lg font-semibold text-gray-900">
-                                {selectedEventForDetail.title}
-                            </h3>
-                        </div>
-                        <div className="text-sm text-gray-500">
-                            {formatDateRange(
-                                selectedEventForDetail.startDate,
-                                selectedEventForDetail.endDate
-                            )}
-                        </div>
-                        <div className="flex items-center gap-2 pt-4 border-t border-gray-200">
-                            <div className="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center text-white text-xs font-bold">
-                                MK
-                            </div>
-                            <span className="text-sm text-gray-900">
-                                강민지
-                            </span>
-                        </div>
-                    </div>
-                )}
-            </BaseModal>
+                onDelete={(eventId) => {
+                    handleEventDelete(eventId);
+                    setEventDetailMenuOpen(false);
+                }}
+            />
         </div>
     );
 }

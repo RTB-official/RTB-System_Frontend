@@ -35,10 +35,15 @@ const CalendarTag: React.FC<CalendarTagProps> = ({
     return (
         <div
             className={`absolute h-6 flex items-center truncate pointer-events-auto group z-10 cursor-pointer
+                ${isHoliday ? "bg-red-100" : "text-gray-900"} 
                 ${isStart ? "ml-3 rounded-l-sm" : "rounded-l-none"}
                 ${isEnd ? "mr-3 rounded-r-sm" : "rounded-r-none"}
-                ${isHoliday ? "bg-red-100 text-gray-900" : "text-gray-800"}
             `}
+            style={{
+                left,
+                width,
+                backgroundColor: isHoliday ? undefined : `${color}15`,
+            }}
             style={{
                 left,
                 width,
@@ -63,7 +68,7 @@ const CalendarTag: React.FC<CalendarTagProps> = ({
                         backgroundColor: isHoliday ? "#ef4444" : color,
                     }}
                 />
-                <span className="text-[15px] font-semibold truncate leading-none">
+                <span className="text-[15px] font-semibold truncate leading-none text-gray-900">
                     {title}
                 </span>
             </div>

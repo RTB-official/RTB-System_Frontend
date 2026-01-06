@@ -1,11 +1,15 @@
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import Input from "../common/Input";
 
 type Props = {
     isOpen: boolean;
     memberName?: string;
     onClose: () => void;
-    onSubmit?: (payload: { newPassword: string; confirmPassword: string }) => void;
+    onSubmit?: (payload: {
+        newPassword: string;
+        confirmPassword: string;
+    }) => void;
 };
 
 function IconClose() {
@@ -96,10 +100,13 @@ export default function ResetPasswordModal({
 
     if (!isOpen) return null;
 
-    return (
-        <div className="fixed inset-0 z-50">
+    return createPortal(
+        <div className="fixed inset-0 z-[70]">
             {/* Overlay */}
-            <div className="absolute inset-0 bg-black/40" onClick={handleClose} />
+            <div
+                className="absolute inset-0 bg-black/40"
+                onClick={handleClose}
+            />
 
             {/* Modal */}
             <div className="absolute inset-0 flex items-center justify-center p-4">
@@ -173,7 +180,7 @@ export default function ResetPasswordModal({
                     </div>
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 }
-

@@ -515,6 +515,7 @@ export default function ReportListPage() {
                                                         `PDF 다운로드: ${row.id}`
                                                     );
                                                 }}
+                                                width="w-44"
                                             />
                                         </div>
                                     ),

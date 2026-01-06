@@ -348,6 +348,7 @@ export default function MembersPage() {
                         // TODO: 삭제 API 호출 및 목록 갱신
                     }
                 }}
+                width="w-44"
             />
 
             {/* Reset Password Modal */}

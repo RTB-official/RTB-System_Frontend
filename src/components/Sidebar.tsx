@@ -235,14 +235,16 @@ export default function Sidebar({ onClose }: SidebarProps) {
 
                 return `flex gap-6 items-center p-3 rounded-xl transition-colors ${
                     active
-                        ? "bg-[#364153] text-white"
-                        : "text-[#101828] hover:bg-[#e5e7eb]"
+                        ? "bg-gray-700 text-white"
+                        : "text-gray-900 hover:bg-gray-200"
                 }`;
             }}
         >
             <div className="flex gap-3 items-center w-[162px]">
                 {icon}
-                <p className="font-medium text-[16px] leading-[1.5]">{label}</p>
+                <p className="font-medium text-[16px] leading-normal">
+                    {label}
+                </p>
             </div>
         </NavLink>
     );
@@ -269,7 +271,7 @@ export default function Sidebar({ onClose }: SidebarProps) {
                 `flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-left ${
                     isActive
                         ? "text-blue-600 font-medium"
-                        : "text-[#6a7282] hover:text-[#101828] hover:bg-[#e5e7eb]"
+                        : "text-gray-500 hover:text-gray-900 hover:bg-gray-200"
                 }`
             }
         >
@@ -292,7 +294,7 @@ export default function Sidebar({ onClose }: SidebarProps) {
     ];
 
     return (
-        <aside className="w-[239px] h-full bg-[#f9fafb] border-r border-[#e5e7eb] flex flex-col">
+        <aside className="w-[239px] h-full bg-gray-50 border-r border-gray-200 flex flex-col">
             <div className="flex flex-col gap-6 px-4 py-5">
                 {/* Logo & Close Button */}
                 <div className="flex gap-2 items-center justify-between p-2">
@@ -302,13 +304,13 @@ export default function Sidebar({ onClose }: SidebarProps) {
                             alt="RTB 로고"
                             className="h-10 w-auto object-contain shrink-0"
                         />
-                        <p className="font-semibold text-[13px] text-[#101828] leading-[1.5] whitespace-nowrap">
+                        <p className="font-semibold text-[13px] text-gray-900 leading-normal whitespace-nowrap">
                             RTB 통합 관리 시스템
                         </p>
                     </div>
                     <button
                         onClick={onClose}
-                        className="lg:hidden p-1 hover:bg-[#e5e7eb] rounded-lg transition-colors text-[#101828]"
+                        className="lg:hidden p-1 hover:bg-gray-200 rounded-lg transition-colors text-gray-900"
                     >
                         <IconClose />
                     </button>
@@ -318,11 +320,11 @@ export default function Sidebar({ onClose }: SidebarProps) {
                 <div className="flex flex-col gap-3">
                     <div
                         ref={usernameRef}
-                        className="flex gap-2 items-center p-2 cursor-pointer hover:bg-[#e5e7eb] rounded-xl transition-colors"
+                        className="flex gap-2 items-center p-2 cursor-pointer hover:bg-gray-200 rounded-xl transition-colors"
                         onClick={() => setUserMenuOpen(true)}
                     >
-                        <div className="w-7 h-7 rounded-full bg-[#101828]" />
-                        <p className="font-semibold text-[16px] text-[#101828] leading-[1.5]">
+                        <div className="w-7 h-7 rounded-full bg-gray-900" />
+                        <p className="font-semibold text-[16px] text-gray-900 leading-normal">
                             user name
                         </p>
                     </div>
@@ -332,25 +334,20 @@ export default function Sidebar({ onClose }: SidebarProps) {
                         isOpen={userMenuOpen}
                         anchorEl={usernameRef.current}
                         onClose={() => setUserMenuOpen(false)}
-                        onEdit={() => {
-                            // 프로필 수정 기능 (필요시 구현)
-                            setUserMenuOpen(false);
-                        }}
-                        onDelete={() => {
-                            // 삭제 기능은 사용하지 않음
-                        }}
-                        showDelete={false}
                         onResetPassword={() => {
                             setResetPasswordModalOpen(true);
                             setUserMenuOpen(false);
                         }}
                         onLogout={() => {
                             if (confirm("로그아웃 하시겠습니까?")) {
-                                // 로그아웃 로직 구현
                                 console.log("로그아웃");
                                 setUserMenuOpen(false);
                             }
                         }}
+                        showLogout={true}
+                        showDelete={false}
+                        placement="right"
+                        width="w-60"
                     />
 
                     {/* 비밀번호 재설정 모달 */}
@@ -371,12 +368,12 @@ export default function Sidebar({ onClose }: SidebarProps) {
                             className={`flex gap-6 items-center p-3 rounded-xl transition-colors w-full text-left ${
                                 showNotifications
                                     ? "bg-[#f1f5f9]"
-                                    : "text-[#101828] hover:bg-[#e5e7eb]"
+                                    : "text-gray-900 hover:bg-gray-200"
                             }`}
                         >
                             <div className="flex gap-3 items-center w-[162px]">
                                 <IconNotifications />
-                                <p className="font-medium text-[16px] leading-[1.5]">
+                                <p className="font-medium text-[16px] leading-normal">
                                     알림
                                 </p>
                             </div>
@@ -394,7 +391,7 @@ export default function Sidebar({ onClose }: SidebarProps) {
                         )}
                     </div>
 
-                    <div className="h-px bg-[#e5e7eb] rounded-full" />
+                    <div className="h-px bg-gray-200 rounded-full" />
 
                     <nav className="flex flex-col gap-2">
                         {/* 대시보드 */}
@@ -416,13 +413,13 @@ export default function Sidebar({ onClose }: SidebarProps) {
                             }}
                             className={`flex gap-6 items-center p-3 rounded-xl transition-colors ${
                                 reportActive
-                                    ? "bg-[#364153] text-white"
-                                    : "text-[#101828] hover:bg-[#e5e7eb]"
+                                    ? "bg-gray-700 text-white"
+                                    : "text-gray-900 hover:bg-gray-200"
                             }`}
                         >
                             <div className="flex gap-3 items-center w-[162px]">
                                 <IconDescription />
-                                <p className="font-medium text-[16px] leading-[1.5]">
+                                <p className="font-medium text-[16px] leading-normal">
                                     출장 보고서
                                 </p>
                             </div>
@@ -460,13 +457,13 @@ export default function Sidebar({ onClose }: SidebarProps) {
                             }}
                             className={`w-full flex gap-6 items-center p-3 rounded-xl transition-colors ${
                                 expenseActive
-                                    ? "bg-[#364153] text-white"
-                                    : "text-[#101828] hover:bg-[#e5e7eb]"
+                                    ? "bg-gray-700 text-white"
+                                    : "text-gray-900 hover:bg-gray-200"
                             }`}
                         >
                             <div className="flex gap-3 items-center w-[162px]">
                                 <IconPayment />
-                                <p className="font-medium text-[16px] leading-[1.5]">
+                                <p className="font-medium text-[16px] leading-normal">
                                     지출 관리
                                 </p>
                             </div>
