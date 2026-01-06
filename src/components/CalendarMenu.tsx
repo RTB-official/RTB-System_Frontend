@@ -91,8 +91,25 @@ export default function CalendarMenu({ onClose, style, selectedDate }: Props) {
       }}
       data-node-id="995:12291"
     >
-      <MenuItem ref={(el)=> (refs.current['일정 추가']=el)} icon={<IconCalendar className="w-5 h-5" />} label="일정 추가" onClick={() => openPanel('일정 추가')} />
-      <MenuItem ref={(el)=> (refs.current['휴가 등록']=el)} icon={<IconUpload className="w-5 h-5" />} label="휴가 등록" onClick={() => openPanel('휴가 등록')} />
+      <MenuItem 
+        ref={(el)=> (refs.current['일정 추가']=el)} 
+        icon={<IconCalendar className="w-5 h-5" />} 
+        label="일정 추가" 
+        onClick={() => {
+          const ev = new CustomEvent('openEventForm', { detail: { date: selectedDate } })
+          window.dispatchEvent(ev)
+          onClose?.()
+        }} 
+      />
+      <MenuItem 
+        ref={(el)=> (refs.current['휴가 등록']=el)} 
+        icon={<IconUpload className="w-5 h-5" />} 
+        label="휴가 등록" 
+        onClick={() => {
+          navigate('/vacation?openModal=true')
+          onClose?.()
+        }} 
+      />
       <MenuItem
         ref={(el)=> (refs.current['개인 지출']=el)}
         icon={
@@ -118,7 +135,7 @@ export default function CalendarMenu({ onClose, style, selectedDate }: Props) {
             maxWidth: 'calc(100vw - 16px)'
           }}
         >
-          <SmallPanel label={active} onClose={() => setActive(null)} />
+          <SmallPanel label={active} onClose={() => setActive(null)} selectedDate={selectedDate} />
         </div>
       )}
     </div>
@@ -144,7 +161,7 @@ const MenuItem = React.forwardRef(function MenuItem(
   )
 })
 
-function SmallPanel({ label, onClose }: { label: string; onClose: () => void }) {
+function SmallPanel({ label, onClose, selectedDate }: { label: string; onClose: () => void; selectedDate?: string | null }) {
   return (
     <div>
       <div className="flex items-center justify-between mb-3">
@@ -153,7 +170,7 @@ function SmallPanel({ label, onClose }: { label: string; onClose: () => void }) 
       </div>
       <div>
         {/* Render the same form as the modal but compact inside the panel */}
-        <EventForm onClose={onClose} />
+        <EventForm onClose={onClose} initialDate={selectedDate || undefined} />
       </div>
     </div>
   )

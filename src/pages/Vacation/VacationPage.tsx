@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import Sidebar from "../../components/Sidebar";
 import Header from "../../components/common/Header";
 import Button from "../../components/common/Button";
@@ -19,6 +20,7 @@ export interface VacationRow {
 
 export default function VacationPage() {
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [searchParams, setSearchParams] = useSearchParams();
 
     // 연도 필터 / 탭 상태
     const [year, setYear] = useState("2025");
@@ -26,6 +28,16 @@ export default function VacationPage() {
     const [page, setPage] = useState(1);
 
     const [modalOpen, setModalOpen] = useState(false);
+
+    // URL 파라미터로 모달 열기
+    useEffect(() => {
+        if (searchParams.get("openModal") === "true") {
+            setModalOpen(true);
+            // URL에서 파라미터 제거
+            searchParams.delete("openModal");
+            setSearchParams(searchParams, { replace: true });
+        }
+    }, [searchParams, setSearchParams]);
 
     // 스샷과 유사한 mock
     const rows: VacationRow[] = useMemo(
