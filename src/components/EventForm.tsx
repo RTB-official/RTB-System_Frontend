@@ -340,7 +340,7 @@ export default function EventForm({
                             }}
                             onFocus={() => setShowResults(true)}
                         />
-                        <Button type="button" onClick={() => handleAddAttendee()}>
+                        <Button type="button" variant="primary" onClick={() => handleAddAttendee()}>
                             추가
                         </Button>
                     </div>

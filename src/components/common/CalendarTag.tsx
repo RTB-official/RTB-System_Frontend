@@ -1,5 +1,6 @@
 // CalendarTag.tsx
 import React from "react";
+import { IconStar } from "../icons/Icons";
 
 interface CalendarTagProps {
     title: string;
@@ -11,7 +12,7 @@ interface CalendarTagProps {
     left?: string;
     onEdit?: () => void;
     onDelete?: () => void;
-    onClick?: () => void;
+    onClick?: (e: React.MouseEvent) => void;
     details?: React.ReactNode;
     isFirstInRow?: boolean;
 }
@@ -32,27 +33,30 @@ const CalendarTag: React.FC<CalendarTagProps> = ({
 }) => {
     const isHoliday = variant === "holiday";
 
+    const [isHovered, setIsHovered] = React.useState(false);
+
     return (
         <div
-            className={`absolute h-6 flex items-center truncate pointer-events-auto group z-10 cursor-pointer
-                ${isHoliday ? "bg-red-100" : "text-gray-900"} 
+            className={`absolute h-6 flex items-center truncate pointer-events-auto group z-10 cursor-pointer transition-all
+                ${isHoliday ? "bg-red-100 hover:bg-red-200" : "text-gray-900"} 
                 ${isStart ? "ml-3 rounded-l-sm" : "rounded-l-none"}
                 ${isEnd ? "mr-3 rounded-r-sm" : "rounded-r-none"}
             `}
             style={{
                 left,
                 width,
-                backgroundColor: isHoliday ? undefined : `${color}15`,
+                backgroundColor: isHoliday 
+                    ? undefined 
+                    : isHovered 
+                        ? `${color}33` // hover 시 20% 투명도 (진해짐)
+                        : `${color}15`, // 기본 8% 투명도
             }}
-            style={{
-                left,
-                width,
-                background: isHoliday ? undefined : `${color}15`,
-            }}
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
             onClick={(e) => {
                 if (onClick && !isHoliday) {
                     e.stopPropagation();
-                    onClick();
+                    onClick(e);
                 }
             }}
         >
@@ -62,20 +66,24 @@ const CalendarTag: React.FC<CalendarTagProps> = ({
                     ${isEnd ? "pr-1.5" : "pr-0"}
                 `}
             >
-                <div
-                    className="w-1 h-5 rounded-full shrink-0 mr-2"
-                    style={{
-                        backgroundColor: isHoliday ? "#ef4444" : color,
-                    }}
-                />
-                <span className="text-[15px] font-semibold truncate leading-none text-gray-900">
+                {isHoliday ? (
+                    <IconStar className="w-3.5 h-3.5 text-red-500 mr-1.5 shrink-0" />
+                ) : (
+                    <div
+                        className="w-1 h-5 rounded-full shrink-0 mr-2"
+                        style={{
+                            backgroundColor: color,
+                        }}
+                    />
+                )}
+                <span className={`text-[15px] truncate leading-none ${isHoliday ? "font-medium text-red-600" : "font-medium text-gray-800"}`}>
                     {title}
                 </span>
             </div>
 
             {/* 툴팁/상세 정보 (onEdit, onDelete가 있을 때만 표시) */}
             {(onEdit || onDelete || details) && (
-                <div className="absolute bottom-full left-0 mb-2 hidden group-hover:block z-50 w-64 bg-white rounded-lg shadow-lg border border-gray-200 p-4 whitespace-normal pointer-events-auto">
+                <div className="absolute bottom-full left-0 mb-2 hidden  z-50 w-64 bg-white rounded-lg shadow-lg border border-gray-200 p-4 whitespace-normal pointer-events-auto">
                     {details}
                     <div className="flex gap-2 mt-3">
                         {onEdit && (

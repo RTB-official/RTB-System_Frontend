@@ -1,50 +1,23 @@
 import React, { useEffect, useRef } from "react";
-import { CalendarEvent } from "../../pages/Dashboard/DashboardPage"; // CalendarEvent 인터페이스를 가져옵니다.
+import { createPortal } from "react-dom";
+import { IconCalendar } from "../icons/Icons";
+import { CalendarEvent } from "../../types";
+import Button from "./Button";
 
 interface EventDetailMenuProps {
     isOpen: boolean;
     anchorEl: HTMLElement | null;
+    position?: { x: number; y: number };
     onClose: () => void;
     event: CalendarEvent | null;
     onEdit: (event: CalendarEvent) => void;
     onDelete: (eventId: string) => void;
 }
 
-const IconCalendar = () => (
-    <svg
-        className="w-5 h-5 text-gray-400"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-    >
-        <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-        />
-    </svg>
-);
-
-const IconPerson = () => (
-    <svg
-        className="w-5 h-5 text-gray-400"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-    >
-        <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-        />
-    </svg>
-);
-
 const EventDetailMenu: React.FC<EventDetailMenuProps> = ({
     isOpen,
     anchorEl,
+    position,
     onClose,
     event,
     onEdit,
@@ -76,13 +49,37 @@ const EventDetailMenu: React.FC<EventDetailMenuProps> = ({
         return () => window.removeEventListener("keydown", handleKeyDown);
     }, [isOpen, onClose]);
 
-    if (!isOpen || !anchorEl || !event) return null;
+    if (!isOpen || (!anchorEl && !position) || !event) return null;
 
-    const rect = anchorEl.getBoundingClientRect();
-    const top = rect.bottom + window.scrollY + 8;
-    const left = rect.left + window.scrollX;
+    let top = 0;
+    let left = 0;
 
-    // 날짜 및 시간 포맷팅 (예시)
+    if (position) {
+        top = position.y;
+        left = position.x;
+    } else if (anchorEl) {
+        const rect = anchorEl.getBoundingClientRect();
+        top = rect.bottom + 8;
+        left = rect.left;
+    }
+
+    // 화면 밖으로 나가는 것 방지
+    const menuWidth = 320; // 사용자가 수정한 w-80 기준
+    const menuHeight = 350; // 예상 최대 높이
+
+    // 가로 보정
+    if (left + menuWidth > window.innerWidth - 12) {
+        left = window.innerWidth - menuWidth - 12;
+    }
+    if (left < 12) left = 12;
+
+    // 세로 보정 (바닥 뚫림 방지)
+    if (top + menuHeight > window.innerHeight - 12) {
+        top = window.innerHeight - menuHeight - 12;
+    }
+    if (top < 12) top = 12;
+
+    // 날짜 및 시간 포맷팅
     const formatDateTimeRange = (
         startDate: string,
         endDate: string
@@ -90,16 +87,8 @@ const EventDetailMenu: React.FC<EventDetailMenuProps> = ({
         const start = new Date(startDate);
         const end = new Date(endDate);
 
-        const startTime = start.toLocaleTimeString("ko-KR", {
-            hour: "2-digit",
-            minute: "2-digit",
-            hour12: false,
-        });
-        const endTime = end.toLocaleTimeString("ko-KR", {
-            hour: "2-digit",
-            minute: "2-digit",
-            hour12: false,
-        });
+        const startTime = `${start.getHours()}시`;
+        const endTime = `${end.getHours()}시`;
 
         const startDay = `${start.getMonth() + 1}월 ${start.getDate()}일`;
         const endDay = `${end.getMonth() + 1}월 ${end.getDate()}일`;
@@ -110,66 +99,77 @@ const EventDetailMenu: React.FC<EventDetailMenuProps> = ({
         return `${startDay} ${startTime} ~ ${endDay} ${endTime}`;
     };
 
-    return (
+    return createPortal(
         <div
             ref={menuRef}
-            className="absolute z-50 w-80 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden p-4 flex flex-col gap-4"
+            className="fixed z-9999 w-80 bg-white rounded-2xl shadow-lg border border-gray-200 p-4 flex flex-col gap-4"
             style={{ top, left }}
         >
-            <div className="flex items-center gap-3">
-                <IconCalendar />
-                <h3 className="text-lg font-bold text-gray-900">{event.title}</h3>
-            </div>
-            
-            <div className="text-sm text-gray-600 pl-8">
-                {formatDateTimeRange(event.startDate, event.endDate)}
-            </div>
+            <div className="flex gap-3 items-start">
+                {/* 텍스트 바로 앞에 배치되는 캘린더 아이콘 */}
+                <div className="shrink-0">
+                    <IconCalendar />
+                </div>
 
-            {/* 참가자 정보 (TODO: 실제 데이터로 교체) */}
-            <div className="flex items-center gap-3">
-                <IconPerson />
-                <div className="flex flex-wrap gap-2">
-                    {/* 참가자 더미 데이터 */}
-                    <div className="flex items-center gap-1">
-                        <div className="w-6 h-6 rounded-full bg-orange-500 flex items-center justify-center text-white text-xs font-bold">
-                            MK
-                        </div>
-                        <span className="text-sm text-gray-800">강민지</span>
+                {/* 오른쪽 텍스트 묶음 */}
+                <div className="flex flex-col">
+                    <h3 className="text-lg font-semibold text-gray-900 leading-tight mb-0.5">
+                        {event.title}
+                    </h3>
+
+                    <div className="text-sm text-gray-400 font-medium mb-2">
+                        {formatDateTimeRange(event.startDate, event.endDate)}
                     </div>
-                    <div className="flex items-center gap-1">
-                        <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-bold">
-                            HJ
-                        </div>
-                        <span className="text-sm text-gray-800">홍길동</span>
+
+                    {/* 참석자 정보 */}
+                    <div className="flex flex-wrap gap-2 items-center">
+                        {[1, 2, 3].map((_, i) => (
+                            <div key={i} className="flex items-center gap-1">
+                                <div className="w-5 h-5 rounded-full bg-[#FF8A00] flex items-center justify-center text-white text-[10px] font-bold border border-white shadow-sm">
+                                    MK
+                                </div>
+                                <span className="text-base font-medium text-gray-700">
+                                    강민지
+                                </span>
+                            </div>
+                        ))}
                     </div>
                 </div>
             </div>
 
             {!event.isHoliday && (
-                <div className="flex gap-2 mt-2 pt-4 border-t border-gray-200">
-                    <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            onEdit(event);
-                            onClose();
-                        }}
-                        className="flex-1 px-3 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
-                    >
-                        수정
-                    </button>
-                    <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            onDelete(event.id);
-                            onClose();
-                        }}
-                        className="flex-1 px-3 py-2 text-sm font-medium text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-colors"
-                    >
-                        삭제
-                    </button>
-                </div>
+                <>
+                    <div className="h-px bg-gray-100" />
+                    <div className="flex gap-2">
+                        <Button
+                            variant="primary"
+                            size="sm"
+                            fullWidth
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onEdit(event);
+                                onClose();
+                            }}
+                        >
+                            수정
+                        </Button>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            fullWidth
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onDelete(event.id);
+                                onClose();
+                            }}
+                        >
+                            삭제
+                        </Button>
+                    </div>
+                </>
             )}
-        </div>
+        </div>,
+        document.body
     );
 };
 

@@ -1,9 +1,17 @@
 import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
+import {
+    IconEdit,
+    IconTrash,
+    IconDownload,
+    IconLock,
+    IconLogout,
+} from "../icons/Icons";
 
 interface ActionMenuProps {
     isOpen: boolean;
     anchorEl: HTMLElement | null;
+    position?: { x: number; y: number };
     onClose: () => void;
     onEdit?: () => void;
     onDelete?: () => void;
@@ -16,84 +24,13 @@ interface ActionMenuProps {
     showLogout?: boolean;
     placement?: "right" | "bottom-right" | "bottom-left";
     width?: string;
+    children?: React.ReactNode;
 }
-
-const IconEdit = () => (
-    <svg
-        width="16"
-        height="16"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.5"
-    >
-        <path d="M4 21v-3.5L17.5 4.5a2 2 0 012.8 0l0 0a2 2 0 010 2.8L7.5 20.5H4z" />
-    </svg>
-);
-
-const IconTrash = () => (
-    <svg
-        width="16"
-        height="16"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.5"
-    >
-        <path d="M3 6h18" />
-        <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" />
-        <path d="M10 11v6M14 11v6" />
-        <path d="M9 6V4h6v2" />
-    </svg>
-);
-
-const IconDownload = () => (
-    <svg
-        width="16"
-        height="16"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.5"
-    >
-        <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
-        <path d="M7 10l5 5 5-5" />
-        <path d="M12 15V3" />
-    </svg>
-);
-
-const IconLock = () => (
-    <svg
-        width="16"
-        height="16"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.5"
-    >
-        <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-        <path d="M7 11V7a5 5 0 0110 0v4" />
-    </svg>
-);
-
-const IconLogout = () => (
-    <svg
-        width="16"
-        height="16"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.5"
-    >
-        <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
-        <path d="M16 17l5-5-5-5" />
-        <path d="M21 12H9" />
-    </svg>
-);
 
 export default function ActionMenu({
     isOpen,
     anchorEl,
+    position,
     onClose,
     onEdit,
     onDelete,
@@ -106,6 +43,7 @@ export default function ActionMenu({
     showLogout = true,
     placement = "bottom-right",
     width = "w-64",
+    children,
 }: ActionMenuProps) {
     const menuRef = useRef<HTMLDivElement>(null);
 
@@ -135,7 +73,7 @@ export default function ActionMenu({
         return () => window.removeEventListener("keydown", handleKeyDown);
     }, [isOpen, onClose]);
 
-    if (!isOpen || !anchorEl) return null;
+    if (!isOpen || (!anchorEl && !position)) return null;
 
     // width 값에서 숫자 추출 (w-64 -> 256px 등)
     const getWidthValue = (w: string) => {
@@ -154,28 +92,43 @@ export default function ActionMenu({
     };
 
     const menuWidthPx = getWidthValue(width);
-    const rect = anchorEl.getBoundingClientRect();
-    let top = rect.bottom + 8;
-    let left = rect.right - menuWidthPx;
+    const menuHeightPx = 220; // CalendarMenu 항목 3개 기준 예상 높이
+    let top = 0;
+    let left = 0;
 
-    if (placement === "right") {
-        top = rect.top;
-        left = rect.right + 12;
-    } else if (placement === "bottom-left") {
+    if (position) {
+        top = position.y;
+        left = position.x;
+    } else if (anchorEl) {
+        const rect = anchorEl.getBoundingClientRect();
         top = rect.bottom + 8;
-        left = rect.left;
+        left = rect.right - menuWidthPx;
+
+        if (placement === "right") {
+            top = rect.top;
+            left = rect.right + 12;
+        } else if (placement === "bottom-left") {
+            top = rect.bottom + 8;
+            left = rect.left;
+        }
     }
 
-    // 화면 밖으로 나가는 것 방지
+    // 화면 밖으로 나가는 것 방지 (가로)
     if (left < 12) left = 12;
     if (left + menuWidthPx > window.innerWidth - 12) {
         left = window.innerWidth - menuWidthPx - 12;
     }
 
+    // 화면 밖으로 나가는 것 방지 (세로)
+    if (top + menuHeightPx > window.innerHeight - 12) {
+        top = window.innerHeight - menuHeightPx - 12;
+    }
+    if (top < 12) top = 12;
+
     return createPortal(
         <div
             ref={menuRef}
-            className={`fixed ${width} rounded-2xl border border-gray-200 bg-white shadow-xl ring-1 ring-black/5 p-3 flex flex-col gap-1 z-[9999]`}
+            className={`fixed ${width} rounded-2xl border border-gray-200 bg-white shadow-xl ring-1 ring-black/5 p-3 flex flex-col z-9999`}
             style={{
                 top,
                 left,
@@ -187,6 +140,7 @@ export default function ActionMenu({
                     <div className="h-px bg-gray-300 mx-2 mb-2" />
                 </>
             )}
+            {children}
             {onEdit && (
                 <button
                     className="w-full px-3 py-2.5 text-left text-[15px] hover:bg-gray-50 active:bg-gray-100 text-gray-800 flex items-center gap-3 rounded-lg transition-colors cursor-pointer"

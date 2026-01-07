@@ -1,6 +1,6 @@
 import React from "react";
 import {
-    IconCardAlt,
+    IconCard,
     IconUpload,
     IconCalendar,
 } from "../../../components/icons/Icons";
@@ -52,7 +52,7 @@ export default function ExpenseFormCard({
         <SectionCard
             title={
                 <span className="flex items-center gap-2 text-gray-900">
-                    <IconCardAlt />
+                    <IconCard />
                     개인 카드/현금 지출내역
                 </span>
             }

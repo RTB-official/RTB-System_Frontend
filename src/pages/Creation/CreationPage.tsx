@@ -11,7 +11,7 @@ import ConsumablesSection from "../../components/sections/ConsumablesSection";
 import FileUploadSection from "../../components/sections/FileUploadSection";
 import TimelineSummarySection from "../../components/sections/TimelineSummarySection";
 import { useWorkReportStore } from "../../store/workReportStore";
-import { IconArrowBack } from "../../components/icons/IconArrowBack";
+import { IconArrowBack } from "../../components/icons/Icons";
 
 export default function CreationPage() {
     const [sidebarOpen, setSidebarOpen] = useState(false);

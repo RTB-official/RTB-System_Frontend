@@ -8,6 +8,12 @@ import Button from "../../components/common/Button";
 import CalendarTag from "../../components/common/CalendarTag";
 import BaseModal from "../../components/ui/BaseModal";
 import EventDetailMenu from "../../components/common/EventDetailMenu";
+import {
+    IconChevronLeft,
+    IconChevronRight,
+    IconMenu,
+} from "../../components/icons/Icons";
+import { CalendarEvent } from "../../types";
 
 // 공휴일 API 정보
 const HOLIDAY_API_KEY =
@@ -32,15 +38,6 @@ function generateMonthGrid(year: number, month: number) {
 }
 
 // 이벤트 구조: 각 이벤트는 고유 ID, 제목, 색상, 시작일, 종료일을 가짐
-interface CalendarEvent {
-    id: string;
-    title: string;
-    color: string;
-    startDate: string; // YYYY-MM-DD 형식
-    endDate: string; // YYYY-MM-DD 형식
-    isHoliday?: boolean;
-    attendees?: string[]; // 참가자 추가
-}
 
 const sampleEvents: CalendarEvent[] = [
     {
@@ -625,19 +622,10 @@ export default function DashboardPage() {
                                     onClick={
                                         segment.event.isHoliday
                                             ? undefined
-                                            : () => {
-                                                  const el =
-                                                      e.currentTarget as HTMLElement;
-                                                  const rect =
-                                                      el.getBoundingClientRect();
+                                            : (e) => {
                                                   setEventDetailMenuPos({
-                                                      x:
-                                                          rect.left +
-                                                          window.pageXOffset,
-                                                      y:
-                                                          rect.bottom +
-                                                          window.pageYOffset +
-                                                          8,
+                                                      x: e.clientX,
+                                                      y: e.clientY,
                                                   });
                                                   setSelectedEventForMenu(
                                                       segment.event
@@ -688,16 +676,7 @@ export default function DashboardPage() {
                         className="p-2 rounded-lg hover:bg-gray-100 text-gray-700"
                         aria-label="메뉴 열기"
                     >
-                        <svg
-                            width="20"
-                            height="20"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                        >
-                            <path d="M4 6H20M4 12H20M4 18H20" />
-                        </svg>
+                        <IconMenu />
                     </button>
                 </div>
 
@@ -712,18 +691,7 @@ export default function DashboardPage() {
                                     variant="outline"
                                     size="sm"
                                     onClick={prevMonth}
-                                    icon={
-                                        <svg
-                                            width="16"
-                                            height="16"
-                                            viewBox="0 0 24 24"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            strokeWidth="2"
-                                        >
-                                            <path d="M15 18l-6-6 6-6" />
-                                        </svg>
-                                    }
+                                    icon={<IconChevronLeft />}
                                 />
                                 <Button
                                     variant="outline"
@@ -736,18 +704,7 @@ export default function DashboardPage() {
                                     variant="outline"
                                     size="sm"
                                     onClick={nextMonth}
-                                    icon={
-                                        <svg
-                                            width="16"
-                                            height="16"
-                                            viewBox="0 0 24 24"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            strokeWidth="2"
-                                        >
-                                            <path d="M9 18l6-6-6-6" />
-                                        </svg>
-                                    }
+                                    icon={<IconChevronRight />}
                                 />
                             </div>
                         </div>
@@ -876,33 +833,6 @@ export default function DashboardPage() {
                                                                 !isDragging &&
                                                                 !dragStart
                                                             ) {
-                                                                const el =
-                                                                    e.currentTarget as HTMLElement;
-                                                                const dateEl =
-                                                                    el.querySelector(
-                                                                        "[data-date-number]"
-                                                                    ) as HTMLElement | null;
-                                                                const anchor =
-                                                                    dateEl
-                                                                        ? dateEl.getBoundingClientRect()
-                                                                        : el.getBoundingClientRect();
-
-                                                                const scrollX =
-                                                                    window.scrollX ||
-                                                                    window.pageXOffset;
-                                                                const scrollY =
-                                                                    window.scrollY ||
-                                                                    window.pageYOffset;
-
-                                                                const x =
-                                                                    anchor.right +
-                                                                    scrollX +
-                                                                    24;
-                                                                const y =
-                                                                    anchor.top +
-                                                                    scrollY -
-                                                                    24;
-
                                                                 setSelectedDateForModal(
                                                                     key
                                                                 );
@@ -912,8 +842,8 @@ export default function DashboardPage() {
                                                                         {
                                                                             detail: {
                                                                                 date: key,
-                                                                                x,
-                                                                                y,
+                                                                                x: e.clientX,
+                                                                                y: e.clientY,
                                                                             },
                                                                         }
                                                                     );
@@ -1023,24 +953,18 @@ export default function DashboardPage() {
                 </main>
             </div>
 
-            {menuOpen && menuPos && (
-                <div
-                    style={{
-                        position: "absolute",
-                        left: menuPos.x,
-                        top: menuPos.y,
-                        zIndex: 60,
+            {menuOpen && (
+                <CalendarMenu
+                    isOpen={menuOpen}
+                    anchorEl={null}
+                    position={menuPos || undefined}
+                    selectedDate={menuDate}
+                    onClose={() => {
+                        setMenuOpen(false);
+                        setMenuDate(null);
+                        setMenuPos(null);
                     }}
-                >
-                    <CalendarMenu
-                        selectedDate={menuDate}
-                        onClose={() => {
-                            setMenuOpen(false);
-                            setMenuDate(null);
-                            setMenuPos(null);
-                        }}
-                    />
-                </div>
+                />
             )}
 
             <EventModal
@@ -1092,16 +1016,10 @@ export default function DashboardPage() {
                                 <div
                                     key={event.id}
                                     className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
-                                    onClick={() => {
-                                        const el =
-                                            e.currentTarget as HTMLElement;
-                                        const rect = el.getBoundingClientRect();
+                                    onClick={(e) => {
                                         setEventDetailMenuPos({
-                                            x: rect.left + window.pageXOffset,
-                                            y:
-                                                rect.bottom +
-                                                window.pageYOffset +
-                                                8,
+                                            x: e.clientX,
+                                            y: e.clientY,
                                         });
                                         setSelectedEventForMenu(event);
                                         setHiddenEventsModalOpen(false);
@@ -1136,7 +1054,8 @@ export default function DashboardPage() {
             {/* 일정 상세 정보 액션 메뉴 */}
             <EventDetailMenu
                 isOpen={eventDetailMenuOpen}
-                anchorEl={eventDetailMenuPos ? document.body : null} // 실제 anchorEl은 클릭된 태그의 DOM 노드가 되어야 함
+                anchorEl={null}
+                position={eventDetailMenuPos || undefined}
                 onClose={() => setEventDetailMenuOpen(false)}
                 event={selectedEventForMenu}
                 onEdit={(eventToEdit) => {

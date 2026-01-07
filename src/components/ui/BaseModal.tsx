@@ -1,4 +1,5 @@
 import { useEffect, ReactNode } from "react";
+import { createPortal } from "react-dom";
 
 interface BaseModalProps {
     isOpen: boolean;
@@ -27,7 +28,7 @@ export default function BaseModal({
     title,
     children,
     footer,
-    maxWidth = "max-w-[640px]",
+    maxWidth = "max-w-[440px]",
     className = "",
 }: BaseModalProps) {
     // 모달 열릴 때 바디 스크롤 잠금
@@ -54,25 +55,22 @@ export default function BaseModal({
 
     if (!isOpen) return null;
 
-    return (
+    return createPortal(
         <div
-            className="fixed inset-0 z-50 flex items-center justify-center"
+            className="fixed inset-0 z-[10000] flex items-center justify-center"
             aria-modal="true"
             role="dialog"
         >
             {/* Overlay */}
-            <div
-                className="absolute inset-0 bg-black/40"
-                onClick={onClose}
-            />
+            <div className="absolute inset-0 bg-black/40" onClick={onClose} />
 
             {/* Modal */}
             <div className="absolute inset-0 flex items-center justify-center p-4">
                 <div
-                    className={`w-full ${maxWidth} bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden ${className}`}
+                    className={`w-full ${maxWidth} bg-white rounded-2xl shadow-xl flex flex-col overflow-hidden ${className}`}
                 >
                     {/* Header */}
-                    <div className="px-6 py-5 flex items-center justify-between border-b border-gray-200">
+                    <div className="px-6 py-4 flex items-center justify-between">
                         <h2 className="text-[20px] font-semibold text-gray-900">
                             {title}
                         </h2>
@@ -86,17 +84,19 @@ export default function BaseModal({
                     </div>
 
                     {/* Body */}
-                    <div className="px-6 py-6">{children}</div>
+                    <div className="px-6 pt-5 pb-4 flex-1 overflow-y-auto">
+                        {children}
+                    </div>
 
                     {/* Footer */}
                     {footer && (
-                        <div className="px-6 py-4 border-t border-gray-200">
+                        <div className="flex justify-end gap-3 px-6 py-4">
                             {footer}
                         </div>
                     )}
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 }
-

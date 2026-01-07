@@ -4,7 +4,7 @@ import Sidebar from "../../components/Sidebar";
 import Header from "../../components/common/Header";
 import Table from "../../components/common/Table";
 import YearMonthSelector from "../../components/common/YearMonthSelector";
-import { IconArrowBack } from "../../components/icons/IconArrowBack";
+import { IconArrowBack } from "../../components/icons/Icons";
 const IconWork = () => (
     <svg
         width="24"

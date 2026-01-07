@@ -2,14 +2,7 @@ import React from 'react'
 import EventForm from './EventForm'
 import BaseModal from './ui/BaseModal'
 import Button from './common/Button'
-
-interface CalendarEvent {
-  id: string
-  title: string
-  color: string
-  startDate: string
-  endDate: string
-}
+import { CalendarEvent } from '../types'
 
 interface EventModalProps {
   isOpen: boolean
