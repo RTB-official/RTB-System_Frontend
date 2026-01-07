@@ -74,12 +74,14 @@ const CalendarTag: React.FC<CalendarTagProps> = ({
                         <IconStar className="w-3.5 h-3.5 text-red-500" />
                     </div>
                 ) : (
-                    <div
-                        className="w-1 h-5 rounded-full shrink-0 mr-2"
-                        style={{
-                            backgroundColor: color,
-                        }}
-                    />
+                    isStart && (
+                        <div
+                            className="w-1 h-5 rounded-full shrink-0 mr-2"
+                            style={{
+                                backgroundColor: color,
+                            }}
+                        />
+                    )
                 )}
                 <span
                     className={`text-[15px] truncate leading-none ${

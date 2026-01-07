@@ -669,7 +669,7 @@ export default function DashboardPage() {
                                     const dateHeaderHeight = 48;
                                     const bottomPadding = 18;
                                     const tagHeight = 24;
-                                    const tagSpacing = 2;
+                                    const tagSpacing = 4;
 
                                     // 주의 모든 날짜 셀 중 최소 높이를 찾아서 표시 가능한 행 수 계산
                                     const pad = (n: number) =>
