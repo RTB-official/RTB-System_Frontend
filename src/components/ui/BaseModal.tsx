@@ -70,8 +70,8 @@ export default function BaseModal({
                     className={`w-full ${maxWidth} bg-white rounded-2xl shadow-xl flex flex-col overflow-hidden ${className}`}
                 >
                     {/* Header */}
-                    <div className="px-6 py-4 flex items-center justify-between">
-                        <h2 className="text-[20px] font-semibold text-gray-900">
+                    <div className="px-6 py-6 flex items-center justify-between">
+                        <h2 className="text-[22px] font-semibold text-gray-900">
                             {title}
                         </h2>
                         <button
@@ -84,7 +84,7 @@ export default function BaseModal({
                     </div>
 
                     {/* Body */}
-                    <div className="px-6 pt-5 pb-4 flex-1 overflow-y-auto">
+                    <div className="px-6 pb-4 flex-1 overflow-y-auto">
                         {children}
                     </div>
 

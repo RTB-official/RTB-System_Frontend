@@ -2,8 +2,6 @@ import { useState } from "react";
 import BaseModal from "../ui/BaseModal";
 import Button from "../common/Button";
 import Input from "../common/Input";
-import { IconClose } from "../icons/Icons";
-
 type Props = {
     isOpen: boolean;
     memberName?: string;
@@ -72,13 +70,23 @@ export default function ResetPasswordModal({
             isOpen={isOpen}
             onClose={handleClose}
             title="비밀번호 재설정"
-            maxWidth="max-w-md"
+            maxWidth="max-w-lg"
             footer={
-                <div className="flex gap-3 justify-end">
-                    <Button variant="outline" size="md" onClick={handleClose}>
+                <div className="flex gap-3 w-full">
+                    <Button
+                        variant="outline"
+                        size="md"
+                        fullWidth
+                        onClick={handleClose}
+                    >
                         취소
                     </Button>
-                    <Button variant="primary" size="md" onClick={handleSubmit}>
+                    <Button
+                        variant="primary"
+                        size="md"
+                        fullWidth
+                        onClick={handleSubmit}
+                    >
                         재설정
                     </Button>
                 </div>

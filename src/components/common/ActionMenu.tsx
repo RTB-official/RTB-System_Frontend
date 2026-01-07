@@ -25,6 +25,8 @@ interface ActionMenuProps {
     placement?: "right" | "bottom-right" | "bottom-left";
     width?: string;
     children?: React.ReactNode;
+    userDisplayName?: string;
+    userEmail?: string;
 }
 
 export default function ActionMenu({
@@ -44,6 +46,8 @@ export default function ActionMenu({
     placement = "bottom-right",
     width = "w-64",
     children,
+    userDisplayName,
+    userEmail,
 }: ActionMenuProps) {
     const menuRef = useRef<HTMLDivElement>(null);
 
@@ -134,9 +138,21 @@ export default function ActionMenu({
                 left,
             }}
         >
-            {headerContent && (
+            {(userDisplayName || userEmail || headerContent) && (
                 <>
-                    <div className="px-2 py-2 mb-1">{headerContent}</div>
+                    <div className="px-2 py-2 mb-1">
+                        {userDisplayName && (
+                            <p className="text-[16px] font-semibold text-gray-900 leading-normal">
+                                {userDisplayName}
+                            </p>
+                        )}
+                        {userEmail && (
+                            <p className="text-sm text-gray-500 leading-normal">
+                                {userEmail}
+                            </p>
+                        )}
+                        {!userDisplayName && !userEmail && headerContent}
+                    </div>
                     <div className="h-px bg-gray-300 mx-2 mb-2" />
                 </>
             )}
@@ -199,7 +215,7 @@ export default function ActionMenu({
             )}
             {showLogout && onLogout && (
                 <button
-                    className="w-full px-3 py-2.5 text-left text-[15px] hover:bg-gray-50 active:bg-gray-100 text-gray-800 flex items-center gap-3 border-t border-gray-100 mt-1 pt-3 rounded-none rounded-b-lg cursor-pointer"
+                    className="w-full px-3 py-2.5 text-left text-[15px] hover:bg-gray-50 active:bg-gray-100 text-gray-800 flex items-center gap-3 border-t border-gray-100 rounded-none rounded-b-lg cursor-pointer"
                     onClick={() => {
                         onLogout();
                         onClose();

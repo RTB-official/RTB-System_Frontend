@@ -68,6 +68,12 @@ export default function Sidebar({ onClose }: SidebarProps) {
     const [logoutConfirmModalOpen, setLogoutConfirmModalOpen] = useState(false);
     const usernameRef = useRef<HTMLDivElement>(null);
 
+    // 임시 사용자 정보 (실제 앱에서는 인증 컨텍스트 등에서 가져와야 합니다)
+    const currentUser = {
+        displayName: "강민지", // 실제 사용자 이름으로 대체
+        email: "mj.kang@rtb.com", // 실제 사용자 이메일로 대체
+    };
+
     // 라우트 변경 시: 해당 라우트의 메뉴는 자동으로 열림 + 포커스 자동 정렬
     useEffect(() => {
         if (isReportRoute) {
@@ -217,7 +223,7 @@ export default function Sidebar({ onClose }: SidebarProps) {
                     >
                         <div className="w-7 h-7 rounded-full bg-gray-900" />
                         <p className="font-semibold text-[16px] text-gray-900 leading-normal">
-                            user name
+                            {currentUser.displayName}
                         </p>
                     </div>
 
@@ -238,6 +244,8 @@ export default function Sidebar({ onClose }: SidebarProps) {
                         showDelete={false}
                         placement="right"
                         width="w-60"
+                        userDisplayName={currentUser.displayName}
+                        userEmail={currentUser.email}
                     />
 
                     {/* 비밀번호 재설정 모달 */}

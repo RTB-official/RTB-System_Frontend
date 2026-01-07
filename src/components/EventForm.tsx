@@ -372,12 +372,13 @@ export default function EventForm({
                 </div>
             </div>
 
-            <div className="flex justify-end gap-3 pt-2">
-                <Button variant="outline" onClick={onClose}>
+            <div className="flex justify-end gap-3 w-full pt-2">
+                <Button variant="outline" fullWidth onClick={onClose}>
                     취소
                 </Button>
                 <Button
                     variant="primary"
+                    fullWidth
                     onClick={() => {
                         if (!title || !startDate || !endDate) {
                             alert("일정 제목, 시작일, 종료일을 입력해주세요.");

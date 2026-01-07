@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import BaseModal from "./BaseModal";
 import Input from "../common/Input";
 import Button from "../common/Button";
+import DatePicker from "./DatePicker"; // DatePicker 임포트
 
 type LeaveType = "FULL" | "AM" | "PM";
 
@@ -16,16 +17,7 @@ interface Props {
   }) => void;
 }
 
-function pad2(n: number) {
-  return String(n).padStart(2, "0");
-}
-
-function formatKoreanDate(dateISO: string) {
-  const [y, m, d] = dateISO.split("-").map(Number);
-  const dt = new Date(y, m - 1, d);
-  const weekday = dt.toLocaleDateString("ko-KR", { weekday: "short" });
-  return `${y}. ${pad2(m)}. ${pad2(d)}.(${weekday})`;
-}
+// formatKoreanDate 함수는 DatePicker 컴포넌트 내부에서 처리될 것이므로 제거
 
 export default function VacationRequestModal({
   isOpen,
@@ -79,29 +71,14 @@ export default function VacationRequestModal({
       <div className="space-y-5">
         {/* 날짜 */}
         <div>
-          <label className="text-sm font-medium text-gray-700 mb-2 block">
-            날짜
-          </label>
-          <div className="relative">
-            <input
-              type="date"
-              value={dateISO}
-              onChange={(e) => setDateISO(e.target.value)}
-              className="w-full h-12 rounded-xl border border-gray-200 px-4 pr-12 font-medium text-gray-900 bg-white outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-            />
-            <div className="pointer-events-none absolute inset-y-0 left-4 flex items-center text-[14px] font-medium text-gray-900">
-              {formatKoreanDate(dateISO)}
-            </div>
-            <div className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-gray-500">
-              📅
-            </div>
-            <style>
-              {`
-                input[type="date"]::-webkit-datetime-edit { opacity: 0; }
-                input[type="date"]::-webkit-calendar-picker-indicator { opacity: 0; }
-              `}
-            </style>
-          </div>
+          <DatePicker
+            label="날짜"
+            labelClassName="text-sm font-medium text-gray-700"
+            value={dateISO}
+            onChange={setDateISO}
+            placeholder="년도. 월. 일."
+            className="w-full"
+          />
         </div>
 
         {/* 휴가 유형 */}
@@ -114,11 +91,6 @@ export default function VacationRequestModal({
               variant={leaveType === "FULL" ? "primary" : "outline"}
               size="md"
               onClick={() => setLeaveType("FULL")}
-              className={
-                leaveType === "FULL"
-                  ? "bg-gray-900 text-white"
-                  : "bg-white text-gray-800"
-              }
             >
               하루 종일
             </Button>
@@ -126,11 +98,6 @@ export default function VacationRequestModal({
               variant={leaveType === "AM" ? "primary" : "outline"}
               size="md"
               onClick={() => setLeaveType("AM")}
-              className={
-                leaveType === "AM"
-                  ? "bg-gray-900 text-white"
-                  : "bg-white text-gray-800"
-              }
             >
               오전 반차
             </Button>
@@ -138,11 +105,6 @@ export default function VacationRequestModal({
               variant={leaveType === "PM" ? "primary" : "outline"}
               size="md"
               onClick={() => setLeaveType("PM")}
-              className={
-                leaveType === "PM"
-                  ? "bg-gray-900 text-white"
-                  : "bg-white text-gray-800"
-              }
             >
               오후 반차
             </Button>
