@@ -27,11 +27,11 @@ export default function Select({
     ...props
 }: SelectProps) {
     const sizeStyles = {
-        sm: "h-9 text-[15px] px-3 pr-6 bg-[right_0.5rem_center] rounded-[10px]",
-        md: "h-12 text-base px-4 pr-10 bg-[right_1rem_center] rounded-xl",
+        sm: "h-9 text-[15px] px-3 pr-8 bg-[right_0.5rem_center] bg-[length:14px] rounded-[10px]",
+        md: "h-12 text-base px-4 pr-11 bg-[right_1rem_center] bg-[length:18px] rounded-xl",
     };
 
-    const baseStyles = `w-full ${sizeStyles[size]} border border-gray-200 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2216%22%20height%3D%2216%22%20viewBox%3D%220%200%2024%2024%22%3E%3Cpath%20d%3D%22M6%209L12%2015L18%209%22%20stroke%3D%22%23101828%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20fill%3D%22none%22%2F%3E%3C%2Fsvg%3E')] bg-[length:14px] bg-no-repeat`;
+    const baseStyles = `w-full ${sizeStyles[size]} border border-gray-200 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%3E%3Cpath%20d%3D%22M6%209L12%2015L18%209%22%20stroke%3D%22%23101828%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20fill%3D%22none%22%2F%3E%3C%2Fsvg%3E')] bg-no-repeat`;
 
     const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         onChange?.(e.target.value);
