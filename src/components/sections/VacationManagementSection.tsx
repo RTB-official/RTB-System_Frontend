@@ -137,7 +137,6 @@ export default function VacationManagementSection({
                     ]}
                     value={year}
                     onChange={onYearChange}
-                    className="w-auto min-w-[140px]"
                 />
             </div>
 
