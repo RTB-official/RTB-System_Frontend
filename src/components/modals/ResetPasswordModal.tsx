@@ -72,10 +72,10 @@ export default function ResetPasswordModal({
             title="비밀번호 재설정"
             maxWidth="max-w-md"
             footer={
-                <div className="flex gap-3 w-full">
+                <div className="flex gap-2 w-full">
                     <Button
                         variant="outline"
-                        size="md"
+                        size="lg"
                         fullWidth
                         onClick={handleClose}
                     >
@@ -83,7 +83,7 @@ export default function ResetPasswordModal({
                     </Button>
                     <Button
                         variant="primary"
-                        size="md"
+                        size="lg"
                         fullWidth
                         onClick={handleSubmit}
                     >

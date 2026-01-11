@@ -272,7 +272,7 @@ export default function Sidebar({ onClose }: SidebarProps) {
                             <div className="flex gap-3 w-full">
                                 <Button
                                     variant="outline"
-                                    size="md"
+                                    size="lg"
                                     fullWidth
                                     onClick={() =>
                                         setLogoutConfirmModalOpen(false)
@@ -282,7 +282,7 @@ export default function Sidebar({ onClose }: SidebarProps) {
                                 </Button>
                                 <Button
                                     variant="primary"
-                                    size="md"
+                                    size="lg"
                                     fullWidth
                                     onClick={() => {
                                         console.log("로그아웃");
