@@ -73,7 +73,6 @@ export default function VacationRequestModal({
         <div>
           <DatePicker
             label="날짜"
-            labelClassName="text-sm font-medium text-gray-700"
             value={dateISO}
             onChange={setDateISO}
             placeholder="년도. 월. 일."
