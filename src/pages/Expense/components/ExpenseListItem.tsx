@@ -56,32 +56,32 @@ export default function ExpenseListItem({
                                 <span className="text-[14px] text-gray-400">
                                     {tag ? `${date} · ${tag}` : date}
                                 </span>
+                                {submitted ? (
+                                    <Chip
+                                        color="blue-500"
+                                        variant="solid"
+                                        size="sm"
+                                        icon={
+                                            <IconCheck className="w-3 h-3" />
+                                        }
+                                    >
+                                        제출 완료
+                                    </Chip>
+                                ) : (
+                                    <Chip
+                                        color="red-600"
+                                        variant="solid"
+                                        size="sm"
+                                    >
+                                        제출 전
+                                    </Chip>
+                                )}
                             </div>
                             <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2">
                                     <div className="text-[20px] font-extrabold text-gray-900">
                                         {amount}
                                     </div>
-                                    {submitted ? (
-                                        <Chip
-                                            color="blue-500"
-                                            variant="solid"
-                                            size="sm"
-                                            icon={
-                                                <IconCheck className="w-3 h-3" />
-                                            }
-                                        >
-                                            제출 완료
-                                        </Chip>
-                                    ) : (
-                                        <Chip
-                                            color="red-600"
-                                            variant="solid"
-                                            size="sm"
-                                        >
-                                            제출 전
-                                        </Chip>
-                                    )}
                                 </div>
                                 {desc && (
                                     <div className="text-sm text-gray-500 mt-1 wrap-break-word">
@@ -141,6 +141,20 @@ export default function ExpenseListItem({
             <div className="flex items-start justify-between">
                 <div className="flex items-center gap-2">
                     <div className="text-[14px] text-gray-400">{date}</div>
+                    {submitted ? (
+                        <Chip
+                            color="blue-500"
+                            variant="solid"
+                            size="sm"
+                            icon={<IconCheck className="w-3 h-3" />}
+                        >
+                            제출 완료
+                        </Chip>
+                    ) : (
+                        <Chip color="red-600" variant="solid" size="sm">
+                            제출 전
+                        </Chip>
+                    )}
                 </div>
                 {onRemove && (
                     <button
@@ -173,20 +187,6 @@ export default function ExpenseListItem({
                         <div className="text-[22px] font-extrabold text-gray-900">
                             {amount}
                         </div>
-                        {submitted ? (
-                            <Chip
-                                color="blue-500"
-                                variant="solid"
-                                size="sm"
-                                icon={<IconCheck className="w-3 h-3" />}
-                            >
-                                제출 완료
-                            </Chip>
-                        ) : (
-                            <Chip color="red-600" variant="solid" size="sm">
-                                제출 전
-                            </Chip>
-                        )}
                     </div>
                     {routeLabel && (
                         <div className="text-sm text-gray-500 mt-1">
