@@ -102,7 +102,10 @@ export default function PersonalExpensePage() {
                 const submittedMileageIds = mileagesData
                     .filter((m) => m.is_submitted)
                     .map((m) => m.id);
-                setSubmittedIds([...submittedExpenseIds, ...submittedMileageIds]);
+                setSubmittedIds([
+                    ...submittedExpenseIds,
+                    ...submittedMileageIds,
+                ]);
             } catch (error) {
                 console.error("데이터 로드 실패:", error);
                 alert("데이터를 불러오는데 실패했습니다.");
