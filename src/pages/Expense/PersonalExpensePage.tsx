@@ -9,14 +9,23 @@ import ExpenseHistorySection, {
 } from "./components/ExpenseHistorySection";
 import YearMonthSelector from "../../components/common/YearMonthSelector";
 import Button from "../../components/common/Button";
+import { useAuth } from "../../store/auth";
+import {
+    createPersonalExpense,
+    createPersonalMileage,
+    getPersonalExpenses,
+    getPersonalMileages,
+    deletePersonalExpense,
+    deletePersonalMileage,
+    type PersonalExpense,
+    type PersonalMileage,
+} from "../../lib/personalExpenseApi";
 
 export default function PersonalExpensePage() {
+    const { user } = useAuth();
     const location = useLocation();
     const params = new URLSearchParams(location.search);
     const preselectedDate = params.get("date") || null;
-
-    const [leftItems, setLeftItems] = useState<any[]>([]);
-    const [rightItems, setRightItems] = useState<any[]>([]);
 
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const currentDate = new Date();
@@ -24,15 +33,20 @@ export default function PersonalExpensePage() {
     const [month, setMonth] = useState(`${currentDate.getMonth() + 1}월`);
     const [submittedIds, setSubmittedIds] = useState<number[]>([]);
 
+    const [loading, setLoading] = useState(false);
+    const [expenses, setExpenses] = useState<PersonalExpense[]>([]);
+    const [mileages, setMileages] = useState<PersonalMileage[]>([]);
+
     const allItemsToSubmitCount = useMemo(() => {
-        const unsubmittedLeftItems = leftItems.filter(
+        // submittedIds에 없는 항목만 카운트
+        const unsubmittedExpenses = expenses.filter(
             (item) => !submittedIds.includes(item.id)
         );
-        const unsubmittedRightItems = rightItems.filter(
+        const unsubmittedMileages = mileages.filter(
             (item) => !submittedIds.includes(item.id)
         );
-        return unsubmittedLeftItems.length + unsubmittedRightItems.length;
-    }, [leftItems, rightItems, submittedIds]);
+        return unsubmittedExpenses.length + unsubmittedMileages.length;
+    }, [expenses, mileages, submittedIds]);
 
     useEffect(() => {
         document.body.style.overflow = sidebarOpen ? "hidden" : "";
@@ -55,12 +69,39 @@ export default function PersonalExpensePage() {
         }));
     }, []);
 
+    // 데이터 로드
+    useEffect(() => {
+        if (!user?.id) return;
+
+        const loadData = async () => {
+            setLoading(true);
+            try {
+                const yearNum = parseInt(year.replace("년", ""));
+                const monthNum = parseInt(month.replace("월", "")) - 1;
+
+                const [expensesData, mileagesData] = await Promise.all([
+                    getPersonalExpenses(user.id, { year: yearNum, month: monthNum }),
+                    getPersonalMileages(user.id, { year: yearNum, month: monthNum }),
+                ]);
+
+                setExpenses(expensesData);
+                setMileages(mileagesData);
+            } catch (error) {
+                console.error("데이터 로드 실패:", error);
+                alert("데이터를 불러오는데 실패했습니다.");
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        loadData();
+    }, [user?.id, year, month]);
+
     // 날짜 필터링 함수
     const matchesFilter = (dateStr: string) => {
         if (!dateStr) return false;
         try {
             const date = new Date(dateStr);
-            // Invalid date 체크
             if (isNaN(date.getTime())) return false;
 
             const selectedYear = parseInt(year.replace("년", ""));
@@ -75,49 +116,200 @@ export default function PersonalExpensePage() {
         }
     };
 
-    const handleRemoveLeftItem = (id: number) => {
-        setLeftItems((prev) => prev.filter((item) => item.id !== id));
-        setSubmittedIds((prev) => prev.filter((itemId) => itemId !== id));
+    // 마일리지 추가 핸들러
+    const handleMileageAdd = async (item: {
+        id?: number;
+        date: string;
+        from: string;
+        to: string;
+        distance: string;
+        note: string;
+        cost: number;
+    }) => {
+        if (!user?.id) {
+            alert("로그인이 필요합니다.");
+            return;
+        }
+
+        try {
+            const distanceNum = parseFloat(item.distance || "0");
+            const costPerKm = 250;
+            const calculatedCost = distanceNum * costPerKm;
+
+            await createPersonalMileage({
+                user_id: user.id,
+                m_date: item.date,
+                from_text: item.from,
+                to_text: item.to,
+                distance_km: distanceNum,
+                detail: item.note || null,
+                amount_won: calculatedCost,
+            });
+
+            // 목록 새로고침
+            const yearNum = parseInt(year.replace("년", ""));
+            const monthNum = parseInt(month.replace("월", "")) - 1;
+            const data = await getPersonalMileages(user.id, {
+                year: yearNum,
+                month: monthNum,
+            });
+            setMileages(data);
+        } catch (error: any) {
+            console.error("마일리지 등록 실패:", error);
+            alert(error.message || "마일리지 등록에 실패했습니다.");
+        }
     };
 
-    const handleRemoveRightItem = (id: number) => {
-        setRightItems((prev) => prev.filter((item) => item.id !== id));
-        setSubmittedIds((prev) => prev.filter((itemId) => itemId !== id));
+    // 지출 추가 핸들러
+    const handleExpenseAdd = async (item: {
+        id?: number;
+        date: string;
+        type: string;
+        amount: string;
+        detail: string;
+        img?: string | null;
+    }) => {
+        if (!user?.id) {
+            alert("로그인이 필요합니다.");
+            return;
+        }
+
+        try {
+            const amountNum = parseInt(item.amount || "0");
+            if (amountNum <= 0) {
+                alert("금액을 입력해주세요.");
+                return;
+            }
+
+            await createPersonalExpense({
+                user_id: user.id,
+                expense_date: item.date,
+                expense_type: item.type,
+                detail: item.detail || null,
+                amount: amountNum,
+                receipt_path: item.img || null, // 추후 파일 업로드 구현 시 수정
+            });
+
+            // 목록 새로고침
+            const yearNum = parseInt(year.replace("년", ""));
+            const monthNum = parseInt(month.replace("월", "")) - 1;
+            const data = await getPersonalExpenses(user.id, {
+                year: yearNum,
+                month: monthNum,
+            });
+            setExpenses(data);
+        } catch (error: any) {
+            console.error("지출 등록 실패:", error);
+            alert(error.message || "지출 등록에 실패했습니다.");
+        }
     };
 
-    const mileageHistory = useMemo<ExpenseHistoryItem[]>(
-        () =>
-            leftItems
-                .filter((it) => matchesFilter(it.date || ""))
-                .map((it) => ({
-                    id: it.id,
-                    variant: "mileage" as const,
-                    date: it.date || "",
-                    amount: `${(it.cost || 0).toLocaleString("ko-KR")}원`,
-                    routeLabel: `${it.from || "출발지"} → ${it.to || "도착지"}`,
-                    distanceLabel: `${it.distance || 0}km`,
-                    desc: it.note || "",
-                })),
-        [leftItems, year, month]
-    );
+    // 마일리지 삭제 핸들러
+    const handleRemoveMileage = async (id: number) => {
+        if (!user?.id) {
+            alert("로그인이 필요합니다.");
+            return;
+        }
 
-    const cardHistory = useMemo<ExpenseHistoryItem[]>(
-        () =>
-            rightItems
-                .filter((it) => matchesFilter(it.date || ""))
-                .map((it) => ({
-                    id: it.id,
-                    variant: "card" as const,
-                    date: it.date || "",
-                    amount: `${Number(it.amount || 0).toLocaleString(
-                        "ko-KR"
-                    )}원`,
-                    tag: it.type || "기타",
-                    desc: it.detail || "",
-                    img: it.img || null,
-                })),
-        [rightItems, year, month]
-    );
+        if (!confirm("정말 삭제하시겠습니까?")) return;
+
+        try {
+            await deletePersonalMileage(id, user.id);
+            setMileages((prev) => prev.filter((item) => item.id !== id));
+            setSubmittedIds((prev) => prev.filter((itemId) => itemId !== id));
+        } catch (error: any) {
+            console.error("마일리지 삭제 실패:", error);
+            alert(error.message || "마일리지 삭제에 실패했습니다.");
+        }
+    };
+
+    // 지출 삭제 핸들러
+    const handleRemoveExpense = async (id: number) => {
+        if (!user?.id) {
+            alert("로그인이 필요합니다.");
+            return;
+        }
+
+        if (!confirm("정말 삭제하시겠습니까?")) return;
+
+        try {
+            await deletePersonalExpense(id, user.id);
+            setExpenses((prev) => prev.filter((item) => item.id !== id));
+            setSubmittedIds((prev) => prev.filter((itemId) => itemId !== id));
+        } catch (error: any) {
+            console.error("지출 삭제 실패:", error);
+            alert(error.message || "지출 삭제에 실패했습니다.");
+        }
+    };
+
+    // 마일리지 히스토리 변환
+    const mileageHistory = useMemo<ExpenseHistoryItem[]>(() => {
+        return mileages
+            .filter((it) => matchesFilter(it.m_date))
+            .map((it) => ({
+                id: it.id,
+                variant: "mileage" as const,
+                date: it.m_date,
+                amount: `${(it.amount_won || 0).toLocaleString("ko-KR")}원`,
+                routeLabel: `${it.from_text || "출발지"} → ${it.to_text || "도착지"}`,
+                distanceLabel: `${Number(it.distance_km || 0)}km`,
+                desc: it.detail || "",
+            }));
+    }, [mileages, year, month]);
+
+    // 지출 히스토리 변환
+    const cardHistory = useMemo<ExpenseHistoryItem[]>(() => {
+        return expenses
+            .filter((it) => matchesFilter(it.expense_date))
+            .map((it) => ({
+                id: it.id,
+                variant: "card" as const,
+                date: it.expense_date,
+                amount: `${Number(it.amount || 0).toLocaleString("ko-KR")}원`,
+                tag: it.expense_type || "기타",
+                desc: it.detail || "",
+                img: it.receipt_path || null,
+            }));
+    }, [expenses, year, month]);
+
+    // 모두 제출 핸들러
+    const handleSubmitAll = async () => {
+        if (!user?.id) {
+            alert("로그인이 필요합니다.");
+            return;
+        }
+
+        const unsubmittedExpenses = expenses.filter(
+            (item) => !submittedIds.includes(item.id)
+        );
+        const unsubmittedMileages = mileages.filter(
+            (item) => !submittedIds.includes(item.id)
+        );
+
+        const currentItemsToSubmitCount =
+            unsubmittedExpenses.length + unsubmittedMileages.length;
+
+        if (currentItemsToSubmitCount === 0) {
+            alert("제출할 항목이 없습니다.");
+            return;
+        }
+
+        const confirmSubmit = window.confirm(
+            `총 ${currentItemsToSubmitCount}개의 항목을 제출하시겠습니까?`
+        );
+        if (!confirmSubmit) return;
+
+        // TODO: 실제 제출 로직 (서버에 제출 상태 업데이트 등)
+        const allIdsToSubmit = [
+            ...unsubmittedExpenses.map((i) => i.id),
+            ...unsubmittedMileages.map((i) => i.id),
+        ];
+
+        console.log("제출할 항목 ID: ", allIdsToSubmit);
+        alert(`총 ${allIdsToSubmit.length}개의 항목이 제출되었습니다.`);
+
+        setSubmittedIds((prev) => [...prev, ...allIdsToSubmit]);
+    };
 
     return (
         <div className="flex h-screen bg-white overflow-hidden">
@@ -165,18 +357,20 @@ export default function PersonalExpensePage() {
                         />
                     </div>
 
+                    {loading && (
+                        <div className="text-center py-8 text-gray-500">
+                            로딩 중...
+                        </div>
+                    )}
+
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-3 items-stretch w-full">
                         <MileageCard
                             initialDate={preselectedDate || undefined}
-                            onAdd={(item) =>
-                                setLeftItems((prev) => [item, ...prev])
-                            }
+                            onAdd={handleMileageAdd}
                         />
                         <ExpenseFormCard
                             initialDate={preselectedDate || undefined}
-                            onAdd={(item) =>
-                                setRightItems((prev) => [item, ...prev])
-                            }
+                            onAdd={handleExpenseAdd}
                         />
                     </div>
 
@@ -186,14 +380,14 @@ export default function PersonalExpensePage() {
                             items={mileageHistory}
                             emptyMessage="등록된 마일리지 내역이 없습니다."
                             submittedIds={submittedIds}
-                            onRemove={handleRemoveLeftItem}
+                            onRemove={handleRemoveMileage}
                         />
                         <ExpenseHistorySection
                             title="개인 카드/현금 지출 내역"
                             items={cardHistory}
                             emptyMessage="등록된 지출 내역이 없습니다."
                             submittedIds={submittedIds}
-                            onRemove={handleRemoveRightItem}
+                            onRemove={handleRemoveExpense}
                         />
                     </div>
 
@@ -203,49 +397,7 @@ export default function PersonalExpensePage() {
                                 variant="primary"
                                 size="lg"
                                 fullWidth
-                                onClick={() => {
-                                    const itemsToSubmitLeft = leftItems.filter(
-                                        (item) =>
-                                            !submittedIds.includes(item.id)
-                                    );
-                                    const itemsToSubmitRight =
-                                        rightItems.filter(
-                                            (item) =>
-                                                !submittedIds.includes(item.id)
-                                        );
-
-                                    const currentItemsToSubmitCount =
-                                        itemsToSubmitLeft.length +
-                                        itemsToSubmitRight.length;
-
-                                    if (currentItemsToSubmitCount === 0) {
-                                        alert("제출할 항목이 없습니다.");
-                                        return;
-                                    }
-
-                                    const confirmSubmit = window.confirm(
-                                        `총 ${currentItemsToSubmitCount}개의 항목을 제출하시겠습니까?`
-                                    );
-                                    if (!confirmSubmit) return;
-
-                                    const allIdsToSubmit = [
-                                        ...itemsToSubmitLeft.map((i) => i.id),
-                                        ...itemsToSubmitRight.map((i) => i.id),
-                                    ];
-                                    console.log(
-                                        "제출할 항목 ID: ",
-                                        allIdsToSubmit
-                                    );
-                                    alert(
-                                        `총 ${allIdsToSubmit.length}개의 항목이 제출되었습니다.`
-                                    );
-
-                                    // 제출 완료 후 submittedIds 업데이트
-                                    setSubmittedIds((prev) => [
-                                        ...prev,
-                                        ...allIdsToSubmit,
-                                    ]);
-                                }}
+                                onClick={handleSubmitAll}
                             >
                                 모두 제출 ({allItemsToSubmitCount}개)
                             </Button>
