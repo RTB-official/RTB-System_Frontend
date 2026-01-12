@@ -80,8 +80,14 @@ export default function PersonalExpensePage() {
                 const monthNum = parseInt(month.replace("월", "")) - 1;
 
                 const [expensesData, mileagesData] = await Promise.all([
-                    getPersonalExpenses(user.id, { year: yearNum, month: monthNum }),
-                    getPersonalMileages(user.id, { year: yearNum, month: monthNum }),
+                    getPersonalExpenses(user.id, {
+                        year: yearNum,
+                        month: monthNum,
+                    }),
+                    getPersonalMileages(user.id, {
+                        year: yearNum,
+                        month: monthNum,
+                    }),
                 ]);
 
                 setExpenses(expensesData);
@@ -265,7 +271,9 @@ export default function PersonalExpensePage() {
                 variant: "mileage" as const,
                 date: formatDate(it.m_date),
                 amount: `${(it.amount_won || 0).toLocaleString("ko-KR")}원`,
-                routeLabel: `${it.from_text || "출발지"} → ${it.to_text || "도착지"}`,
+                routeLabel: `${it.from_text || "출발지"} → ${
+                    it.to_text || "도착지"
+                }`,
                 distanceLabel: `${Number(it.distance_km || 0)}km`,
                 desc: it.detail || "",
             }));

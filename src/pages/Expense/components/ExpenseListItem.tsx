@@ -53,7 +53,7 @@ export default function ExpenseListItem({
                         </div>
                         <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-1">
-                                <span className="text-[15px] text-gray-400">
+                                <span className="text-[14px] text-gray-400">
                                     {tag ? `${date} · ${tag}` : date}
                                 </span>
                             </div>
@@ -140,7 +140,7 @@ export default function ExpenseListItem({
         <div className="bg-white border border-gray-200 rounded-2xl p-4">
             <div className="flex items-start justify-between">
                 <div className="flex items-center gap-2">
-                    <div className="text-[15px] text-gray-400">{date}</div>
+                    <div className="text-[14px] text-gray-400">{date}</div>
                 </div>
                 {onRemove && (
                     <button
