@@ -17,16 +17,13 @@ if (!supabaseUrl || !supabaseAnonKey) {
     );
 }
 
+// Supabase 클라이언트 생성
+// Supabase JS 클라이언트가 자동으로 apikey 헤더를 추가하므로
+// global.headers를 설정하면 오히려 문제가 될 수 있음
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     auth: {
         persistSession: true,
         autoRefreshToken: true,
         detectSessionInUrl: true,
-    },
-    global: {
-        headers: {
-            apikey: supabaseAnonKey,
-            Authorization: `Bearer ${supabaseAnonKey}`,
-        },
     },
 });

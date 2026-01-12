@@ -442,25 +442,12 @@ export interface EmployeeCardExpenseDetail {
 
 /**
  * 모든 사용자 목록 조회
- * profiles 테이블이 없을 경우 personal_expenses와 personal_mileage에서 사용자 ID 추출
+ * profiles 테이블의 RLS 정책 무한 재귀 문제로 인해
+ * 전체 조회를 건너뛰고 personal_expenses/personal_mileage에서 user_id 추출 후 개별 조회
  */
 export async function getAllUsers(): Promise<UserProfile[]> {
-    // 먼저 profiles 테이블 시도
-    const { data: profilesData, error: profilesError } = await supabase
-        .from("profiles")
-        .select("id, name, username, email")
-        .order("name", { ascending: true });
-
-    if (!profilesError && profilesData && profilesData.length > 0) {
-        return profilesData;
-    }
-
-    // profiles 테이블이 없거나 에러가 발생한 경우
-    // personal_expenses와 personal_mileage에서 고유한 user_id 추출
-    console.warn(
-        "profiles 테이블 접근 실패, personal_expenses/personal_mileage에서 사용자 목록 추출:",
-        profilesError?.message
-    );
+    // profiles 테이블 전체 조회는 RLS 정책 무한 재귀 문제로 인해 건너뜀
+    // 바로 personal_expenses와 personal_mileage에서 고유한 user_id 추출
 
     const [expensesResult, mileagesResult] = await Promise.all([
         supabase.from("personal_expenses").select("user_id").limit(1000),
@@ -481,14 +468,49 @@ export async function getAllUsers(): Promise<UserProfile[]> {
         });
     }
 
-    // user_id만으로 기본 UserProfile 생성
-    // 실제 사용자 이름은 나중에 profiles 테이블이 생성되면 업데이트 가능
-    const users: UserProfile[] = Array.from(userIds).map((userId) => ({
-        id: userId,
-        name: `User ${userId.substring(0, 8)}`,
-        username: userId.substring(0, 8),
-        email: null,
-    }));
+    // 각 user_id에 대해 profiles 테이블에서 name 가져오기 시도
+    // RLS 정책 문제가 있을 수 있지만, 개별 조회는 작동할 수 있음
+    const users: UserProfile[] = [];
+    
+    for (const userId of Array.from(userIds)) {
+        try {
+            // profiles 테이블에서 개별 조회 시도
+            const { data: profileData, error: profileError } = await supabase
+                .from("profiles")
+                .select("id, name, username, email")
+                .eq("id", userId)
+                .single();
+            
+            if (!profileError && profileData) {
+                // profiles에서 성공적으로 데이터를 가져온 경우
+                const name = profileData.name?.trim();
+                users.push({
+                    id: profileData.id,
+                    name: name || profileData.username || `User ${userId.substring(0, 8)}`,
+                    username: profileData.username || userId.substring(0, 8),
+                    email: profileData.email || null,
+                });
+            } else {
+                // profiles에서 정보를 가져오지 못한 경우 (RLS 정책 문제 등)
+                console.warn(`profiles 조회 실패 (user_id: ${userId}):`, profileError?.message);
+                users.push({
+                    id: userId,
+                    name: `User ${userId.substring(0, 8)}`,
+                    username: userId.substring(0, 8),
+                    email: null,
+                });
+            }
+        } catch (e) {
+            // 에러 발생 시 기본값 사용
+            console.warn(`profiles 조회 중 에러 (user_id: ${userId}):`, e);
+            users.push({
+                id: userId,
+                name: `User ${userId.substring(0, 8)}`,
+                username: userId.substring(0, 8),
+                email: null,
+            });
+        }
+    }
 
     return users.sort((a, b) => a.name.localeCompare(b.name));
 }
