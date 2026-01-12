@@ -17,6 +17,8 @@ import {
     getPersonalMileages,
     deletePersonalExpense,
     deletePersonalMileage,
+    updatePersonalExpense,
+    updatePersonalMileage,
     type PersonalExpense,
     type PersonalMileage,
 } from "../../lib/personalExpenseApi";
@@ -38,15 +40,15 @@ export default function PersonalExpensePage() {
     const [mileages, setMileages] = useState<PersonalMileage[]>([]);
 
     const allItemsToSubmitCount = useMemo(() => {
-        // submittedIds에 없는 항목만 카운트
+        // is_submitted가 false인 항목만 카운트
         const unsubmittedExpenses = expenses.filter(
-            (item) => !submittedIds.includes(item.id)
+            (item) => !item.is_submitted
         );
         const unsubmittedMileages = mileages.filter(
-            (item) => !submittedIds.includes(item.id)
+            (item) => !item.is_submitted
         );
         return unsubmittedExpenses.length + unsubmittedMileages.length;
-    }, [expenses, mileages, submittedIds]);
+    }, [expenses, mileages]);
 
     useEffect(() => {
         document.body.style.overflow = sidebarOpen ? "hidden" : "";
@@ -92,6 +94,15 @@ export default function PersonalExpensePage() {
 
                 setExpenses(expensesData);
                 setMileages(mileagesData);
+
+                // 제출된 항목 ID 추출 (백엔드에서 가져온 is_submitted 필드 기반)
+                const submittedExpenseIds = expensesData
+                    .filter((e) => e.is_submitted)
+                    .map((e) => e.id);
+                const submittedMileageIds = mileagesData
+                    .filter((m) => m.is_submitted)
+                    .map((m) => m.id);
+                setSubmittedIds([...submittedExpenseIds, ...submittedMileageIds]);
             } catch (error) {
                 console.error("데이터 로드 실패:", error);
                 alert("데이터를 불러오는데 실패했습니다.");
@@ -276,6 +287,7 @@ export default function PersonalExpensePage() {
                 }`,
                 distanceLabel: `${Number(it.distance_km || 0)}km`,
                 desc: it.detail || "",
+                isSubmitted: it.is_submitted,
             }));
     }, [mileages, year, month]);
 
@@ -291,6 +303,7 @@ export default function PersonalExpensePage() {
                 tag: it.expense_type || "기타",
                 desc: it.detail || "",
                 img: it.receipt_path || null,
+                isSubmitted: it.is_submitted,
             }));
     }, [expenses, year, month]);
 
@@ -302,10 +315,10 @@ export default function PersonalExpensePage() {
         }
 
         const unsubmittedExpenses = expenses.filter(
-            (item) => !submittedIds.includes(item.id)
+            (item) => !item.is_submitted
         );
         const unsubmittedMileages = mileages.filter(
-            (item) => !submittedIds.includes(item.id)
+            (item) => !item.is_submitted
         );
 
         const currentItemsToSubmitCount =
@@ -321,16 +334,61 @@ export default function PersonalExpensePage() {
         );
         if (!confirmSubmit) return;
 
-        // TODO: 실제 제출 로직 (서버에 제출 상태 업데이트 등)
-        const allIdsToSubmit = [
-            ...unsubmittedExpenses.map((i) => i.id),
-            ...unsubmittedMileages.map((i) => i.id),
-        ];
+        try {
+            // 백엔드에 제출 상태 업데이트
+            const updatePromises: Promise<any>[] = [];
 
-        console.log("제출할 항목 ID: ", allIdsToSubmit);
-        alert(`총 ${allIdsToSubmit.length}개의 항목이 제출되었습니다.`);
+            // 지출 항목 제출 상태 업데이트
+            for (const expense of unsubmittedExpenses) {
+                updatePromises.push(
+                    updatePersonalExpense(expense.id, user.id, {
+                        is_submitted: true,
+                    })
+                );
+            }
 
-        setSubmittedIds((prev) => [...prev, ...allIdsToSubmit]);
+            // 마일리지 항목 제출 상태 업데이트
+            for (const mileage of unsubmittedMileages) {
+                updatePromises.push(
+                    updatePersonalMileage(mileage.id, user.id, {
+                        is_submitted: true,
+                    })
+                );
+            }
+
+            await Promise.all(updatePromises);
+
+            // 데이터 새로고침
+            const yearNum = parseInt(year.replace("년", ""));
+            const monthNum = parseInt(month.replace("월", "")) - 1;
+            const [expensesData, mileagesData] = await Promise.all([
+                getPersonalExpenses(user.id, {
+                    year: yearNum,
+                    month: monthNum,
+                }),
+                getPersonalMileages(user.id, {
+                    year: yearNum,
+                    month: monthNum,
+                }),
+            ]);
+
+            setExpenses(expensesData);
+            setMileages(mileagesData);
+
+            // 제출된 항목 ID 업데이트
+            const submittedExpenseIds = expensesData
+                .filter((e) => e.is_submitted)
+                .map((e) => e.id);
+            const submittedMileageIds = mileagesData
+                .filter((m) => m.is_submitted)
+                .map((m) => m.id);
+            setSubmittedIds([...submittedExpenseIds, ...submittedMileageIds]);
+
+            alert(`총 ${currentItemsToSubmitCount}개의 항목이 제출되었습니다.`);
+        } catch (error: any) {
+            console.error("제출 실패:", error);
+            alert(error.message || "제출에 실패했습니다.");
+        }
     };
 
     return (

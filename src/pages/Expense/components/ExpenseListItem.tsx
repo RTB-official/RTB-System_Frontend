@@ -61,9 +61,7 @@ export default function ExpenseListItem({
                                         color="blue-500"
                                         variant="solid"
                                         size="sm"
-                                        icon={
-                                            <IconCheck className="w-3 h-3" />
-                                        }
+                                        icon={<IconCheck className="w-3 h-3" />}
                                     >
                                         제출 완료
                                     </Chip>

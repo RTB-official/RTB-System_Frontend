@@ -10,6 +10,7 @@ export interface PersonalExpense {
   detail: string | null;
   amount: number;
   receipt_path: string | null;
+  is_submitted: boolean;
   created_at: string;
 }
 
@@ -22,6 +23,7 @@ export interface PersonalMileage {
   to_text: string;
   detail: string | null;
   amount_won: number;
+  is_submitted: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -51,6 +53,7 @@ export interface UpdateExpenseInput {
   detail?: string;
   amount?: number;
   receipt_path?: string;
+  is_submitted?: boolean;
 }
 
 export interface UpdateMileageInput {
@@ -60,6 +63,7 @@ export interface UpdateMileageInput {
   to_text?: string;
   detail?: string;
   amount_won?: number;
+  is_submitted?: boolean;
 }
 
 // ==================== 개인 지출 (카드/현금) ====================
