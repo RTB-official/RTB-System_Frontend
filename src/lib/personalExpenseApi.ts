@@ -442,19 +442,55 @@ export interface EmployeeCardExpenseDetail {
 
 /**
  * 모든 사용자 목록 조회
+ * profiles 테이블이 없을 경우 personal_expenses와 personal_mileage에서 사용자 ID 추출
  */
 export async function getAllUsers(): Promise<UserProfile[]> {
-    const { data, error } = await supabase
+    // 먼저 profiles 테이블 시도
+    const { data: profilesData, error: profilesError } = await supabase
         .from("profiles")
         .select("id, name, username, email")
         .order("name", { ascending: true });
 
-    if (error) {
-        console.error("Error fetching users:", error);
-        throw new Error(`사용자 목록 조회 실패: ${error.message}`);
+    if (!profilesError && profilesData && profilesData.length > 0) {
+        return profilesData;
     }
 
-    return data || [];
+    // profiles 테이블이 없거나 에러가 발생한 경우
+    // personal_expenses와 personal_mileage에서 고유한 user_id 추출
+    console.warn(
+        "profiles 테이블 접근 실패, personal_expenses/personal_mileage에서 사용자 목록 추출:",
+        profilesError?.message
+    );
+
+    const [expensesResult, mileagesResult] = await Promise.all([
+        supabase.from("personal_expenses").select("user_id").limit(1000),
+        supabase.from("personal_mileage").select("user_id").limit(1000),
+    ]);
+
+    const userIds = new Set<string>();
+
+    if (expensesResult.data) {
+        expensesResult.data.forEach((row) => {
+            if (row.user_id) userIds.add(row.user_id);
+        });
+    }
+
+    if (mileagesResult.data) {
+        mileagesResult.data.forEach((row) => {
+            if (row.user_id) userIds.add(row.user_id);
+        });
+    }
+
+    // user_id만으로 기본 UserProfile 생성
+    // 실제 사용자 이름은 나중에 profiles 테이블이 생성되면 업데이트 가능
+    const users: UserProfile[] = Array.from(userIds).map((userId) => ({
+        id: userId,
+        name: `User ${userId.substring(0, 8)}`,
+        username: userId.substring(0, 8),
+        email: null,
+    }));
+
+    return users.sort((a, b) => a.name.localeCompare(b.name));
 }
 
 /**
