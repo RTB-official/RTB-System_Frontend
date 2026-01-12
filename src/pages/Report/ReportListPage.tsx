@@ -9,6 +9,7 @@ import Button from "../../components/common/Button";
 import ActionMenu from "../../components/common/ActionMenu";
 import Chip from "../../components/ui/Chip";
 import { IconMore, IconPlus } from "../../components/icons/Icons";
+import EmptyValueIndicator from "../Expense/components/EmptyValueIndicator";
 
 type ReportStatus = "submitted" | "pending" | "not_submitted";
 
@@ -365,11 +366,16 @@ export default function ReportListPage() {
                                     key: "supervisor",
                                     label: "참관감독",
                                     width: "96px",
-                                    render: (value) => (
-                                        <span className="text-gray-500">
-                                            {value}
-                                        </span>
-                                    ),
+                                    render: (value) => {
+                                        if (value && value.trim() && value !== "—") {
+                                            return (
+                                                <span className="text-gray-500">
+                                                    {value}
+                                                </span>
+                                            );
+                                        }
+                                        return <EmptyValueIndicator />;
+                                    },
                                 },
                                 {
                                     key: "date",
