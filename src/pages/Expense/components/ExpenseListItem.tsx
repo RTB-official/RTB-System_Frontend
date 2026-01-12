@@ -191,6 +191,11 @@ export default function ExpenseListItem({
                             {routeLabel}
                         </div>
                     )}
+                    {desc && (
+                        <div className="text-sm text-gray-500 mt-1 wrap-break-word">
+                            {desc}
+                        </div>
+                    )}
                 </div>
                 {distanceLabel && (
                     <div className="text-sm text-gray-500">{distanceLabel}</div>
