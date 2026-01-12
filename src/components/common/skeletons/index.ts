@@ -6,3 +6,4 @@ export { default as SkeletonHeader } from "./SkeletonHeader";
 export { default as SkeletonFilter } from "./SkeletonFilter";
 export { default as SkeletonTabs } from "./SkeletonTabs";
 export { default as SkeletonGrid } from "./SkeletonGrid";
+export { default as SkeletonSectionCard } from "./SkeletonSectionCard";

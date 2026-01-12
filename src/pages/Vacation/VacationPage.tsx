@@ -105,11 +105,17 @@ export default function VacationPage() {
     const rows: VacationRow[] = useMemo(() => {
         return vacations.map((vacation, index) => {
             const usedDays = vacation.leave_type === "FULL" ? -1 : -0.5;
-            
+
             // 남은 연차 계산 (간단한 로직, 실제로는 누적 계산 필요)
             const approvedVacations = vacations
-                .filter((v) => v.status === "approved" && vacations.indexOf(v) <= index)
-                .reduce((sum, v) => sum + (v.leave_type === "FULL" ? 1 : 0.5), 0);
+                .filter(
+                    (v) =>
+                        v.status === "approved" && vacations.indexOf(v) <= index
+                )
+                .reduce(
+                    (sum, v) => sum + (v.leave_type === "FULL" ? 1 : 0.5),
+                    0
+                );
             const remainDays = summary.myAnnual - approvedVacations;
 
             return {
@@ -234,22 +240,22 @@ export default function VacationPage() {
                             <VacationSkeleton />
                         ) : (
                             <>
-                        <VacationManagementSection
-                            summary={summary}
-                            year={year}
-                            onYearChange={setYear}
-                            tab={tab}
-                            onTabChange={setTab}
+                                <VacationManagementSection
+                                    summary={summary}
+                                    year={year}
+                                    onYearChange={setYear}
+                                    tab={tab}
+                                    onTabChange={setTab}
                                     rows={paginatedRows}
-                            grantExpireRows={grantExpireRows}
-                            page={page}
-                            totalPages={totalPages}
-                            onPageChange={setPage}
-                        />
+                                    grantExpireRows={grantExpireRows}
+                                    page={page}
+                                    totalPages={totalPages}
+                                    onPageChange={setPage}
+                                />
 
-                        <VacationRequestModal
-                            isOpen={modalOpen}
-                            onClose={() => setModalOpen(false)}
+                                <VacationRequestModal
+                                    isOpen={modalOpen}
+                                    onClose={() => setModalOpen(false)}
                                     availableDays={summary.myAnnual}
                                     onSubmit={handleVacationSubmit}
                                 />
