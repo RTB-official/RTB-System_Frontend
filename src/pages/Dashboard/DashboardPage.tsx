@@ -15,6 +15,29 @@ import {
 } from "../../components/icons/Icons";
 import { CalendarEvent } from "../../types";
 import useCalendarWheelNavigation from "../../hooks/useCalendarWheelNavigation";
+import { useAuth } from "../../store/auth";
+import {
+    getVacations,
+    type Vacation,
+} from "../../lib/vacationApi";
+import {
+    getPersonalExpenses,
+    getPersonalMileages,
+    type PersonalExpense,
+    type PersonalMileage,
+} from "../../lib/personalExpenseApi";
+import {
+    getWorkLogsForDashboard,
+    getCalendarEvents,
+    createCalendarEvent,
+    updateCalendarEvent,
+    deleteCalendarEvent,
+    vacationToCalendarEvent,
+    workLogToCalendarEvent,
+    expenseToCalendarEvent,
+    calendarEventRecordToCalendarEvent,
+} from "../../lib/dashboardApi";
+import { supabase } from "../../lib/supabase";
 
 // 공휴일 API 정보
 const HOLIDAY_API_KEY =
@@ -38,33 +61,8 @@ function generateMonthGrid(year: number, month: number) {
     return grid;
 }
 
-// 이벤트 구조: 각 이벤트는 고유 ID, 제목, 색상, 시작일, 종료일을 가짐
-
-const sampleEvents: CalendarEvent[] = [
-    {
-        id: "1",
-        title: "휴가 - 강민지",
-        color: "#60a5fa",
-        startDate: "2024-12-18",
-        endDate: "2024-12-20",
-    },
-    {
-        id: "2",
-        title: "12월12일 암모니아 교육",
-        color: "#fb923c",
-        startDate: "2024-12-12",
-        endDate: "2024-12-12",
-    },
-    {
-        id: "3",
-        title: "태그",
-        color: "#bbf7d0",
-        startDate: "2024-12-19",
-        endDate: "2024-12-21",
-    },
-];
-
 export default function DashboardPage() {
+    const { user } = useAuth();
     const today = new Date();
 
     const getColumnPadding = (index: number) => {
@@ -258,7 +256,131 @@ export default function DashboardPage() {
         useState<string>("");
 
     // 이벤트를 날짜별로 그룹화
-    const [allEvents, setAllEvents] = useState<CalendarEvent[]>(sampleEvents);
+    const [allEvents, setAllEvents] = useState<CalendarEvent[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [currentUserName, setCurrentUserName] = useState<string | null>(null);
+
+    // 현재 사용자 이름 가져오기
+    useEffect(() => {
+        const fetchUserName = async () => {
+            if (!user?.id) return;
+
+            try {
+                const { data, error } = await supabase
+                    .from("profiles")
+                    .select("name")
+                    .eq("id", user.id)
+                    .single();
+
+                if (error) {
+                    console.error("Error fetching user name:", error);
+                    // RLS 에러가 발생할 수 있으므로 에러를 무시하고 계속 진행
+                } else if (data) {
+                    setCurrentUserName(data.name);
+                }
+            } catch (err) {
+                console.error("Error fetching user name:", err);
+            }
+        };
+
+        fetchUserName();
+    }, [user?.id]);
+
+    // 실제 데이터 가져오기
+    useEffect(() => {
+        const loadEvents = async () => {
+            if (!user?.id) {
+                setLoading(false);
+                return;
+            }
+
+            setLoading(true);
+            try {
+                const events: CalendarEvent[] = [];
+
+                // 1. 휴가 조회 (전체 공개)
+                try {
+                    const vacations = await getVacations(undefined, {
+                        year,
+                        month,
+                    });
+                    for (const vacation of vacations) {
+                        // 사용자 이름 가져오기 시도
+                        let userName: string | undefined;
+                        if (vacation.user_id) {
+                            try {
+                                const { data: profile } = await supabase
+                                    .from("profiles")
+                                    .select("name")
+                                    .eq("id", vacation.user_id)
+                                    .single();
+                                if (profile) {
+                                    userName = profile.name;
+                                }
+                            } catch (err) {
+                                // RLS 에러 무시
+                            }
+                        }
+                        events.push(vacationToCalendarEvent(vacation, userName));
+                    }
+                } catch (err) {
+                    console.error("Error loading vacations:", err);
+                }
+
+                // 2. 출장보고서 조회 (포함된 사람만)
+                try {
+                    const workLogs = await getWorkLogsForDashboard(
+                        user.id,
+                        currentUserName,
+                        { year, month }
+                    );
+                    for (const workLog of workLogs) {
+                        events.push(workLogToCalendarEvent(workLog));
+                    }
+                } catch (err) {
+                    console.error("Error loading work logs:", err);
+                }
+
+                // 3. 지출 내역 조회 (본인만)
+                try {
+                    const [expenses, mileages] = await Promise.all([
+                        getPersonalExpenses(user.id, { year, month }),
+                        getPersonalMileages(user.id, { year, month }),
+                    ]);
+
+                    for (const expense of expenses) {
+                        events.push(expenseToCalendarEvent(expense, "expense"));
+                    }
+                    for (const mileage of mileages) {
+                        events.push(expenseToCalendarEvent(mileage, "mileage"));
+                    }
+                } catch (err) {
+                    console.error("Error loading expenses:", err);
+                }
+
+                // 4. 일정 조회 (전체)
+                try {
+                    const calendarEvents = await getCalendarEvents({
+                        year,
+                        month,
+                    });
+                    for (const event of calendarEvents) {
+                        events.push(calendarEventRecordToCalendarEvent(event));
+                    }
+                } catch (err) {
+                    console.error("Error loading calendar events:", err);
+                }
+
+                setAllEvents(events);
+            } catch (err) {
+                console.error("Error loading events:", err);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        loadEvents();
+    }, [user?.id, year, month, currentUserName]);
 
     // 공휴일 데이터를 연속된 일정으로 병합
     const mergedHolidays = useMemo(() => {
@@ -438,31 +560,18 @@ export default function DashboardPage() {
     };
 
     // 일정 저장 핸들러
-    const handleEventSave = (data: {
+    const handleEventSave = async (data: {
         title: string;
         startDate: string;
         startTime?: string;
         endDate: string;
         endTime?: string;
         allDay: boolean;
+        attendees?: string[]; // EventForm에서 전달하지만 사용하지 않음
     }) => {
-        if (editingEvent) {
-            // 기존 이벤트 수정
-            setAllEvents((prev) =>
-                prev.map((event) =>
-                    event.id === editingEvent.id
-                        ? {
-                              ...event,
-                              title: data.title,
-                              startDate: data.startDate,
-                              endDate: data.endDate,
-                          }
-                        : event
-                )
-            );
-            setEditingEvent(null);
-        } else {
-            // 새 이벤트 생성
+        if (!user?.id) return;
+
+        try {
             const colors = [
                 "#60a5fa",
                 "#fb923c",
@@ -473,24 +582,85 @@ export default function DashboardPage() {
             const randomColor =
                 colors[Math.floor(Math.random() * colors.length)];
 
-            const newEvent: CalendarEvent = {
-                id: Date.now().toString(),
-                title: data.title,
-                color: randomColor,
-                startDate: data.startDate,
-                endDate: data.endDate,
-            };
+            if (editingEvent) {
+                // 기존 이벤트 수정 (event- 접두사가 있는 경우만)
+                if (editingEvent.id.startsWith("event-")) {
+                    const eventId = editingEvent.id.replace("event-", "");
+                    await updateCalendarEvent(eventId, {
+                        title: data.title,
+                        start_date: data.startDate,
+                        end_date: data.endDate,
+                        start_time: data.startTime || null,
+                        end_time: data.endTime || null,
+                        all_day: data.allDay,
+                    });
+                } else {
+                    // 다른 타입의 이벤트는 수정 불가
+                    console.warn("Cannot edit this type of event");
+                    return;
+                }
+            } else {
+                // 새 이벤트 생성
+                await createCalendarEvent({
+                    user_id: user.id,
+                    title: data.title,
+                    color: randomColor,
+                    start_date: data.startDate,
+                    end_date: data.endDate,
+                    start_time: data.startTime,
+                    end_time: data.endTime,
+                    all_day: data.allDay ?? true,
+                });
+            }
 
-            setAllEvents((prev) => [...prev, newEvent]);
+            // 데이터 다시 로드
+            const calendarEvents = await getCalendarEvents({ year, month });
+            const newEvents = calendarEvents.map(calendarEventRecordToCalendarEvent);
+            
+            // 기존 이벤트 중 calendar_events가 아닌 것들 유지
+            const otherEvents = allEvents.filter(
+                (e) => !e.id.startsWith("event-")
+            );
+            setAllEvents([...otherEvents, ...newEvents]);
+
+            setEditingEvent(null);
+            setEventModalOpen(false);
+        } catch (err) {
+            console.error("Error saving event:", err);
+            alert("일정 저장에 실패했습니다.");
         }
     };
 
     // 일정 삭제 핸들러
-    const handleEventDelete = (eventId: string) => {
-        setAllEvents((prev) => prev.filter((event) => event.id !== eventId));
-        setEditingEvent(null);
-        setEventModalOpen(false);
-        setEventDetailMenuOpen(false); // 상세 메뉴도 닫기
+    const handleEventDelete = async (eventId: string) => {
+        try {
+            // event- 접두사가 있는 경우만 삭제 가능 (calendar_events 테이블의 일정)
+            if (eventId.startsWith("event-")) {
+                const id = eventId.replace("event-", "");
+                await deleteCalendarEvent(id);
+            } else {
+                // 다른 타입의 이벤트는 삭제 불가
+                console.warn("Cannot delete this type of event");
+                return;
+            }
+
+            // 데이터 다시 로드
+            const calendarEvents = await getCalendarEvents({ year, month });
+            const newEvents = calendarEvents.map(calendarEventRecordToCalendarEvent);
+            
+            // 기존 이벤트 중 calendar_events가 아닌 것들 유지
+            const otherEvents = allEvents.filter(
+                (e) => !e.id.startsWith("event-")
+            );
+            setAllEvents([...otherEvents, ...newEvents]);
+
+            setEditingEvent(null);
+            setEventModalOpen(false);
+            setEventDetailMenuOpen(false);
+        } catch (err) {
+            console.error("Error deleting event:", err);
+            alert("일정 삭제에 실패했습니다.");
+        }
     };
 
     // 특정 날짜의 이벤트 목록 가져오기
@@ -860,13 +1030,13 @@ export default function DashboardPage() {
                 maxWidth="max-w-md"
             >
                 {hiddenEventsDate && (
-                    <div className="space-y-3">
+                    <div className="space-y-2">
                         {getEventsForDate(hiddenEventsDate.dateKey)
                             .slice(hiddenEventsDate.threshold)
                             .map((event) => (
                                 <div
                                     key={event.id}
-                                    className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+                                    className="p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
                                     onClick={(e) => {
                                         setEventDetailMenuPos({
                                             x: e.clientX,
@@ -877,9 +1047,9 @@ export default function DashboardPage() {
                                         setEventDetailMenuOpen(true);
                                     }}
                                 >
-                                    <div className="flex items-center gap-3">
+                                    <div className="flex items-center gap-4">
                                         <div
-                                            className="w-4 h-4 rounded-full shrink-0"
+                                            className="w-1 h-12 rounded-[2px] shrink-0"
                                             style={{
                                                 backgroundColor: event.color,
                                             }}
@@ -888,7 +1058,7 @@ export default function DashboardPage() {
                                             <p className="font-medium text-gray-900">
                                                 {event.title}
                                             </p>
-                                            <p className="text-sm text-gray-500 mt-1">
+                                            <p className="text-sm text-gray-500">
                                                 {formatDateRange(
                                                     event.startDate,
                                                     event.endDate
