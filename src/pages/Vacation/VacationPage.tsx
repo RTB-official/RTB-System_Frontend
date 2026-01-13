@@ -5,13 +5,13 @@ import Header from "../../components/common/Header";
 import Button from "../../components/common/Button";
 import VacationManagementSection from "../../components/sections/VacationManagementSection";
 import VacationRequestModal from "../../components/ui/VacationRequestModal";
-import { IconMore, IconPlus } from "../../components/icons/Icons";
+import VacationSkeleton from "../../components/common/VacationSkeleton";
+import { IconPlus } from "../../components/icons/Icons";
 import { useAuth } from "../../store/auth";
 import {
     createVacation,
     getVacations,
     getVacationStats,
-    deleteVacation,
     statusToKorean,
     leaveTypeToKorean,
     formatVacationDate,
@@ -105,11 +105,17 @@ export default function VacationPage() {
     const rows: VacationRow[] = useMemo(() => {
         return vacations.map((vacation, index) => {
             const usedDays = vacation.leave_type === "FULL" ? -1 : -0.5;
-            
+
             // 남은 연차 계산 (간단한 로직, 실제로는 누적 계산 필요)
             const approvedVacations = vacations
-                .filter((v) => v.status === "approved" && vacations.indexOf(v) <= index)
-                .reduce((sum, v) => sum + (v.leave_type === "FULL" ? 1 : 0.5), 0);
+                .filter(
+                    (v) =>
+                        v.status === "approved" && vacations.indexOf(v) <= index
+                )
+                .reduce(
+                    (sum, v) => sum + (v.leave_type === "FULL" ? 1 : 0.5),
+                    0
+                );
             const remainDays = summary.myAnnual - approvedVacations;
 
             return {
@@ -230,31 +236,31 @@ export default function VacationPage() {
                 {/* Content */}
                 <div className="flex-1 overflow-y-auto px-9 py-6 md:py-9">
                     <div className="flex flex-col gap-4 md:gap-6 w-full">
-                        {loading && (
-                            <div className="text-center py-8 text-gray-500">
-                                로딩 중...
-                            </div>
+                        {loading ? (
+                            <VacationSkeleton />
+                        ) : (
+                            <>
+                                <VacationManagementSection
+                                    summary={summary}
+                                    year={year}
+                                    onYearChange={setYear}
+                                    tab={tab}
+                                    onTabChange={setTab}
+                                    rows={paginatedRows}
+                                    grantExpireRows={grantExpireRows}
+                                    page={page}
+                                    totalPages={totalPages}
+                                    onPageChange={setPage}
+                                />
+
+                                <VacationRequestModal
+                                    isOpen={modalOpen}
+                                    onClose={() => setModalOpen(false)}
+                                    availableDays={summary.myAnnual}
+                                    onSubmit={handleVacationSubmit}
+                                />
+                            </>
                         )}
-
-                        <VacationManagementSection
-                            summary={summary}
-                            year={year}
-                            onYearChange={setYear}
-                            tab={tab}
-                            onTabChange={setTab}
-                            rows={paginatedRows}
-                            grantExpireRows={grantExpireRows}
-                            page={page}
-                            totalPages={totalPages}
-                            onPageChange={setPage}
-                        />
-
-                        <VacationRequestModal
-                            isOpen={modalOpen}
-                            onClose={() => setModalOpen(false)}
-                            availableDays={summary.myAnnual}
-                            onSubmit={handleVacationSubmit}
-                        />
                     </div>
                 </div>
             </div>
