@@ -1,7 +1,6 @@
 // src/components/sections/TimelineSummarySection.tsx
 import { useMemo, useState } from "react";
-import { useWorkReportStore, REGION_GROUPS } from "../../store/workReportStore";
-import Button from "../common/Button";
+import { useWorkReportStore } from "../../store/workReportStore";
 
 // 분 → 시간 문자열 (0.5시간 단위)
 const toHourStr = (minutes: number): string => {
@@ -194,19 +193,6 @@ const aggregatePersonDayData = (entries: any[]) => {
     };
 };
 
-// 인원 → 지역 클래스 (현재는 미사용이지만 유지)
-const getRegionClass = (name: string) => {
-    for (const [key, names] of Object.entries(REGION_GROUPS)) {
-        if (names.includes(name)) {
-            if (key === "BC") return "bg-blue-50";
-            if (key === "UL") return "bg-emerald-50";
-            if (key === "JY") return "bg-amber-50";
-            if (key === "GJ") return "bg-violet-50";
-        }
-    }
-    return "";
-};
-
 // 타입별 색상
 const getTypeColor = (type: string) => {
     switch (type) {
@@ -250,13 +236,6 @@ function Popover({ segment, position }: PopoverProps) {
         </div>
     );
 }
-
-export default function TimelineSummarySection() {
-type TimelineGroup = {
-    signature: string;
-    persons: string[];
-    segments: DaySegment[]; // 대표 세그먼트(그룹 공통 타임라인)
-};
 
 // ✅ "같이 움직인 사람들" 기준으로 날짜별 그룹 생성
 // - 사람별로 세그먼트를 분해
@@ -344,7 +323,8 @@ const buildTimelineGroupsOverall = (entries: any[]) => {
 
         const segmentsByDate = new Map<string, DaySegment[]>();
         sortedRep.forEach((seg) => {
-            if (!segmentsByDate.has(seg.dateKey)) segmentsByDate.set(seg.dateKey, []);
+            if (!segmentsByDate.has(seg.dateKey))
+                segmentsByDate.set(seg.dateKey, []);
             segmentsByDate.get(seg.dateKey)!.push({
                 ...seg,
                 persons: personsSorted, // ✅ 렌더/팝오버용: 그룹 사람들
@@ -371,15 +351,14 @@ const buildTimelineGroupsOverall = (entries: any[]) => {
     return groups;
 };
 
-
 interface TimelineSummarySectionProps {
     onDraftSave?: () => void;
     onSubmit?: () => void;
 }
 
 export default function TimelineSummarySection({
-    onDraftSave,
-    onSubmit,
+    onDraftSave: _onDraftSave,
+    onSubmit: _onSubmit,
 }: TimelineSummarySectionProps) {
     const { workLogEntries } = useWorkReportStore();
     const [hoveredSegment, setHoveredSegment] = useState<{
@@ -391,7 +370,6 @@ export default function TimelineSummarySection({
     const overallGroups = useMemo(() => {
         return buildTimelineGroupsOverall(workLogEntries);
     }, [workLogEntries]);
-
 
     // 인원별 일자별 집계 데이터
     const { dayPersonData, allDates, allPersons } = useMemo(
@@ -509,17 +487,17 @@ export default function TimelineSummarySection({
                             {/* 그룹 라벨 */}
                             <div className="flex items-center justify-between gap-3 mb-3">
                                 <div className="text-[14px] font-semibold text-slate-800">
-                                    {group.persons.join(", ")} ({group.persons.length}명)
+                                    {group.persons.join(", ")} (
+                                    {group.persons.length}명)
                                 </div>
-                                <div className="text-[12px] text-slate-400">
-                                    
-                                </div>
+                                <div className="text-[12px] text-slate-400"></div>
                             </div>
 
                             {/* 그룹 내 날짜별 타임라인 */}
                             <div className="flex flex-col gap-6">
                                 {group.sortedDates.map((dateKey) => {
-                                    const segments = group.segmentsByDate.get(dateKey) || [];
+                                    const segments =
+                                        group.segmentsByDate.get(dateKey) || [];
                                     const labels = renderTimeLabels(segments);
 
                                     const lanesSegments = assignLanes(segments);
@@ -527,12 +505,13 @@ export default function TimelineSummarySection({
                                         1,
                                         ...lanesSegments.map((s) => s.lane + 1)
                                     );
-                                    const trackHeight = Math.max(36, laneCount * 32 + 8);
+                                    const trackHeight = Math.max(
+                                        36,
+                                        laneCount * 32 + 8
+                                    );
 
                                     // 날짜 포맷팅
                                     const d = new Date(dateKey);
-                                    const weekday = ["일", "월", "화", "수", "목", "금", "토"][d.getDay()];
-                                    const isWeekend = d.getDay() === 0 || d.getDay() === 6;
 
                                     return (
                                         <div
@@ -543,7 +522,7 @@ export default function TimelineSummarySection({
                                             <div className="w-[44px] shrink-0 text-[14px] font-semibold text-slate-700 leading-[28px] pt-[18px]">
                                                 {d.getMonth() + 1}/{d.getDate()}
                                             </div>
-                                    
+
                                             {/* ✅ 트랙 영역 */}
                                             <div className="flex-1">
                                                 <div
@@ -557,80 +536,135 @@ export default function TimelineSummarySection({
                                                     }}
                                                 >
                                                     {/* 시간 라벨 */}
-                                                    {labels.map((label, idx) => (
-                                                        <div
-                                                            key={idx}
-                                                            className={`absolute -top-5 text-[10px] text-slate-500 font-medium whitespace-nowrap ${
-                                                                label.isStart ? "" : "transform -translate-x-full"
-                                                            }`}
-                                                            style={{ left: `${label.left}%` }}
-                                                        >
-                                                            {minutesToLabel(label.min)}시
-                                                        </div>
-                                                    ))}
-                                    
-                                                    {/* 세그먼트 */}
-                                                    {lanesSegments.map((seg, idx) => {
-                                                        const left = (seg.startMin / 1440) * 100;
-                                                        const width = Math.max(
-                                                            ((seg.endMin - seg.startMin) / 1440) * 100,
-                                                            0.5
-                                                        );
-                                                        const color = getTypeColor(seg.type);
-                                                        const laneHeight = 28;
-                                                        const topOffset = 4 + seg.lane * (laneHeight + 4);
-                                    
-                                                        return (
+                                                    {labels.map(
+                                                        (label, idx) => (
                                                             <div
-                                                                key={`${seg.entryId}-${groupIdx}-${dateKey}-${idx}`}
-                                                                className="absolute rounded-lg cursor-pointer transition-all hover:scale-[1.02] hover:shadow-lg hover:z-10"
+                                                                key={idx}
+                                                                className={`absolute -top-5 text-[10px] text-slate-500 font-medium whitespace-nowrap ${
+                                                                    label.isStart
+                                                                        ? ""
+                                                                        : "transform -translate-x-full"
+                                                                }`}
                                                                 style={{
-                                                                    left: `${left}%`,
-                                                                    width: `${width}%`,
-                                                                    top: `${topOffset}px`,
-                                                                    height: `${laneHeight}px`,
-                                                                    background: `linear-gradient(135deg, ${color.bg} 0%, ${color.bgDark} 100%)`,
-                                                                    border: `1px solid ${color.border}`,
-                                                                    boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-                                                                }}
-                                                                onMouseEnter={(e) =>
-                                                                    setHoveredSegment({
-                                                                        segment: seg,
-                                                                        position: { x: e.clientX, y: e.clientY },
-                                                                    })
-                                                                }
-                                                                onMouseLeave={() => setHoveredSegment(null)}
-                                                                onMouseMove={(e) => {
-                                                                    if (hoveredSegment) {
-                                                                        setHoveredSegment({
-                                                                            segment: seg,
-                                                                            position: { x: e.clientX, y: e.clientY },
-                                                                        });
-                                                                    }
+                                                                    left: `${label.left}%`,
                                                                 }}
                                                             >
-                                                                {width > 6 && (
-                                                                    <div className="absolute inset-0 flex items-center justify-center px-2 overflow-hidden">
-                                                                        <span className="text-[11px] font-semibold text-white truncate drop-shadow-sm">
-                                                                            {seg.type} {toHourStr(seg.totalMin)}h
-                                                                        </span>
-                                                                    </div>
+                                                                {minutesToLabel(
+                                                                    label.min
                                                                 )}
+                                                                시
                                                             </div>
-                                                        );
-                                                    })}
+                                                        )
+                                                    )}
+
+                                                    {/* 세그먼트 */}
+                                                    {lanesSegments.map(
+                                                        (seg, idx) => {
+                                                            const left =
+                                                                (seg.startMin /
+                                                                    1440) *
+                                                                100;
+                                                            const width =
+                                                                Math.max(
+                                                                    ((seg.endMin -
+                                                                        seg.startMin) /
+                                                                        1440) *
+                                                                        100,
+                                                                    0.5
+                                                                );
+                                                            const color =
+                                                                getTypeColor(
+                                                                    seg.type
+                                                                );
+                                                            const laneHeight = 28;
+                                                            const topOffset =
+                                                                4 +
+                                                                seg.lane *
+                                                                    (laneHeight +
+                                                                        4);
+
+                                                            return (
+                                                                <div
+                                                                    key={`${seg.entryId}-${groupIdx}-${dateKey}-${idx}`}
+                                                                    className="absolute rounded-lg cursor-pointer transition-all hover:scale-[1.02] hover:shadow-lg hover:z-10"
+                                                                    style={{
+                                                                        left: `${left}%`,
+                                                                        width: `${width}%`,
+                                                                        top: `${topOffset}px`,
+                                                                        height: `${laneHeight}px`,
+                                                                        background: `linear-gradient(135deg, ${color.bg} 0%, ${color.bgDark} 100%)`,
+                                                                        border: `1px solid ${color.border}`,
+                                                                        boxShadow:
+                                                                            "0 2px 4px rgba(0,0,0,0.1)",
+                                                                    }}
+                                                                    onMouseEnter={(
+                                                                        e
+                                                                    ) =>
+                                                                        setHoveredSegment(
+                                                                            {
+                                                                                segment:
+                                                                                    seg,
+                                                                                position:
+                                                                                    {
+                                                                                        x: e.clientX,
+                                                                                        y: e.clientY,
+                                                                                    },
+                                                                            }
+                                                                        )
+                                                                    }
+                                                                    onMouseLeave={() =>
+                                                                        setHoveredSegment(
+                                                                            null
+                                                                        )
+                                                                    }
+                                                                    onMouseMove={(
+                                                                        e
+                                                                    ) => {
+                                                                        if (
+                                                                            hoveredSegment
+                                                                        ) {
+                                                                            setHoveredSegment(
+                                                                                {
+                                                                                    segment:
+                                                                                        seg,
+                                                                                    position:
+                                                                                        {
+                                                                                            x: e.clientX,
+                                                                                            y: e.clientY,
+                                                                                        },
+                                                                                }
+                                                                            );
+                                                                        }
+                                                                    }}
+                                                                >
+                                                                    {width >
+                                                                        6 && (
+                                                                        <div className="absolute inset-0 flex items-center justify-center px-2 overflow-hidden">
+                                                                            <span className="text-[11px] font-semibold text-white truncate drop-shadow-sm">
+                                                                                {
+                                                                                    seg.type
+                                                                                }{" "}
+                                                                                {toHourStr(
+                                                                                    seg.totalMin
+                                                                                )}
+                                                                                h
+                                                                            </span>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            );
+                                                        }
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>
                                     );
-                                    
                                 })}
                             </div>
                         </div>
                     );
                 })}
             </div>
-
 
             {/* 작업자별 일자 요약 테이블 */}
             {allPersons.length > 0 && (
@@ -730,12 +764,13 @@ export default function TimelineSummarySection({
                                             </td>
                                             {allDates.map((date, idx) => {
                                                 const key = `${date}|${person}`;
-                                                const rec =
-                                                    dayPersonData.get(key) || {
-                                                        작업: 0,
-                                                        이동: 0,
-                                                        대기: 0,
-                                                    };
+                                                const rec = dayPersonData.get(
+                                                    key
+                                                ) || {
+                                                    작업: 0,
+                                                    이동: 0,
+                                                    대기: 0,
+                                                };
                                                 const showWait =
                                                     hasWaitByDate.get(date);
                                                 const hasData =
