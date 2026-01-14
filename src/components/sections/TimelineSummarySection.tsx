@@ -1,10 +1,5 @@
 import { useMemo, useState } from "react";
-import {
-    useWorkReportStore,
-    calcDurationHours,
-    REGION_GROUPS,
-} from "../../store/workReportStore";
-import Button from "../common/Button";
+import { useWorkReportStore, REGION_GROUPS } from "../../store/workReportStore";
 
 // 분 → 시간 문자열 (0.5시간 단위)
 const toHourStr = (minutes: number): string => {
@@ -254,15 +249,7 @@ function Popover({ segment, position }: PopoverProps) {
     );
 }
 
-interface TimelineSummarySectionProps {
-    onDraftSave?: () => void;
-    onSubmit?: () => void;
-}
-
-export default function TimelineSummarySection({
-    onDraftSave,
-    onSubmit,
-}: TimelineSummarySectionProps) {
+export default function TimelineSummarySection() {
     const { workLogEntries } = useWorkReportStore();
     const [hoveredSegment, setHoveredSegment] = useState<{
         segment: DaySegment;
@@ -719,24 +706,6 @@ export default function TimelineSummarySection({
                     position={hoveredSegment.position}
                 />
             )}
-
-            {/* 하단 액션바 */}
-            <div className="mt-6 p-4 bg-[#f9fafb] border border-[#e5e7eb] rounded-xl flex justify-between items-center">
-                <Button
-                    onClick={onDraftSave}
-                    variant="outline"
-                    className="rounded-full px-6"
-                >
-                    임시저장
-                </Button>
-                <Button
-                    onClick={onSubmit}
-                    variant="primary"
-                    className="rounded-full px-8"
-                >
-                    제출하기
-                </Button>
-            </div>
         </div>
     );
 }

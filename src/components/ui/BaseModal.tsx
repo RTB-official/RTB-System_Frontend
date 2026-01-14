@@ -65,9 +65,9 @@ export default function BaseModal({
             <div className="absolute inset-0 bg-black/35" onClick={onClose} />
 
             {/* Modal */}
-            <div className="absolute inset-0 flex items-center justify-center p-4">
+            <div className="absolute inset-0 flex items-center justify-center">
                 <div
-                    className={`w-full ${maxWidth} bg-white px-6 py-4 gap-3 rounded-2xl shadow-xl flex flex-col overflow-hidden ${className}`}
+                    className={`w-full ${maxWidth} bg-white p-6 gap-3 rounded-2xl shadow-xl flex flex-col overflow-hidden ${className}`}
                 >
                     {/* Header */}
                     <div className=" flex items-center justify-between">
@@ -90,7 +90,7 @@ export default function BaseModal({
 
                     {/* Footer */}
                     {footer && (
-                        <div className="flex justify-center gap-2 px-6 py-3">
+                        <div className="flex justify-center gap-2">
                             {footer}
                         </div>
                     )}

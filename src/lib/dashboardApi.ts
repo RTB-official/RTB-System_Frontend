@@ -162,11 +162,11 @@ export async function getCalendarEvents(filters?: {
 // ==================== 출장보고서 조회 ====================
 
 /**
- * 출장보고서 조회 (날짜 범위 및 포함된 사람 기준)
+ * 출장보고서 조회 (전체 공개)
  */
 export async function getWorkLogsForDashboard(
     currentUserId: string,
-    currentUserName: string | null,
+    currentUserName: string | null, // 사용하지 않지만 호환성을 위해 유지
     filters?: {
         year?: number;
         month?: number;
@@ -248,20 +248,13 @@ export async function getWorkLogsForDashboard(
         }
     }
 
-    // 5. 결과 조합 및 권한 필터링
+    // 5. 결과 조합 (권한 필터링 제거 - 전체 공개)
     const result: WorkLogWithPersons[] = [];
 
     for (const log of workLogs) {
         const persons = personsMap.get(log.id) || [];
-        
-        // 권한 필터링: 현재 사용자 이름이 포함된 경우만
-        if (!currentUserName || !persons.some(
-            (name) => name.toLowerCase() === currentUserName.toLowerCase()
-        )) {
-            continue;
-        }
-
         const dates = datesMap.get(log.id);
+        
         result.push({
             id: log.id,
             author: log.author,

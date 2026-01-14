@@ -144,28 +144,29 @@ export const IconClock = (props: { className?: string }) => (
 
 export const IconEdit = (props: { className?: string }) => (
     <svg
-        className={props.className || "w-4 h-4"}
-        viewBox="0 0 24 24"
+        className={props.className || "w-5 h-5"}
+        viewBox="0 0 20 20"
         fill="none"
-        stroke="currentColor"
-        strokeWidth="1.5"
+        xmlns="http://www.w3.org/2000/svg"
     >
-        <path d="M4 21v-3.5L17.5 4.5a2 2 0 012.8 0l0 0a2 2 0 010 2.8L7.5 20.5H4z" />
+        <path
+            d="M4.16667 15.8333H5.35417L13.5 7.6875L12.3125 6.5L4.16667 14.6458V15.8333ZM2.5 17.5V13.9583L13.5 2.97917C13.6667 2.82639 13.8507 2.70833 14.0521 2.625C14.2535 2.54167 14.4653 2.5 14.6875 2.5C14.9097 2.5 15.125 2.54167 15.3333 2.625C15.5417 2.70833 15.7222 2.83333 15.875 3L17.0208 4.16667C17.1875 4.31944 17.309 4.5 17.3854 4.70833C17.4618 4.91667 17.5 5.125 17.5 5.33333C17.5 5.55556 17.4618 5.76736 17.3854 5.96875C17.309 6.17014 17.1875 6.35417 17.0208 6.52083L6.04167 17.5H2.5ZM12.8958 7.10417L12.3125 6.5L13.5 7.6875L12.8958 7.10417Z"
+            fill="currentColor"
+        />
     </svg>
 );
 
 export const IconTrash = (props: { className?: string }) => (
     <svg
-        className={props.className || "w-4 h-4"}
-        viewBox="0 0 24 24"
+        className={props.className || "w-5 h-5"}
+        viewBox="0 0 20 20"
         fill="none"
-        stroke="currentColor"
-        strokeWidth="1.5"
+        xmlns="http://www.w3.org/2000/svg"
     >
-        <path d="M3 6h18" />
-        <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" />
-        <path d="M10 11v6M14 11v6" />
-        <path d="M9 6V4h6v2" />
+        <path
+            d="M5.83325 17.5C5.37492 17.5 4.9827 17.3369 4.65659 17.0108C4.32992 16.6842 4.16659 16.2917 4.16659 15.8333V5H3.33325V3.33333H7.49992V2.5H12.4999V3.33333H16.6666V5H15.8333V15.8333C15.8333 16.2917 15.6702 16.6842 15.3441 17.0108C15.0174 17.3369 14.6249 17.5 14.1666 17.5H5.83325ZM14.1666 5H5.83325V15.8333H14.1666V5ZM7.49992 14.1667H9.16659V6.66667H7.49992V14.1667ZM10.8333 14.1667H12.4999V6.66667H10.8333V14.1667Z"
+            fill="currentColor"
+        />
     </svg>
 );
 
@@ -381,6 +382,51 @@ export const IconCheck = (props: { className?: string }) => (
         strokeLinejoin="round"
     >
         <path d="M20 6L9 17l-5-5" />
+    </svg>
+);
+
+export const IconCheckmark = (props: { className?: string }) => (
+    <svg
+        className={props.className || "w-4 h-4"}
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="3"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+    >
+        <polyline points="20 6 9 17 4 12" />
+    </svg>
+);
+
+export const IconError = (props: { className?: string }) => (
+    <svg
+        className={props.className || "w-4 h-4"}
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="3"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+    >
+        <line x1="18" y1="6" x2="6" y2="18" />
+        <line x1="6" y1="6" x2="18" y2="18" />
+    </svg>
+);
+
+export const IconInfo = (props: { className?: string }) => (
+    <svg
+        className={props.className || "w-4 h-4"}
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="3"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+    >
+        <circle cx="12" cy="12" r="10" />
+        <line x1="12" y1="16" x2="12" y2="12" />
+        <line x1="12" y1="8" x2="12.01" y2="8" />
     </svg>
 );
 

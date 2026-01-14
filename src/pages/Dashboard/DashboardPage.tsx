@@ -16,16 +16,7 @@ import {
 import { CalendarEvent } from "../../types";
 import useCalendarWheelNavigation from "../../hooks/useCalendarWheelNavigation";
 import { useAuth } from "../../store/auth";
-import {
-    getVacations,
-    type Vacation,
-} from "../../lib/vacationApi";
-import {
-    getPersonalExpenses,
-    getPersonalMileages,
-    type PersonalExpense,
-    type PersonalMileage,
-} from "../../lib/personalExpenseApi";
+import { getVacations } from "../../lib/vacationApi";
 import {
     getWorkLogsForDashboard,
     getCalendarEvents,
@@ -34,7 +25,6 @@ import {
     deleteCalendarEvent,
     vacationToCalendarEvent,
     workLogToCalendarEvent,
-    expenseToCalendarEvent,
     calendarEventRecordToCalendarEvent,
 } from "../../lib/dashboardApi";
 import { supabase } from "../../lib/supabase";
@@ -258,33 +248,6 @@ export default function DashboardPage() {
     // 이벤트를 날짜별로 그룹화
     const [allEvents, setAllEvents] = useState<CalendarEvent[]>([]);
     const [loading, setLoading] = useState(true);
-    const [currentUserName, setCurrentUserName] = useState<string | null>(null);
-
-    // 현재 사용자 이름 가져오기
-    useEffect(() => {
-        const fetchUserName = async () => {
-            if (!user?.id) return;
-
-            try {
-                const { data, error } = await supabase
-                    .from("profiles")
-                    .select("name")
-                    .eq("id", user.id)
-                    .single();
-
-                if (error) {
-                    console.error("Error fetching user name:", error);
-                    // RLS 에러가 발생할 수 있으므로 에러를 무시하고 계속 진행
-                } else if (data) {
-                    setCurrentUserName(data.name);
-                }
-            } catch (err) {
-                console.error("Error fetching user name:", err);
-            }
-        };
-
-        fetchUserName();
-    }, [user?.id]);
 
     // 실제 데이터 가져오기
     useEffect(() => {
@@ -321,17 +284,20 @@ export default function DashboardPage() {
                                 // RLS 에러 무시
                             }
                         }
-                        events.push(vacationToCalendarEvent(vacation, userName));
+                        events.push(
+                            vacationToCalendarEvent(vacation, userName)
+                        );
                     }
                 } catch (err) {
                     console.error("Error loading vacations:", err);
                 }
 
-                // 2. 출장보고서 조회 (포함된 사람만)
+                // 2. 출장보고서 조회 (전체 공개)
                 try {
+                    // 권한 필터링 없이 모든 출장보고서 조회
                     const workLogs = await getWorkLogsForDashboard(
                         user.id,
-                        currentUserName,
+                        null, // 필터링 제거 (전체 공개)
                         { year, month }
                     );
                     for (const workLog of workLogs) {
@@ -341,24 +307,7 @@ export default function DashboardPage() {
                     console.error("Error loading work logs:", err);
                 }
 
-                // 3. 지출 내역 조회 (본인만)
-                try {
-                    const [expenses, mileages] = await Promise.all([
-                        getPersonalExpenses(user.id, { year, month }),
-                        getPersonalMileages(user.id, { year, month }),
-                    ]);
-
-                    for (const expense of expenses) {
-                        events.push(expenseToCalendarEvent(expense, "expense"));
-                    }
-                    for (const mileage of mileages) {
-                        events.push(expenseToCalendarEvent(mileage, "mileage"));
-                    }
-                } catch (err) {
-                    console.error("Error loading expenses:", err);
-                }
-
-                // 4. 일정 조회 (전체)
+                // 3. 일정 조회 (전체)
                 try {
                     const calendarEvents = await getCalendarEvents({
                         year,
@@ -380,7 +329,7 @@ export default function DashboardPage() {
         };
 
         loadEvents();
-    }, [user?.id, year, month, currentUserName]);
+    }, [user?.id, year, month]);
 
     // 공휴일 데이터를 연속된 일정으로 병합
     const mergedHolidays = useMemo(() => {
@@ -590,8 +539,8 @@ export default function DashboardPage() {
                         title: data.title,
                         start_date: data.startDate,
                         end_date: data.endDate,
-                        start_time: data.startTime || null,
-                        end_time: data.endTime || null,
+                        start_time: data.startTime || undefined,
+                        end_time: data.endTime || undefined,
                         all_day: data.allDay,
                     });
                 } else {
@@ -615,8 +564,10 @@ export default function DashboardPage() {
 
             // 데이터 다시 로드
             const calendarEvents = await getCalendarEvents({ year, month });
-            const newEvents = calendarEvents.map(calendarEventRecordToCalendarEvent);
-            
+            const newEvents = calendarEvents.map(
+                calendarEventRecordToCalendarEvent
+            );
+
             // 기존 이벤트 중 calendar_events가 아닌 것들 유지
             const otherEvents = allEvents.filter(
                 (e) => !e.id.startsWith("event-")
@@ -646,8 +597,10 @@ export default function DashboardPage() {
 
             // 데이터 다시 로드
             const calendarEvents = await getCalendarEvents({ year, month });
-            const newEvents = calendarEvents.map(calendarEventRecordToCalendarEvent);
-            
+            const newEvents = calendarEvents.map(
+                calendarEventRecordToCalendarEvent
+            );
+
             // 기존 이벤트 중 calendar_events가 아닌 것들 유지
             const otherEvents = allEvents.filter(
                 (e) => !e.id.startsWith("event-")

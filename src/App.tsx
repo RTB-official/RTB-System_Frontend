@@ -13,11 +13,13 @@ import MembersPage from "./pages/Members/MembersPage";
 
 import { AuthProvider } from "./store/auth";
 import RequireAuth from "./components/RequireAuth";
+import { ToastProvider } from "./components/ui/ToastProvider";
 
 function App() {
   return (
     <AuthProvider>
-      <BrowserRouter>
+      <ToastProvider>
+        <BrowserRouter>
         <Routes>
           {/* public */}
           <Route path="/login" element={<LoginPage />} />
@@ -40,6 +42,7 @@ function App() {
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </BrowserRouter>
+      </ToastProvider>
     </AuthProvider>
   );
 }
