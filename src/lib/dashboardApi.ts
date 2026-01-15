@@ -105,9 +105,7 @@ export async function updateCalendarEvent(
 /**
  * 일정 삭제
  */
-export async function deleteCalendarEvent(
-    eventId: string
-): Promise<void> {
+export async function deleteCalendarEvent(eventId: string): Promise<void> {
     const { error } = await supabase
         .from("calendar_events")
         .delete()
@@ -128,8 +126,11 @@ export async function getCalendarEvents(filters?: {
 }): Promise<CalendarEventRecord[]> {
     let query = supabase
         .from("calendar_events")
-        .select("*")
-        .order("start_date", { ascending: true });
+        .select(
+            "id, user_id, title, color, start_date, end_date, start_time, end_time, all_day, description, created_at, updated_at"
+        )
+        .order("start_date", { ascending: true })
+        .limit(1000);
 
     if (filters?.year) {
         const startDate = `${filters.year}-01-01`;
@@ -162,24 +163,68 @@ export async function getCalendarEvents(filters?: {
 // ==================== 출장보고서 조회 ====================
 
 /**
- * 출장보고서 조회 (전체 공개)
+ * 출장보고서 조회 (전체 공개) - 최적화 버전
  */
 export async function getWorkLogsForDashboard(
-    currentUserId: string,
-    currentUserName: string | null, // 사용하지 않지만 호환성을 위해 유지
+    _currentUserId: string,
+    _currentUserName: string | null,
     filters?: {
         year?: number;
         month?: number;
     }
 ): Promise<WorkLogWithPersons[]> {
-    // 1. 먼저 work_logs 조회
-    let query = supabase
-        .from("work_logs")
-        .select("id, author, subject, created_at")
-        .eq("is_draft", false)
-        .order("created_at", { ascending: false });
+    // 1. 먼저 work_log_entries에서 날짜로 필터링하여 해당 월의 work_log_id만 가져오기
+    let entriesQuery = supabase
+        .from("work_log_entries")
+        .select("work_log_id, date_from, date_to")
+        .limit(1000);
 
-    const { data: workLogs, error: workLogsError } = await query;
+    if (filters?.year && filters?.month !== undefined) {
+        const startDate = `${filters.year}-${String(filters.month + 1).padStart(
+            2,
+            "0"
+        )}-01`;
+        const endDate = `${filters.year}-${String(filters.month + 1).padStart(
+            2,
+            "0"
+        )}-31`;
+        entriesQuery = entriesQuery
+            .gte("date_from", startDate)
+            .lte("date_from", endDate);
+    } else if (filters?.year) {
+        const startDate = `${filters.year}-01-01`;
+        const endDate = `${filters.year}-12-31`;
+        entriesQuery = entriesQuery
+            .gte("date_from", startDate)
+            .lte("date_from", endDate);
+    }
+
+    const { data: entriesData, error: entriesError } = await entriesQuery;
+
+    if (entriesError || !entriesData || entriesData.length === 0) {
+        return [];
+    }
+
+    // 고유한 work_log_id만 추출
+    const workLogIds = [...new Set(entriesData.map((e) => e.work_log_id))];
+    if (workLogIds.length === 0) return [];
+
+    // 2. 병렬로 work_logs와 work_log_persons 조회
+    const [workLogsResult, personsResult] = await Promise.all([
+        supabase
+            .from("work_logs")
+            .select("id, author, subject, created_at")
+            .eq("is_draft", false)
+            .in("id", workLogIds)
+            .limit(500),
+        supabase
+            .from("work_log_persons")
+            .select("work_log_id, person_name")
+            .in("work_log_id", workLogIds),
+    ]);
+
+    const { data: workLogs, error: workLogsError } = workLogsResult;
+    const { data: personsData, error: personsError } = personsResult;
 
     if (workLogsError) {
         console.error("Error fetching work logs:", workLogsError);
@@ -188,31 +233,12 @@ export async function getWorkLogsForDashboard(
 
     if (!workLogs || workLogs.length === 0) return [];
 
-    const workLogIds = workLogs.map((log) => log.id);
-
-    // 2. work_log_persons 조회
-    const { data: personsData, error: personsError } = await supabase
-        .from("work_log_persons")
-        .select("work_log_id, person_name")
-        .in("work_log_id", workLogIds);
-
     if (personsError) {
         console.error("Error fetching work log persons:", personsError);
-        throw new Error(`출장보고서 참여자 조회 실패: ${personsError.message}`);
+        // 에러가 있어도 계속 진행
     }
 
-    // 3. work_log_entries 조회 (날짜 정보)
-    const { data: entriesData, error: entriesError } = await supabase
-        .from("work_log_entries")
-        .select("work_log_id, date_from, date_to")
-        .in("work_log_id", workLogIds);
-
-    if (entriesError) {
-        console.error("Error fetching work log entries:", entriesError);
-        // 날짜 정보는 필수가 아니므로 에러를 무시
-    }
-
-    // 4. 데이터 그룹화
+    // 3. 데이터 그룹화
     const personsMap = new Map<number, string[]>();
     if (personsData) {
         for (const person of personsData) {
@@ -227,34 +253,41 @@ export async function getWorkLogsForDashboard(
         }
     }
 
-    const datesMap = new Map<number, { date_from?: string; date_to?: string }>();
-    if (entriesData) {
-        for (const entry of entriesData) {
-            const logId = entry.work_log_id;
-            if (!datesMap.has(logId)) {
-                datesMap.set(logId, {
-                    date_from: entry.date_from || undefined,
-                    date_to: entry.date_to || undefined,
-                });
-            } else {
-                const existing = datesMap.get(logId)!;
-                if (entry.date_from && (!existing.date_from || entry.date_from < existing.date_from)) {
-                    existing.date_from = entry.date_from;
-                }
-                if (entry.date_to && (!existing.date_to || entry.date_to > existing.date_to)) {
-                    existing.date_to = entry.date_to;
-                }
+    const datesMap = new Map<
+        number,
+        { date_from?: string; date_to?: string }
+    >();
+    for (const entry of entriesData) {
+        const logId = entry.work_log_id;
+        if (!datesMap.has(logId)) {
+            datesMap.set(logId, {
+                date_from: entry.date_from || undefined,
+                date_to: entry.date_to || undefined,
+            });
+        } else {
+            const existing = datesMap.get(logId)!;
+            if (
+                entry.date_from &&
+                (!existing.date_from || entry.date_from < existing.date_from)
+            ) {
+                existing.date_from = entry.date_from;
+            }
+            if (
+                entry.date_to &&
+                (!existing.date_to || entry.date_to > existing.date_to)
+            ) {
+                existing.date_to = entry.date_to;
             }
         }
     }
 
-    // 5. 결과 조합 (권한 필터링 제거 - 전체 공개)
+    // 4. 결과 조합
     const result: WorkLogWithPersons[] = [];
 
     for (const log of workLogs) {
         const persons = personsMap.get(log.id) || [];
         const dates = datesMap.get(log.id);
-        
+
         result.push({
             id: log.id,
             author: log.author,
@@ -285,7 +318,9 @@ export function vacationToCalendarEvent(
     };
 
     const title = userName
-        ? `휴가 - ${userName} (${leaveTypeMap[vacation.leave_type] || vacation.leave_type})`
+        ? `휴가 - ${userName} (${
+              leaveTypeMap[vacation.leave_type] || vacation.leave_type
+          })`
         : `휴가 (${leaveTypeMap[vacation.leave_type] || vacation.leave_type})`;
 
     return {
@@ -332,7 +367,9 @@ export function expenseToCalendarEvent(
     const title =
         type === "expense"
             ? `지출 - ${(expense as PersonalExpense).expense_type}`
-            : `마일리지 - ${(expense as PersonalMileage).from_text} → ${(expense as PersonalMileage).to_text}`;
+            : `마일리지 - ${(expense as PersonalMileage).from_text} → ${
+                  (expense as PersonalMileage).to_text
+              }`;
 
     return {
         id: `${type}-${expense.id}`,

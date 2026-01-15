@@ -51,8 +51,6 @@ function formatHours(hours: number): string {
     return `${wholeHours}시간 ${minutes}분`;
 }
 
-export { formatHours };
-
 /**
  * 작업자별 상세 워크로드 데이터 타입
  */
@@ -182,6 +180,12 @@ export async function getWorkerWorkloadDetail(
 
     return { summary, entries };
 }
+
+/**
+ * 시간을 "X시간 Y분" 형식으로 포맷팅
+ */
+export { formatHours };
+
 /**
  * 날짜 포맷팅 (YYYY-MM-DD -> YYYY. MM. DD.(요일))
  */

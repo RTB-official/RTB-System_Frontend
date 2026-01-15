@@ -3,41 +3,56 @@
  */
 export default function DashboardSkeleton() {
     return (
-        <div className="flex flex-col gap-6">
-            {/* 네비게이션 */}
-            <div className="flex items-center justify-between mb-4">
-                <div className="h-8 w-32 bg-gray-200 rounded animate-pulse" />
-                <div className="flex gap-2">
-                    <div className="h-10 w-10 bg-gray-200 rounded-lg animate-pulse" />
-                    <div className="h-10 w-10 bg-gray-200 rounded-lg animate-pulse" />
+        <div className="flex-1 flex flex-col">
+            {/* 캘린더 헤더 - 실제처럼 보이게 */}
+            <div className="flex items-center justify-between mb-6">
+                <div className="h-9 w-48 pl-9" />
+                <div className="flex items-center gap-1 pr-9">
+                    <div className="h-10 w-10" />
+                    <div className="h-10 w-16" />
+                    <div className="h-10 w-10" />
                 </div>
             </div>
 
-            {/* 캘린더 그리드 */}
-            <div className="bg-white border border-gray-200 rounded-2xl p-7">
-                <div className="mb-6">
-                    <div className="h-7 w-40 bg-gray-200 rounded animate-pulse" />
-                </div>
-                
-                {/* 요일 헤더 */}
-                <div className="grid grid-cols-7 gap-2 mb-2">
+            {/* 캘린더 스켈레톤 */}
+            <div className="bg-white flex-1 flex flex-col min-h-0 overflow-visible">
+                {/* 요일 헤더 스켈레톤 */}
+                <div className="grid grid-cols-7 border-b border-gray-200">
                     {Array.from({ length: 7 }).map((_, i) => (
-                        <div key={i} className="h-8 bg-gray-100 rounded animate-pulse" />
+                        <div
+                            key={i}
+                            className="py-3 px-4 border-r border-gray-200 last:border-r-0"
+                        >
+                            <div className="h-5 w-8 bg-gray-200 rounded animate-pulse" />
+                        </div>
                     ))}
                 </div>
 
-                {/* 날짜 그리드 */}
-                <div className="grid grid-cols-7 gap-2">
-                    {Array.from({ length: 35 }).map((_, i) => (
+                {/* 날짜 그리드 스켈레톤 */}
+                <div className="flex-1 flex flex-col">
+                    {Array.from({ length: 6 }).map((_, weekIdx) => (
                         <div
-                            key={i}
-                            className="aspect-square bg-gray-50 rounded-lg border border-gray-200 p-2"
+                            key={weekIdx}
+                            className="grid grid-cols-7 border-b border-gray-200 last:border-b-0"
                         >
-                            <div className="h-5 w-5 bg-gray-200 rounded animate-pulse mb-2" />
-                            <div className="space-y-1">
-                                <div className="h-4 bg-gray-200 rounded animate-pulse" />
-                                <div className="h-4 bg-gray-200 rounded animate-pulse" />
-                            </div>
+                            {Array.from({ length: 7 }).map((_, dayIdx) => (
+                                <div
+                                    key={dayIdx}
+                                    className="p-3 border-r border-gray-200 last:border-r-0 min-h-[100px]"
+                                >
+                                    <div className="h-6 w-6 bg-gray-200 rounded-full mb-2 animate-pulse" />
+                                    {Math.random() > 0.6 && (
+                                        <div
+                                            className="h-6 bg-gray-200 rounded mb-1 animate-pulse"
+                                            style={{
+                                                width: `${
+                                                    60 + Math.random() * 30
+                                                }%`,
+                                            }}
+                                        />
+                                    )}
+                                </div>
+                            ))}
                         </div>
                     ))}
                 </div>
@@ -45,4 +60,3 @@ export default function DashboardSkeleton() {
         </div>
     );
 }
-

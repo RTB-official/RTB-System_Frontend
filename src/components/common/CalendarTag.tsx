@@ -77,9 +77,13 @@ const CalendarTag: React.FC<CalendarTagProps> = ({
                         <IconStar className="w-3.5 h-3.5 text-red-500" />
                     </div>
                 ) : isVacation ? (
-                    <IconVacation className="w-4 h-4 mr-1 text-blue-500" />
+                    <div className="w-4 h-4 flex items-center justify-center mr-1 shrink-0">
+                        <IconVacation className="w-4 h-4 text-blue-500" />
+                    </div>
                 ) : isWorkLog ? (
-                    <IconReport className="w-4 h-4 mr-1 text-orange-500" />
+                    <div className="w-4 h-4 flex items-center justify-center mr-1 shrink-0">
+                        <IconReport className="w-4 h-4 text-orange-500" />
+                    </div>
                 ) : (
                     isStart && (
                         <div
