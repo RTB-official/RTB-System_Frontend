@@ -86,9 +86,10 @@ export async function getVacations(
 ): Promise<Vacation[]> {
     let query = supabase
         .from("vacations")
-        .select("*")
+        .select("id, user_id, date, leave_type, reason, status, created_at, updated_at, created_by, updated_by")
         .order("date", { ascending: false })
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .limit(1000); // 성능을 위해 제한
 
     if (userId) {
         query = query.eq("user_id", userId);
