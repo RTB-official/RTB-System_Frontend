@@ -63,6 +63,7 @@ export default function DashboardPage() {
     };
     const [year, setYear] = useState(today.getFullYear());
     const [month, setMonth] = useState(today.getMonth());
+    const [userDepartment, setUserDepartment] = useState<string | null>(null);
 
     // 공휴일 상태
     const [holidays, setHolidays] = useState<Record<string, string>>({});
@@ -340,15 +341,17 @@ export default function DashboardPage() {
                         }
                     }
 
-                    // 휴가 이벤트 생성
-                    vacations.forEach((vacation) => {
-                        const userName = vacation.user_id
-                            ? profileMap.get(vacation.user_id)
-                            : undefined;
-                        events.push(
-                            vacationToCalendarEvent(vacation, userName)
-                        );
-                    });
+                    // 휴가 이벤트 생성 (공사팀 사용자는 제외)
+                    if (userDepartment !== "공사팀") {
+                        vacations.forEach((vacation) => {
+                            const userName = vacation.user_id
+                                ? profileMap.get(vacation.user_id)
+                                : undefined;
+                            events.push(
+                                vacationToCalendarEvent(vacation, userName)
+                            );
+                        });
+                    }
                 } else {
                     console.error(
                         "Error loading vacations:",
