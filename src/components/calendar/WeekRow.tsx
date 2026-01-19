@@ -25,6 +25,7 @@ interface WeekRowProps {
     maxVisibleRows: number;
     tagHeight: number;
     tagSpacing: number;
+    cellHeights: Record<string, number>;
     onEditEvent: (event: CalendarEvent) => void;
     onDeleteEvent: (eventId: string) => void;
     onEventClick: (event: CalendarEvent, e: React.MouseEvent) => void;
@@ -49,6 +50,7 @@ const WeekRow: React.FC<WeekRowProps> = ({
     maxVisibleRows,
     tagHeight,
     tagSpacing,
+    cellHeights,
     onEditEvent,
     onDeleteEvent,
     onEventClick,
@@ -59,52 +61,53 @@ const WeekRow: React.FC<WeekRowProps> = ({
 }) => {
     const pad = (n: number) => (n < 10 ? "0" + n : String(n));
 
-    // 각 날짜별로 마지막 행 태그와 +n개 겹침 여부를 미리 계산
-    const shouldHideLastRowTag = new Map<number, boolean>();
+    // 각 날짜별로 셀 높이에 맞춰 표시 가능한 행 수 계산
+    const dateHeaderHeight = 48; // 날짜 헤더 높이 (top: 46px + 약간의 여백)
+    const bottomPadding = 20; // 하단 여백 (+n개 표시 공간)
+    
+    const getMaxVisibleRowsForCell = (dateKey: string): number => {
+        const cellHeight = cellHeights[dateKey] || 0;
+        if (cellHeight === 0) return maxVisibleRows; // 높이를 아직 측정하지 못한 경우 기본값 사용
+        
+        // 셀 높이에서 헤더와 하단 여백을 제외한 사용 가능한 높이
+        const availableHeight = Math.max(
+            0,
+            cellHeight - dateHeaderHeight - bottomPadding
+        );
+        
+        if (availableHeight <= 0) return 0;
+        
+        // 태그 높이와 간격을 고려하여 표시 가능한 행 수 계산
+        const rows = Math.floor(
+            availableHeight / (tagHeight + tagSpacing)
+        );
+        
+        return Math.max(0, rows);
+    };
+
+    // 각 날짜별로 셀 높이에 맞춰 표시 가능한 태그 계산
+    const cellMaxVisibleRows = new Map<number, number>();
+    
     week.forEach(({ date }, dayIdx) => {
         const dateKey = `${date.getFullYear()}-${pad(
             date.getMonth() + 1
         )}-${pad(date.getDate())}`;
         
-        const dayEvents = getEventsForDate(dateKey);
-        const daySegments = weekEventRows.filter(
-            (segment) =>
-                segment.startOffset <= dayIdx &&
-                dayIdx < segment.startOffset + segment.duration
-        );
-        
-        const visibleRowIndices = new Set(
-            daySegments
-                .filter((s) => s.rowIndex < maxVisibleRows)
-                .map((s) => s.rowIndex)
-        );
-        
-        const hiddenCountRaw = dayEvents.filter((event) => {
-            const segment = daySegments.find(
-                (s) => s.event.id === event.id
-            );
-            return segment && !visibleRowIndices.has(segment.rowIndex);
-        }).length;
-        
-        const hasLastRowTag = daySegments.some(
-            (s) => s.rowIndex === maxVisibleRows - 1
-        );
-        
-        // 마지막 행에 태그가 있고 숨겨진 태그가 있으면, 마지막 행 태그를 숨김
-        shouldHideLastRowTag.set(dayIdx, hasLastRowTag && hiddenCountRaw > 0);
+        const cellMaxRows = getMaxVisibleRowsForCell(dateKey);
+        cellMaxVisibleRows.set(dayIdx, cellMaxRows);
     });
 
-    // 태그는 maxVisibleRows까지 표시하되, 특정 날짜의 마지막 행 태그는 조건부로 숨김
+    // 태그는 각 셀의 높이를 넘어가지 않는 범위에서만 표시
     const visibleSegments = weekEventRows.filter((segment) => {
-        if (segment.rowIndex >= maxVisibleRows) return false;
-        
-        // 마지막 행 태그인 경우, 해당 날짜에서 숨겨야 하는지 확인
-        if (segment.rowIndex === maxVisibleRows - 1) {
-            // 이 세그먼트가 포함된 모든 날짜를 확인
-            for (let dayIdx = segment.startOffset; dayIdx < segment.startOffset + segment.duration; dayIdx++) {
-                if (shouldHideLastRowTag.get(dayIdx)) {
-                    return false; // 이 날짜에서 마지막 행 태그를 숨김
-                }
+        // 이 세그먼트가 포함된 모든 날짜를 확인
+        for (let dayIdx = segment.startOffset; dayIdx < segment.startOffset + segment.duration; dayIdx++) {
+            const dateKey = `${week[dayIdx].date.getFullYear()}-${pad(
+                week[dayIdx].date.getMonth() + 1
+            )}-${pad(week[dayIdx].date.getDate())}`;
+            
+            // 태그가 셀 높이를 넘어가면 숨김
+            if (isTagOverflowing(segment.rowIndex, dateKey)) {
+                return false;
             }
         }
         
@@ -219,25 +222,25 @@ const WeekRow: React.FC<WeekRowProps> = ({
                         dayIdx < segment.startOffset + segment.duration
                 );
 
-                // 숨겨진 이벤트 개수 계산
-                const visibleRowIndices = new Set(
-                    daySegments
-                        .filter((s) => s.rowIndex < maxVisibleRows)
-                        .map((s) => s.rowIndex)
+                // 이 셀의 최대 표시 가능 행 수
+                const cellMaxRows = cellMaxVisibleRows.get(dayIdx) ?? maxVisibleRows;
+
+                // 실제로 표시되는 세그먼트 (visibleSegments에 포함된 것들)
+                const visibleSegmentsForDay = visibleSegments.filter(
+                    (seg) =>
+                        seg.startOffset <= dayIdx &&
+                        dayIdx < seg.startOffset + seg.duration
                 );
                 
-                const hiddenCountRaw = dayEvents.filter((event) => {
-                    const segment = daySegments.find(
-                        (s) => s.event.id === event.id
-                    );
-                    return segment && !visibleRowIndices.has(segment.rowIndex);
-                }).length;
+                const visibleEventIds = new Set(
+                    visibleSegmentsForDay.map((seg) => seg.event.id)
+                );
                 
-                // 마지막 행 태그가 숨겨져 있으면 +n개에 포함
-                const isLastRowTagHidden = shouldHideLastRowTag.get(dayIdx) || false;
-                const hiddenCount = isLastRowTagHidden 
-                    ? hiddenCountRaw + 1 
-                    : hiddenCountRaw;
+                // 숨겨진 이벤트 개수 계산 (표시되지 않는 이벤트)
+                // dayEvents에는 있지만 visibleSegments에는 없는 이벤트
+                const hiddenCount = dayEvents.filter(
+                    (event) => !visibleEventIds.has(event.id)
+                ).length;
 
                 return (
                     <DayCell
@@ -269,7 +272,8 @@ const WeekRow: React.FC<WeekRowProps> = ({
                             }
                         }}
                         onHiddenCountClick={() => {
-                            onHiddenCountClick(dateKey, maxVisibleRows);
+                            const cellMaxRows = cellMaxVisibleRows.get(dayIdx) || maxVisibleRows;
+                            onHiddenCountClick(dateKey, cellMaxRows);
                         }}
                     />
                 );
