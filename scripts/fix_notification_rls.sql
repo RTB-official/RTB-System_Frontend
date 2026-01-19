@@ -34,7 +34,7 @@ BEGIN
         'title', title,
         'message', message,
         'type', type,
-        'is_read', is_read,
+        'read_at', read_at,
         'created_at', created_at
     ) INTO v_notification;
     

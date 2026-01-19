@@ -101,16 +101,16 @@ export async function createNotificationsForUsers(
                             throw new Error("함수가 null을 반환했습니다");
                         }
                         
-                        // JSON 객체를 Notification 타입으로 변환
-                        const notification: Notification = {
-                            id: funcData.id,
-                            user_id: funcData.user_id,
-                            title: funcData.title,
-                            message: funcData.message,
-                            type: funcData.type,
-                            is_read: funcData.is_read || false,
-                            created_at: funcData.created_at,
-                        };
+                    // JSON 객체를 Notification 타입으로 변환
+                    const notification: Notification = {
+                        id: funcData.id,
+                        user_id: funcData.user_id,
+                        title: funcData.title,
+                        message: funcData.message,
+                        type: funcData.type,
+                        read_at: funcData.read_at || null,
+                        created_at: funcData.created_at,
+                    };
                         
                         return notification;
                     } catch (err) {
