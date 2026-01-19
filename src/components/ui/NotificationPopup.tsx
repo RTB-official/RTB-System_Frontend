@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Notification, markNotificationAsRead } from "../../lib/notificationApi";
+import { markNotificationAsRead } from "../../lib/notificationApi";
 
 interface NotificationItem {
     id: string;
@@ -138,7 +138,7 @@ export default function NotificationPopup({
                                 className={`flex flex-col gap-1 px-5 py-4 transition-colors cursor-pointer relative group border-b border-gray-50 last:border-0 ${
                                     isRead
                                         ? "bg-white hover:bg-gray-50"
-                                        : "bg-blue-50 hover:bg-blue-100"
+                                        : "bg-gray-50 hover:bg-gray-100 border-l-4 border-l-blue-500"
                                 }`}
                             >
                                 <div className="flex items-start justify-between gap-2">
@@ -146,20 +146,20 @@ export default function NotificationPopup({
                                         className={`text-[14px] leading-relaxed ${
                                             isRead
                                                 ? "font-medium text-[#475569]"
-                                                : "font-semibold text-[#1e40af]"
+                                                : "font-semibold text-[#1e293b]"
                                         }`}
                                     >
                                         {it.title}
                                     </p>
                                     {!isRead && (
-                                        <div className="flex-shrink-0 w-2 h-2 rounded-full bg-blue-500 mt-1.5"></div>
+                                        <div className="shrink-0 w-2 h-2 rounded-full bg-blue-500 mt-1.5"></div>
                                     )}
                                 </div>
                                 <p
                                     className={`text-[14px] leading-relaxed ${
                                         isRead
                                             ? "text-[#64748b]"
-                                            : "text-[#1e40af]"
+                                            : "text-[#475569]"
                                     }`}
                                 >
                                     {it.message}
