@@ -51,10 +51,12 @@ CREATE POLICY "Users can update their own notifications"
 -- 인증된 사용자는 누구에게나 알림을 생성할 수 있음
 -- (보고서 제출 시 공무팀 전체에 알림을 생성하기 위함) (이미 존재하면 스킵)
 DROP POLICY IF EXISTS "Authenticated users can create notifications" ON notifications;
+-- RLS 정책: 인증된 사용자는 모든 사용자에게 알림 생성 가능
 CREATE POLICY "Authenticated users can create notifications"
     ON notifications
     FOR INSERT
-    WITH CHECK (auth.uid() IS NOT NULL);
+    TO authenticated
+    WITH CHECK (true);
 
 -- 4. 자동 정리 함수 (2주 지난 알림 삭제)
 -- 참고: 이 함수는 수동으로 실행하거나 cron job으로 설정해야 합니다
