@@ -75,8 +75,8 @@ INSERT INTO profiles (
 -- 20. 김상민 (sm.kim) - 이미 존재
 ('ef08a1e4-a85e-43ef-a04f-8bb02f8e28ab', '김상민', 'sm.kim', 'sm.kim@rtb-kor.com', '주임', '010-4147-4859', '창원시 마산회원구 석전북2길 64 가동 608호', TO_DATE('19840110', 'YYYYMMDD'), TO_DATE('20250203', 'YYYYMMDD'), 'staff'),
 
--- 25. 강민지 (mj.kang) - 인턴 (auth.users에 먼저 생성 필요)
--- ('USER_ID_강민지', '강민지', 'mj.kang', 'mj.kang@rtb-kor.com', '인턴', '010-9963-0772', '부산광역시 금강로 131번길 42 206동 1005호', TO_DATE('20070718', 'YYYYMMDD'), TO_DATE('20251117', 'YYYYMMDD'), 'staff'),
+-- 25. 강민지 (mj.kang) - 인턴
+('f6362dfd-1f37-448a-b1cb-3365071d7180', '강민지', 'mj.kang', 'mj.kang@rtb-kor.com', '인턴', '010-9963-0772', '부산광역시 금강로 131번길 42 206동 1005호', TO_DATE('20070718', 'YYYYMMDD'), TO_DATE('20251117', 'YYYYMMDD'), 'staff'),
 
 -- 21. 김지연 (jay.kim) - 이미 존재
 ('3e602998-a6b9-4c59-87f9-b81997392ad6', '김지연', 'jay.kim', 'jay.kim@rtb-kor.com', '대리', '010-3433-5755', '부산시 강서구 명지국제5로 60 108동 1203호(에일린의뜰)', TO_DATE('19821105', 'YYYYMMDD'), TO_DATE('20250310', 'YYYYMMDD'), 'staff'),
@@ -172,8 +172,8 @@ INSERT INTO profile_passports (
 -- 24. 김현지 (hj.kim)
 ('b75eb52d-c594-4761-adb3-df8c0a7ddd98', 'KIM', 'HYUNJI', NULL, TO_DATE('20281005', 'YYYYMMDD')),
 
--- 25. 강민지 (mj.kang) - 인턴 (auth.users에 먼저 생성 필요)
--- ('USER_ID_강민지', 'KANG', 'MINJI', NULL, NULL)
+-- 25. 강민지 (mj.kang) - 인턴
+('f6362dfd-1f37-448a-b1cb-3365071d7180', 'KANG', 'MINJI', NULL, NULL)
 
 ON CONFLICT (user_id) DO UPDATE SET
     passport_last_name = EXCLUDED.passport_last_name,
