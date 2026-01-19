@@ -8,25 +8,34 @@ DROP POLICY IF EXISTS "Allow authenticated insert" ON notifications;
 DROP POLICY IF EXISTS "Allow all authenticated insert" ON notifications;
 
 -- 방법 1: SECURITY DEFINER 함수 생성 (RLS 우회)
+-- JSON 객체를 직접 반환하여 조회 불필요
 CREATE OR REPLACE FUNCTION create_notification_for_user(
     p_user_id UUID,
     p_title TEXT,
     p_message TEXT,
     p_type TEXT
 )
-RETURNS UUID
+RETURNS JSON
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public
 AS $$
 DECLARE
-    v_notification_id UUID;
+    v_notification JSON;
 BEGIN
     INSERT INTO notifications (user_id, title, message, type)
     VALUES (p_user_id, p_title, p_message, p_type)
-    RETURNING id INTO v_notification_id;
+    RETURNING json_build_object(
+        'id', id,
+        'user_id', user_id,
+        'title', title,
+        'message', message,
+        'type', type,
+        'is_read', is_read,
+        'created_at', created_at
+    ) INTO v_notification;
     
-    RETURN v_notification_id;
+    RETURN v_notification;
 END;
 $$;
 

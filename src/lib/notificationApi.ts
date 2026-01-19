@@ -93,18 +93,23 @@ export async function createNotificationsForUsers(
                         throw funcError;
                     }
                     
-                    // 함수는 UUID만 반환하므로, 다시 조회
-                    const { data: notifData, error: fetchError } = await supabase
-                        .from("notifications")
-                        .select("*")
-                        .eq("id", funcData)
-                        .single();
-                    
-                    if (fetchError || !notifData) {
-                        throw fetchError || new Error("알림 조회 실패");
+                    // 함수가 JSON 객체를 직접 반환하므로 그대로 사용
+                    if (!funcData) {
+                        throw new Error("함수가 null을 반환했습니다");
                     }
                     
-                    return notifData;
+                    // JSON 객체를 Notification 타입으로 변환
+                    const notification: Notification = {
+                        id: funcData.id,
+                        user_id: funcData.user_id,
+                        title: funcData.title,
+                        message: funcData.message,
+                        type: funcData.type,
+                        is_read: funcData.is_read || false,
+                        created_at: funcData.created_at,
+                    };
+                    
+                    return notification;
                 })
             );
             
