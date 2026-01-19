@@ -12,6 +12,7 @@ import Chip from "../../components/ui/Chip";
 import { IconMore } from "../../components/icons/Icons";
 import Avatar from "../../components/common/Avatar";
 import MembersSkeleton from "../../components/common/MembersSkeleton";
+import EmptyValueIndicator from "../../pages/Expense/components/EmptyValueIndicator";
 
 type Member = {
     id: string;
@@ -179,7 +180,7 @@ export default function MembersPage() {
 
         const ids = (data ?? []).map((p: any) => p.id);
 
-        // ✅ 여권정보는 분리 테이블에서 조회 (RLS로 staff는 본인만 내려옴 / admin은 전부 내려옴)
+        // ✅ 여권정보는 분리 테이블에서 조회 (모든 사용자가 모든 여권정보 조회 가능)
         const { data: passportsData, error: passportsError } = await supabase
             .from("profile_passports")
             .select(
@@ -198,6 +199,11 @@ export default function MembersPage() {
         (passportsData ?? []).forEach((pp: any) => {
             passportsMap.set(pp.user_id, pp);
         });
+        
+        // 디버깅: 여권정보 확인
+        console.log("🔍 [Members] isAdmin:", admin);
+        console.log("🔍 [Members] passportsData count:", passportsData?.length || 0);
+        console.log("🔍 [Members] passports with number:", passportsData?.filter((pp: any) => pp.passport_number).length || 0);
 
         if (error) {
             console.error("profiles 조회 실패:", error.message);
@@ -224,7 +230,7 @@ export default function MembersPage() {
                 joinDate: p.join_date ? toYYMMDD(p.join_date) : "",
                 birth: p.birth_date ? toYYMMDD(p.birth_date) : "",
 
-                // ✅ staff는 타인 여권 row가 RLS로 안 내려오므로 자동으로 빈 값 처리됨
+                // ✅ 모든 사용자가 모든 여권정보를 볼 수 있음
                 passportNo: pp?.passport_number ?? "",
                 passportLastName: pp?.passport_last_name ?? "",
                 passportFirstName: pp?.passport_first_name ?? "",
@@ -266,11 +272,34 @@ export default function MembersPage() {
         init();
     }, []);
 
+    // 직급 순서 정의 (높은 순)
+    const roleOrder: Record<string, number> = {
+        "대표": 1,
+        "감사": 2,
+        "부장": 3,
+        "차장": 4,
+        "과장": 5,
+        "대리": 6,
+        "주임": 7,
+        "인턴": 8,
+    };
+
     const filteredMembers = useMemo(() => {
-        if (activeTab === "ALL") return members;
-        if (activeTab === "ADMIN")
-            return members.filter((m) => m.team === "공무팀");
-        return members.filter((m) => m.team === "공사팀");
+        let filtered = members;
+        if (activeTab === "ADMIN") {
+            filtered = members.filter((m) => m.team === "공무팀");
+        } else if (activeTab === "STAFF") {
+            filtered = members.filter((m) => m.team === "공사팀");
+        }
+
+        // 직급 순으로 정렬 (높은 순)
+        return [...filtered].sort((a, b) => {
+            const orderA = roleOrder[a.role] ?? 999;
+            const orderB = roleOrder[b.role] ?? 999;
+            if (orderA !== orderB) return orderA - orderB;
+            // 같은 직급이면 입사일 순
+            return a.joinDate.localeCompare(b.joinDate);
+        });
     }, [members, activeTab]);
 
     const totalCount = members.length;
@@ -418,11 +447,11 @@ export default function MembersPage() {
                                                 label: "주소",
                                                 width: "28%",
                                                 render: (_, row) => (
-                                                    <div className="text-[14px] text-gray-900 w-[320px] min-w-[320px]">
-                                                        <div className="truncate">
+                                                    <div className="text-[14px] text-gray-900 w-[320px] min-w-[320px] max-w-[320px]">
+                                                        <div className="wrap-break-word whitespace-normal">
                                                             {row.address1}
                                                         </div>
-                                                        <div className="text-[12px] text-gray-500 mt-1 truncate">
+                                                        <div className="text-[12px] text-gray-500 mt-1 wrap-break-word whitespace-normal">
                                                             {row.address2}
                                                         </div>
                                                     </div>
@@ -451,72 +480,89 @@ export default function MembersPage() {
                                                 label: "여권정보",
                                                 width: "20%",
                                                 render: (_, row) => {
+                                                    // 여권 정보 확인
+                                                    const hasPassportNo = !!row.passportNo;
+                                                    const hasPassportName =
+                                                        !!(row.passportLastName || row.passportFirstName);
+                                                    const hasExpiry = !!row.passportExpiry;
+                                                    const hasAnyPassportInfo = hasPassportNo || hasPassportName || hasExpiry;
+
+                                                    // 여권 정보가 아예 없을 때만 EmptyValueIndicator 표시
+                                                    if (!hasAnyPassportInfo) {
+                                                        return (
+                                                            <div className="flex items-start pr-2 w-[260px] min-w-[260px]">
+                                                                <div className="flex-1 min-w-0">
+                                                                    <EmptyValueIndicator />
+                                                                </div>
+                                                                {(isAdmin ||
+                                                                    row.id ===
+                                                                        myUserId) && (
+                                                                    <button
+                                                                        className="ml-3 flex-none w-8 h-8 rounded-lg hover:bg-gray-100 transition flex items-center justify-center text-gray-400"
+                                                                        onClick={(
+                                                                            e
+                                                                        ) => {
+                                                                            e.stopPropagation();
+                                                                            setSelectedMemberId(
+                                                                                row.id
+                                                                            );
+                                                                            setActionAnchor(
+                                                                                e.currentTarget
+                                                                            );
+                                                                            setActionOpen(
+                                                                                true
+                                                                            );
+                                                                        }}
+                                                                        aria-label="more"
+                                                                    >
+                                                                        <IconMore className="w-5 h-5" />
+                                                                    </button>
+                                                                )}
+                                                            </div>
+                                                        );
+                                                    }
+
                                                     // 251227 -> 25년 12월 만료 형식으로 변환 (YYMMDD)
                                                     let formattedExpiry = "";
-                                                    if (
-                                                        row.passportExpiry &&
-                                                        row.passportExpiry
-                                                            .length === 6
-                                                    ) {
+                                                    if (hasExpiry && row.passportExpiry.length === 6) {
                                                         const year =
-                                                            row.passportExpiry.slice(
-                                                                0,
-                                                                2
-                                                            );
+                                                            row.passportExpiry.slice(0, 2);
                                                         const month = parseInt(
-                                                            row.passportExpiry.slice(
-                                                                2,
-                                                                4
-                                                            ),
+                                                            row.passportExpiry.slice(2, 4),
                                                             10
                                                         );
                                                         formattedExpiry = `${year}년 ${month}월 만료`;
                                                     }
 
-                                                    // ✅ staff는 타인 여권정보 비노출(본인/관리자만 노출)
-                                                    const canSeePassport =
-                                                        isAdmin ||
-                                                        row.id === myUserId;
+                                                    const passportName = `${row.passportLastName || ""} ${row.passportFirstName || ""}`.trim();
 
+                                                    // 여권정보가 있으면 있는 정보만 표시
                                                     return (
                                                         <div className="flex items-start pr-2 w-[260px] min-w-[260px]">
                                                             <div className="flex-1 min-w-0">
                                                                 <div className="flex items-center gap-2 flex-wrap">
-                                                                    <span className="text-[14px] font-semibold text-gray-900 truncate max-w-[140px]">
-                                                                        {canSeePassport
-                                                                            ? row.passportNo ||
-                                                                              "-"
-                                                                            : "-"}
-                                                                    </span>
+                                                                    {hasPassportNo && (
+                                                                        <span className="text-[14px] font-semibold text-gray-900 truncate max-w-[140px]">
+                                                                            {row.passportNo}
+                                                                        </span>
+                                                                    )}
 
-                                                                    {canSeePassport &&
-                                                                        formattedExpiry && (
-                                                                            <Chip
-                                                                                color="red-600"
-                                                                                variant="solid"
-                                                                                size="sm"
-                                                                            >
-                                                                                {
-                                                                                    formattedExpiry
-                                                                                }
-                                                                            </Chip>
-                                                                        )}
-                                                                </div>
-
-                                                                <div className="text-[12px] text-gray-500 uppercase tracking-tight mt-1">
-                                                                    {canSeePassport ? (
-                                                                        <>
-                                                                            {
-                                                                                row.passportLastName
-                                                                            }{" "}
-                                                                            {
-                                                                                row.passportFirstName
-                                                                            }
-                                                                        </>
-                                                                    ) : (
-                                                                        "-"
+                                                                    {formattedExpiry && (
+                                                                        <Chip
+                                                                            color="red-600"
+                                                                            variant="solid"
+                                                                            size="sm"
+                                                                        >
+                                                                            {formattedExpiry}
+                                                                        </Chip>
                                                                     )}
                                                                 </div>
+
+                                                                {passportName && (
+                                                                    <div className="text-[12px] text-gray-500 uppercase tracking-tight mt-1">
+                                                                        {passportName}
+                                                                    </div>
+                                                                )}
                                                             </div>
                                                             {(isAdmin ||
                                                                 row.id ===
