@@ -1,11 +1,14 @@
 import { useEffect, useRef } from "react";
-import { Notification } from "../../lib/notificationApi";
+import { useNavigate } from "react-router-dom";
+import { Notification, markNotificationAsRead } from "../../lib/notificationApi";
 
 interface NotificationItem {
     id: string;
     title: string;
     message: string;
+    type: "report" | "schedule" | "vacation" | "other";
     created_at?: string;
+    read_at?: string | null;
     meta?: string;
 }
 
@@ -14,6 +17,7 @@ interface NotificationPopupProps {
     items?: NotificationItem[];
     anchorEl?: HTMLElement | null;
     onMarkAllAsRead?: () => void;
+    onNotificationRead?: (id: string) => void;
 }
 
 // 날짜 포맷팅 헬퍼
@@ -43,8 +47,10 @@ export default function NotificationPopup({
     items = [],
     anchorEl,
     onMarkAllAsRead,
+    onNotificationRead,
 }: NotificationPopupProps) {
     const popupRef = useRef<HTMLDivElement>(null);
+    const navigate = useNavigate();
 
     // 바깥 클릭 닫기
     useEffect(() => {
@@ -64,6 +70,39 @@ export default function NotificationPopup({
             document.removeEventListener("mousedown", handleClickOutside);
         };
     }, [onClose, anchorEl]);
+
+    // 알림 클릭 핸들러
+    const handleNotificationClick = async (item: NotificationItem) => {
+        // 읽지 않은 알림이면 읽음 처리
+        if (!item.read_at) {
+            try {
+                await markNotificationAsRead(item.id);
+                onNotificationRead?.(item.id);
+            } catch (error) {
+                console.error("알림 읽음 처리 실패:", error);
+            }
+        }
+
+        // 타입에 따라 페이지 이동
+        switch (item.type) {
+            case "schedule":
+                navigate("/dashboard");
+                break;
+            case "report":
+                navigate("/report");
+                break;
+            case "vacation":
+                navigate("/Vacation");
+                break;
+            case "other":
+            default:
+                // other 타입은 이동하지 않음
+                break;
+        }
+
+        // 알림 팝업 닫기
+        onClose();
+    };
 
     return (
         <div
@@ -90,30 +129,53 @@ export default function NotificationPopup({
                         알림이 없습니다.
                     </div>
                 ) : (
-                    items.map((it) => (
-                        <div
-                            key={it.id}
-                            className="flex flex-col gap-1 px-5 py-4 bg-white hover:bg-[#f0f7ff] transition-colors cursor-pointer relative group border-b border-gray-50 last:border-0"
-                        >
-                            <div className="flex items-start justify-between">
-                                <p className="text-[14px] font-semibold text-[#475569]">
-                                    {it.title}
+                    items.map((it) => {
+                        const isRead = !!it.read_at;
+                        return (
+                            <div
+                                key={it.id}
+                                onClick={() => handleNotificationClick(it)}
+                                className={`flex flex-col gap-1 px-5 py-4 transition-colors cursor-pointer relative group border-b border-gray-50 last:border-0 ${
+                                    isRead
+                                        ? "bg-white hover:bg-gray-50"
+                                        : "bg-blue-50 hover:bg-blue-100"
+                                }`}
+                            >
+                                <div className="flex items-start justify-between gap-2">
+                                    <p
+                                        className={`text-[14px] leading-relaxed ${
+                                            isRead
+                                                ? "font-medium text-[#475569]"
+                                                : "font-semibold text-[#1e40af]"
+                                        }`}
+                                    >
+                                        {it.title}
+                                    </p>
+                                    {!isRead && (
+                                        <div className="flex-shrink-0 w-2 h-2 rounded-full bg-blue-500 mt-1.5"></div>
+                                    )}
+                                </div>
+                                <p
+                                    className={`text-[14px] leading-relaxed ${
+                                        isRead
+                                            ? "text-[#64748b]"
+                                            : "text-[#1e40af]"
+                                    }`}
+                                >
+                                    {it.message}
                                 </p>
+                                {(it.created_at || it.meta) && (
+                                    <p className="text-[13px] text-gray-400 mt-1">
+                                        {it.meta ||
+                                            (it.created_at &&
+                                                formatNotificationDate(
+                                                    it.created_at
+                                                ))}
+                                    </p>
+                                )}
                             </div>
-                            <p className="text-[14px] text-[#64748b] leading-relaxed">
-                                {it.message}
-                            </p>
-                            {(it.created_at || it.meta) && (
-                                <p className="text-[13px] text-gray-400 mt-1">
-                                    {it.meta ||
-                                        (it.created_at &&
-                                            formatNotificationDate(
-                                                it.created_at
-                                            ))}
-                                </p>
-                            )}
-                        </div>
-                    ))
+                        );
+                    })
                 )}
             </div>
         </div>
