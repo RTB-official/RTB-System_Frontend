@@ -75,9 +75,9 @@ export async function createNotificationsForUsers(
     if (insertError) {
         console.warn("⚠️ [알림] 일괄 생성 실패, 개별 생성 시도:", insertError.message);
         
-        // 방법 2: RLS 함수 사용 시도
+        // 방법 2: RLS 함수 사용 시도 (함수가 있는 경우)
         try {
-            const functionResults = await Promise.all(
+            const functionResults = await Promise.allSettled(
                 userIds.map(async (user_id) => {
                     const { data: funcData, error: funcError } = await supabase.rpc(
                         'create_notification_for_user',
@@ -90,32 +90,39 @@ export async function createNotificationsForUsers(
                     );
                     
                     if (funcError) {
-                        console.error(`❌ [알림] 함수 생성 실패 (${user_id}):`, funcError);
-                        return null;
+                        throw funcError;
                     }
                     
                     // 함수는 UUID만 반환하므로, 다시 조회
-                    const { data: notifData } = await supabase
+                    const { data: notifData, error: fetchError } = await supabase
                         .from("notifications")
                         .select("*")
                         .eq("id", funcData)
                         .single();
                     
+                    if (fetchError || !notifData) {
+                        throw fetchError || new Error("알림 조회 실패");
+                    }
+                    
                     return notifData;
                 })
             );
             
-            data = functionResults.filter((n): n is Notification => n !== null);
+            const successful = functionResults
+                .filter((result): result is PromiseFulfilledResult<Notification> => 
+                    result.status === 'fulfilled' && result.value !== null
+                )
+                .map(result => result.value);
             
-            if (data.length > 0) {
-                console.log(`✅ [알림] 함수를 통해 ${data.length}개 알림 생성 완료`);
-                return data;
+            if (successful.length > 0) {
+                console.log(`✅ [알림] 함수를 통해 ${successful.length}/${userIds.length}개 알림 생성 완료`);
+                return successful;
             }
         } catch (funcError) {
-            console.error("❌ [알림] 함수 생성도 실패:", funcError);
+            console.warn("⚠️ [알림] 함수 생성 실패 (함수가 없을 수 있음):", funcError);
         }
         
-        // 방법 3: 개별 INSERT 시도 (자신에게만 생성 가능한 경우)
+        // 방법 3: 개별 INSERT 시도
         console.warn("⚠️ [알림] 개별 생성 시도 중...");
         const individualResults = await Promise.allSettled(
             userIds.map(async (user_id) => {
@@ -132,18 +139,19 @@ export async function createNotificationsForUsers(
             })
         );
         
-        data = individualResults
+        const successful = individualResults
             .filter((result): result is PromiseFulfilledResult<Notification> => 
                 result.status === 'fulfilled' && result.value !== null
             )
             .map(result => result.value);
         
-        if (data.length === 0) {
-            error = insertError;
-        } else {
-            console.log(`✅ [알림] 개별 생성으로 ${data.length}/${userIds.length}개 알림 생성 완료`);
-            return data;
+        if (successful.length > 0) {
+            console.log(`✅ [알림] 개별 생성으로 ${successful.length}/${userIds.length}개 알림 생성 완료`);
+            return successful;
         }
+        
+        // 모든 방법 실패
+        error = insertError;
     } else {
         data = insertData || [];
     }
