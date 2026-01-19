@@ -79,37 +79,44 @@ export async function createNotificationsForUsers(
         try {
             const functionResults = await Promise.allSettled(
                 userIds.map(async (user_id) => {
-                    const { data: funcData, error: funcError } = await supabase.rpc(
-                        'create_notification_for_user',
-                        {
-                            p_user_id: user_id,
-                            p_title: title,
-                            p_message: message,
-                            p_type: type,
+                    try {
+                        const { data: funcData, error: funcError } = await supabase.rpc(
+                            'create_notification_for_user',
+                            {
+                                p_user_id: user_id,
+                                p_title: title,
+                                p_message: message,
+                                p_type: type,
+                            }
+                        );
+                        
+                        if (funcError) {
+                            console.error(`❌ [알림] 함수 호출 실패 (${user_id}):`, funcError);
+                            throw funcError;
                         }
-                    );
-                    
-                    if (funcError) {
-                        throw funcError;
+                        
+                        // 함수가 JSON 객체를 직접 반환하므로 그대로 사용
+                        if (!funcData) {
+                            console.error(`❌ [알림] 함수가 null 반환 (${user_id})`);
+                            throw new Error("함수가 null을 반환했습니다");
+                        }
+                        
+                        // JSON 객체를 Notification 타입으로 변환
+                        const notification: Notification = {
+                            id: funcData.id,
+                            user_id: funcData.user_id,
+                            title: funcData.title,
+                            message: funcData.message,
+                            type: funcData.type,
+                            is_read: funcData.is_read || false,
+                            created_at: funcData.created_at,
+                        };
+                        
+                        return notification;
+                    } catch (err) {
+                        console.error(`❌ [알림] 개별 함수 호출 실패 (${user_id}):`, err);
+                        throw err;
                     }
-                    
-                    // 함수가 JSON 객체를 직접 반환하므로 그대로 사용
-                    if (!funcData) {
-                        throw new Error("함수가 null을 반환했습니다");
-                    }
-                    
-                    // JSON 객체를 Notification 타입으로 변환
-                    const notification: Notification = {
-                        id: funcData.id,
-                        user_id: funcData.user_id,
-                        title: funcData.title,
-                        message: funcData.message,
-                        type: funcData.type,
-                        is_read: funcData.is_read || false,
-                        created_at: funcData.created_at,
-                    };
-                    
-                    return notification;
                 })
             );
             
@@ -119,12 +126,18 @@ export async function createNotificationsForUsers(
                 )
                 .map(result => result.value);
             
+            const failed = functionResults.filter(result => result.status === 'rejected');
+            
+            if (failed.length > 0) {
+                console.warn(`⚠️ [알림] ${failed.length}개 함수 호출 실패:`, failed.map(r => r.status === 'rejected' ? r.reason : null));
+            }
+            
             if (successful.length > 0) {
                 console.log(`✅ [알림] 함수를 통해 ${successful.length}/${userIds.length}개 알림 생성 완료`);
                 return successful;
             }
         } catch (funcError) {
-            console.warn("⚠️ [알림] 함수 생성 실패 (함수가 없을 수 있음):", funcError);
+            console.error("❌ [알림] 함수 생성 전체 실패:", funcError);
         }
         
         // 방법 3: 개별 INSERT 시도

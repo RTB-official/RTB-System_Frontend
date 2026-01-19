@@ -68,16 +68,13 @@ FROM pg_policies
 WHERE tablename = 'notifications'
 ORDER BY policyname;
 
--- 정책 확인
+-- 함수가 제대로 생성되었는지 확인
 SELECT 
-    schemaname,
-    tablename,
-    policyname,
-    permissive,
-    roles,
-    cmd,
-    qual,
-    with_check
-FROM pg_policies
-WHERE tablename = 'notifications';
+    p.proname as function_name,
+    pg_get_function_arguments(p.oid) as arguments,
+    pg_get_function_result(p.oid) as return_type
+FROM pg_proc p
+JOIN pg_namespace n ON p.pronamespace = n.oid
+WHERE n.nspname = 'public' 
+  AND p.proname = 'create_notification_for_user';
 
