@@ -63,7 +63,7 @@ const WeekRow: React.FC<WeekRowProps> = ({
 
     // 각 날짜별로 셀 높이에 맞춰 표시 가능한 행 수 계산
     const dateHeaderHeight = 48; // 날짜 헤더 높이 (top: 46px + 약간의 여백)
-    const bottomPadding = 20; // 하단 여백 (+n개 표시 공간)
+    const bottomPadding = 24; // 하단 여백 (+n개 표시 공간)
     
     const getMaxVisibleRowsForCell = (dateKey: string): number => {
         const cellHeight = cellHeights[dateKey] || 0;
@@ -83,6 +83,18 @@ const WeekRow: React.FC<WeekRowProps> = ({
         );
         
         return Math.max(0, rows);
+    };
+    
+    // 태그의 실제 위치가 셀 높이를 넘어가는지 확인하는 함수
+    const isTagOverflowing = (rowIndex: number, dateKey: string): boolean => {
+        const cellHeight = cellHeights[dateKey] || 0;
+        if (cellHeight === 0) return false; // 높이를 측정하지 못한 경우 false
+        
+        const tagTop = dateHeaderHeight + rowIndex * (tagHeight + tagSpacing);
+        const tagBottom = tagTop + tagHeight;
+        
+        // 태그의 하단이 셀 높이에서 하단 여백을 뺀 영역을 넘어가면 overflow
+        return tagBottom > (cellHeight - bottomPadding);
     };
 
     // 각 날짜별로 셀 높이에 맞춰 표시 가능한 태그 계산
