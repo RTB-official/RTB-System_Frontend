@@ -647,8 +647,11 @@ export default function Sidebar({ onClose }: SidebarProps) {
                     <div className="h-px bg-gray-200 rounded-full" />
 
                     <nav className="flex flex-col gap-2">
-                        {/* 대시보드 - 대표님, 공무팀만 (항상 렌더링하여 높이 유지) */}
-                        <div style={{ display: (isCEO || isAdmin) ? 'block' : 'none' }}>
+                        {/* 대시보드 - 대표님, 공무팀만 (항상 렌더링하여 높이 유지, 사용자 정보 로드 후에만 표시) */}
+                        <div style={{ 
+                            display: (hasUserInfo && (isCEO || isAdmin)) ? 'block' : 'none',
+                            minHeight: hasUserInfo ? '0' : '0'
+                        }}>
                             <MainLink
                                 to={PATHS.dashboard}
                                 icon={<IconHome />}
@@ -731,9 +734,9 @@ export default function Sidebar({ onClose }: SidebarProps) {
                         </button>
 
                         {/* 하위메뉴 - 항상 렌더링하여 높이 유지, 조건부로 표시 */}
-                        <div 
+                        <div
                             className="ml-4 mt-1 flex flex-col gap-1"
-                            style={{ 
+                            style={{
                                 display: (expenseOpen && expenseSubMenuItems.length > 1) ? 'flex' : 'none',
                                 minHeight: expenseSubMenuItems.length > 1 ? '0' : '0'
                             }}
