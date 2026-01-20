@@ -1,4 +1,8 @@
 import { supabase } from "./supabase";
+import {
+    getGongmuTeamUserIds,
+    createNotificationsForUsers,
+} from "./notificationApi";
 
 // ==================== 타입 정의 ====================
 
@@ -331,6 +335,43 @@ export async function createWorkLog(
                     `첨부파일 저장 실패: ${receiptsError.message}`
                 );
             }
+        }
+
+        // 7. 보고서 제출 시 공무팀에 알림 생성 (임시저장이 아닐 때만, 본인 제외)
+        if (!data.is_draft) {
+            try {
+                console.log("🔔 [알림] 보고서 제출 알림 생성 시작...");
+                const gongmuUserIds = await getGongmuTeamUserIds();
+                console.log("🔔 [알림] 공무팀 사용자 ID 목록:", gongmuUserIds);
+                
+                // 본인 제외
+                const creatorId = data.created_by || null;
+                const targetUserIds = creatorId 
+                    ? gongmuUserIds.filter(id => id !== creatorId)
+                    : gongmuUserIds;
+                console.log("🔔 [알림] 알림 대상 사용자 ID 목록 (본인 제외):", targetUserIds);
+                
+                if (targetUserIds.length > 0) {
+                    const result = await createNotificationsForUsers(
+                        targetUserIds,
+                        "새 보고서",
+                        `${workLog.author || "작성자"}님이 새 보고서를 제출했습니다.`,
+                        "report"
+                    );
+                    console.log("🔔 [알림] 알림 생성 완료:", result.length, "개");
+                } else {
+                    console.warn("⚠️ [알림] 알림 대상 사용자가 없어 알림을 생성하지 않았습니다.");
+                }
+            } catch (notificationError: any) {
+                // 알림 생성 실패는 보고서 생성을 막지 않음
+                console.error(
+                    "❌ [알림] 알림 생성 실패 (보고서는 정상 생성됨):",
+                    notificationError?.message || notificationError,
+                    notificationError
+                );
+            }
+        } else {
+            console.log("📝 [알림] 임시저장이므로 알림을 생성하지 않습니다.");
         }
 
         return workLog;
@@ -715,6 +756,69 @@ export async function updateWorkLog(
                     `소모품 저장 실패: ${materialsError.message}`
                 );
             }
+        }
+
+        // 7. 보고서 제출 시 공무팀에 알림 생성 (임시저장이 아닐 때만, 그리고 이전에 draft였던 경우만)
+        if (!data.is_draft) {
+            try {
+                console.log("🔔 [알림] 보고서 업데이트 알림 생성 시작...");
+                // 이전 상태 확인 (draft였는지)
+                const { data: previousWorkLog, error: prevError } = await supabase
+                    .from("work_logs")
+                    .select("is_draft")
+                    .eq("id", workLogId)
+                    .single();
+
+                if (prevError) {
+                    console.error("⚠️ [알림] 이전 보고서 상태 조회 실패:", prevError);
+                }
+
+                console.log("🔔 [알림] 이전 보고서 상태:", previousWorkLog);
+
+                // 이전에 draft였거나, 또는 새로 제출되는 경우 알림 생성 (본인 제외)
+                if (!previousWorkLog || previousWorkLog.is_draft) {
+                    // 작성자 ID 가져오기
+                    const { data: currentWorkLog } = await supabase
+                        .from("work_logs")
+                        .select("created_by")
+                        .eq("id", workLogId)
+                        .single();
+                    
+                    const creatorId = currentWorkLog?.created_by || data.created_by || null;
+                    
+                    const gongmuUserIds = await getGongmuTeamUserIds();
+                    console.log("🔔 [알림] 공무팀 사용자 ID 목록:", gongmuUserIds);
+                    
+                    // 본인 제외
+                    const targetUserIds = creatorId 
+                        ? gongmuUserIds.filter(id => id !== creatorId)
+                        : gongmuUserIds;
+                    console.log("🔔 [알림] 알림 대상 사용자 ID 목록 (본인 제외):", targetUserIds);
+                    
+                    if (targetUserIds.length > 0) {
+                        const result = await createNotificationsForUsers(
+                            targetUserIds,
+                            "새 보고서",
+                            `${workLog.author || "작성자"}님이 새 보고서를 제출했습니다.`,
+                            "report"
+                        );
+                        console.log("🔔 [알림] 알림 생성 완료:", result.length, "개");
+                    } else {
+                        console.warn("⚠️ [알림] 알림 대상 사용자가 없어 알림을 생성하지 않았습니다.");
+                    }
+                } else {
+                    console.log("📝 [알림] 이미 제출된 보고서이므로 알림을 생성하지 않습니다.");
+                }
+            } catch (notificationError: any) {
+                // 알림 생성 실패는 보고서 업데이트를 막지 않음
+                console.error(
+                    "❌ [알림] 알림 생성 실패 (보고서는 정상 업데이트됨):",
+                    notificationError?.message || notificationError,
+                    notificationError
+                );
+            }
+        } else {
+            console.log("📝 [알림] 임시저장이므로 알림을 생성하지 않습니다.");
         }
 
         return workLog;

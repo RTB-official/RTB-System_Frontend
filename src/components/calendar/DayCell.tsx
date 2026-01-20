@@ -1,7 +1,9 @@
 import React from "react";
+import CalendarTag from "../common/CalendarTag";
+import { CalendarEvent } from "../../types";
 
 interface WeekEventSegment {
-    event: { id: string };
+    event: CalendarEvent;
     startOffset: number;
     duration: number;
     rowIndex: number;
@@ -16,12 +18,20 @@ interface DayCellProps {
     isInDragRange: boolean;
     columnPadding: string;
     hiddenCount: number;
-    maxVisibleRows: number;
+    onHiddenCountClick: () => void;
     cellRefs: React.MutableRefObject<Record<string, HTMLDivElement | null>>;
+    tagHeight: number;
+    tagSpacing: number;
+    tagLayerTop: number;
+    visibleSegments: WeekEventSegment[];
+    week: { date: Date; inMonth: boolean }[];
+    getSafeDateKey: (date: Date) => string;
+    onEditEvent: (event: any) => void;
+    onDeleteEvent: (eventId: string) => void;
+    onEventClick: (event: any, e: React.MouseEvent) => void;
     onMouseDown: (e: React.MouseEvent) => void;
     onMouseEnter: () => void;
     onClick: (e: React.MouseEvent) => void;
-    onHiddenCountClick: () => void;
 }
 
 const DayCell: React.FC<DayCellProps> = ({
@@ -33,12 +43,20 @@ const DayCell: React.FC<DayCellProps> = ({
     isInDragRange,
     columnPadding,
     hiddenCount,
-    maxVisibleRows,
+    onHiddenCountClick,
     cellRefs,
+    tagHeight,
+    tagSpacing,
+    tagLayerTop,
+    visibleSegments,
+    week,
+    getSafeDateKey,
+    onEditEvent,
+    onDeleteEvent,
+    onEventClick,
     onMouseDown,
     onMouseEnter,
     onClick,
-    onHiddenCountClick,
 }) => {
     return (
         <div
@@ -54,17 +72,19 @@ const DayCell: React.FC<DayCellProps> = ({
             onMouseDown={onMouseDown}
             onMouseEnter={onMouseEnter}
             onClick={onClick}
-            className={`pt-3 relative ${
-                dayIdx < 6 ? "border-r border-gray-200" : ""
-            } ${
-                inMonth ? "cursor-pointer" : "cursor-default"
-            } transition-colors select-none flex flex-col ${
-                isInDragRange
+            className={`p-4 relative ${dayIdx < 6 ? "border-r border-gray-200" : ""
+                } ${inMonth ? "cursor-pointer" : "cursor-default"
+                } transition-colors select-none flex flex-col ${isInDragRange
                     ? "bg-blue-50"
                     : inMonth
-                    ? "bg-white hover:bg-gray-50"
-                    : "bg-white text-gray-400"
-            } overflow-hidden`}
+                        ? "bg-white hover:bg-gray-50"
+                        : "bg-white text-gray-400"
+                }`}
+            style={{
+                overflow: 'hidden',
+                position: 'relative',
+                isolation: 'isolate',
+            }}
         >
             <div className={`${columnPadding} flex items-start`}>
                 <div className="w-7.5 h-7.5 flex items-center justify-center relative">
@@ -73,35 +93,132 @@ const DayCell: React.FC<DayCellProps> = ({
                     )}
                     <div
                         data-date-number
-                        className={`relative z-10 text-[17px] font-medium ${
-                            isToday
-                                ? "text-white"
-                                : !inMonth
+                        className={`relative z-10 text-[17px] font-medium ${isToday
+                            ? "text-white"
+                            : !inMonth
                                 ? "text-gray-400"
                                 : date.getDay() === 0
-                                ? "text-red-500"
-                                : date.getDay() === 6
-                                ? "text-blue-500"
-                                : "text-gray-800"
-                        }`}
+                                    ? "text-red-500"
+                                    : date.getDay() === 6
+                                        ? "text-blue-500"
+                                        : "text-gray-800"
+                            }`}
                     >
                         {date.getDate()}
                     </div>
                 </div>
             </div>
 
-            {/* 태그 개수 표시 (+N개) - 태그와 겹치지 않도록 여유 공간 확보 */}
+            {/* 태그 영역 - absolute로 배치하여 셀 높이 변경 없음, overflow로 클리핑 */}
+            <div
+                className="absolute left-0 right-0 pointer-events-none"
+                style={{
+                    top: `${tagLayerTop}px`,
+                    left: 0,
+                    right: 0,
+                    overflow: 'hidden',
+                    height: hiddenCount > 0
+                        ? `calc(100% - ${tagLayerTop}px - 24px)`
+                        : `calc(100% - ${tagLayerTop}px)`,
+                }}
+            >
+                {visibleSegments.map((segment) => {
+                    const isStartInCell = segment.startOffset === dayIdx;
+                    const isEndInCell = segment.startOffset + segment.duration - 1 === dayIdx;
+
+                    const startDayDate = week[segment.startOffset]?.date;
+                    const endDayDate = week[
+                        Math.min(6, segment.startOffset + segment.duration - 1)
+                    ]?.date;
+
+                    if (!startDayDate || !endDayDate) return null;
+
+                    const isEventStart =
+                        segment.event.startDate === getSafeDateKey(startDayDate);
+                    const isEventEnd =
+                        segment.event.endDate === getSafeDateKey(endDayDate);
+
+                    let width = "100%";
+                    let left = "0px";
+                    if (isStartInCell && isEndInCell) {
+                        // 시작과 끝 모두 이 셀에 있으면 양쪽 간격
+                        width = "calc(100% - 16px)";
+                        left = "8px";
+                    } else if (isStartInCell) {
+                        // 시작만 이 셀에 있으면 왼쪽 간격
+                        width = "calc(100% - 8px)";
+                        left = "8px";
+                    } else if (isEndInCell) {
+                        // 끝만 이 셀에 있으면 오른쪽 간격
+                        width = "calc(100% - 8px)";
+                        left = "0px";
+                    } else {
+                        // 중간에 있는 태그는 간격 없음
+                        width = "100%";
+                        left = "0px";
+                    }
+
+                    // rowIndex로 위치 계산
+                    const top = segment.rowIndex * (tagHeight + tagSpacing);
+
+                    return (
+                        <CalendarTag
+                            key={`${segment.event.id}-${dayIdx}-${segment.rowIndex}`}
+                            title={
+                                isEventStart && isStartInCell ? segment.event.title : ""
+                            }
+                            color={segment.event.color}
+                            variant={segment.event.isHoliday ? "holiday" : "event"}
+                            isStart={isEventStart && isStartInCell}
+                            isEnd={isEventEnd && isEndInCell}
+                            width={width}
+                            style={{
+                                position: 'absolute',
+                                top: `${top}px`,
+                                left: left,
+                                maxWidth: '100%',
+                            }}
+                            onEdit={
+                                segment.event.isHoliday
+                                    ? undefined
+                                    : () => onEditEvent(segment.event)
+                            }
+                            onDelete={
+                                segment.event.isHoliday
+                                    ? undefined
+                                    : () => onDeleteEvent(segment.event.id)
+                            }
+                            onClick={
+                                segment.event.isHoliday
+                                    ? undefined
+                                    : (e) => onEventClick(segment.event, e)
+                            }
+                        />
+                    );
+                })}
+            </div>
+
+            {/* +N개 표시 */}
             {hiddenCount > 0 && (
                 <div
-                    className={`absolute inset-x-0 bottom-0 pointer-events-auto z-20 cursor-pointer text-center pb-1`}
+                    className="absolute left-0 right-0 bottom-0 pointer-events-auto z-40 cursor-pointer flex items-center justify-center bg-white/95 border-t border-gray-200"
+                    style={{
+                        height: '24px',
+                    }}
                     onClick={(e) => {
                         e.stopPropagation();
                         onHiddenCountClick();
                     }}
+                    onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = 'rgba(249, 250, 251, 0.95)';
+                    }}
+                    onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.95)';
+                    }}
                 >
-                    <div className="text-[12px] text-gray-400 hover:text-gray-600 transition-colors bg-white/80 px-1 rounded">
+                    <span className="text-[12px] font-semibold text-gray-700 select-none">
                         +{hiddenCount}개
-                    </div>
+                    </span>
                 </div>
             )}
         </div>

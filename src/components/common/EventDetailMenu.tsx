@@ -18,6 +18,7 @@ interface EventDetailMenuProps {
     event: CalendarEvent | null;
     onEdit: (event: CalendarEvent) => void;
     onDelete: (eventId: string) => void;
+    currentUserId?: string; // 현재 로그인한 사용자 ID
 }
 
 const EventDetailMenu: React.FC<EventDetailMenuProps> = ({
@@ -28,6 +29,7 @@ const EventDetailMenu: React.FC<EventDetailMenuProps> = ({
     event,
     onEdit,
     onDelete,
+    currentUserId,
 }) => {
     const navigate = useNavigate();
     const menuRef = useRef<HTMLDivElement>(null);
@@ -40,10 +42,10 @@ const EventDetailMenu: React.FC<EventDetailMenuProps> = ({
     const eventType = event?.id.startsWith("vacation-")
         ? "vacation"
         : event?.id.startsWith("worklog-")
-        ? "worklog"
-        : event?.id.startsWith("event-")
-        ? "event"
-        : null;
+            ? "worklog"
+            : event?.id.startsWith("event-")
+                ? "event"
+                : null;
 
     // 휴가 데이터 로드
     useEffect(() => {
@@ -179,6 +181,16 @@ const EventDetailMenu: React.FC<EventDetailMenuProps> = ({
         return statusMap[status] || status;
     };
 
+    // 상태에 따른 Chip 색상 (휴가 관리 페이지와 동일)
+    const getStatusColor = (status: string): string => {
+        const colorMap: Record<string, string> = {
+            pending: "blue-600",
+            approved: "green-700",
+            rejected: "red-700",
+        };
+        return colorMap[status] || "gray-500";
+    };
+
     // 휴가 UI
     const renderVacationUI = () => {
         if (loading) {
@@ -205,7 +217,7 @@ const EventDetailMenu: React.FC<EventDetailMenuProps> = ({
                             <h3 className="text-lg font-semibold text-gray-900">
                                 휴가
                             </h3>
-                            <Chip color="gray-400" variant="solid" size="sm">
+                            <Chip color={getStatusColor(vacationData.status)} variant="solid" size="sm">
                                 {getStatusText(vacationData.status)}
                             </Chip>
                         </div>
@@ -343,33 +355,38 @@ const EventDetailMenu: React.FC<EventDetailMenuProps> = ({
                         )}
                     </div>
                 </div>
-                <div className="h-px bg-gray-100" />
-                <div className="flex gap-2">
-                    <Button
-                        variant="primary"
-                        size="sm"
-                        fullWidth
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            onEdit(event);
-                            onClose();
-                        }}
-                    >
-                        수정
-                    </Button>
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        fullWidth
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            onDelete(event.id);
-                            onClose();
-                        }}
-                    >
-                        삭제
-                    </Button>
-                </div>
+                {/* 생성자만 수정/삭제 버튼 표시 */}
+                {event.userId === currentUserId && (
+                    <>
+                        <div className="h-px bg-gray-100" />
+                        <div className="flex gap-2">
+                            <Button
+                                variant="primary"
+                                size="sm"
+                                fullWidth
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onEdit(event);
+                                    onClose();
+                                }}
+                            >
+                                수정
+                            </Button>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                fullWidth
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onDelete(event.id);
+                                    onClose();
+                                }}
+                            >
+                                삭제
+                            </Button>
+                        </div>
+                    </>
+                )}
             </div>
         );
     };

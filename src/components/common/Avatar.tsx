@@ -16,6 +16,8 @@ export default function Avatar({ email, size = 32, position }: Props) {
         switch (position) {
             case "인턴":
                 return "#94A3B8"; // slate
+            case "사원":
+                return "#64748B"; // slate-500
             case "주임":
                 return "#22C55E"; // green
             case "대리":
@@ -23,7 +25,7 @@ export default function Avatar({ email, size = 32, position }: Props) {
             case "과장":
                 return "#A855F7"; // purple
             case "차장":
-                return "#F97316"; // orange
+                return "#efc404"; // yellow (노란색)
             case "부장":
                 return "#EF4444"; // red
             case "감사":

@@ -2,6 +2,10 @@ import { supabase } from "./supabase";
 import { CalendarEvent } from "../types";
 import { Vacation } from "./vacationApi";
 import { PersonalExpense, PersonalMileage } from "./personalExpenseApi";
+import {
+    getGongmuTeamUserIds,
+    createNotificationsForUsers,
+} from "./notificationApi";
 
 // ==================== 타입 정의 ====================
 
@@ -77,6 +81,45 @@ export async function createCalendarEvent(
         throw new Error(`일정 생성 실패: ${error.message}`);
     }
 
+    // 일정 생성 시 공무팀에 알림 생성 (본인 제외)
+    try {
+        console.log("🔔 [알림] 일정 생성 알림 시작...");
+        const gongmuUserIds = await getGongmuTeamUserIds();
+        console.log("🔔 [알림] 공무팀 사용자 ID 목록:", gongmuUserIds);
+        
+        // 본인 제외
+        const targetUserIds = gongmuUserIds.filter(id => id !== data.user_id);
+        console.log("🔔 [알림] 알림 대상 사용자 ID 목록 (본인 제외):", targetUserIds);
+        
+        if (targetUserIds.length > 0) {
+            // 사용자 이름 가져오기
+            const { data: profile } = await supabase
+                .from("profiles")
+                .select("name")
+                .eq("id", data.user_id)
+                .single();
+
+            const userName = profile?.name || "사용자";
+
+            const result = await createNotificationsForUsers(
+                targetUserIds,
+                "새 일정",
+                `${userName}님이 새 일정 "${data.title}"을(를) 추가했습니다.`,
+                "schedule"
+            );
+            console.log("🔔 [알림] 알림 생성 완료:", result.length, "개");
+        } else {
+            console.warn("⚠️ [알림] 알림 대상 사용자가 없어 알림을 생성하지 않았습니다.");
+        }
+    } catch (notificationError: any) {
+        // 알림 생성 실패는 일정 생성을 막지 않음
+        console.error(
+            "❌ [알림] 알림 생성 실패 (일정은 정상 생성됨):",
+            notificationError?.message || notificationError,
+            notificationError
+        );
+    }
+
     return event;
 }
 
@@ -85,8 +128,27 @@ export async function createCalendarEvent(
  */
 export async function updateCalendarEvent(
     eventId: string,
-    data: UpdateCalendarEventInput
+    data: UpdateCalendarEventInput,
+    currentUserId?: string
 ): Promise<CalendarEventRecord> {
+    // 권한 체크: 생성자만 수정 가능
+    if (currentUserId) {
+        const { data: existingEvent, error: fetchError } = await supabase
+            .from("calendar_events")
+            .select("user_id")
+            .eq("id", eventId)
+            .single();
+
+        if (fetchError) {
+            console.error("Error fetching calendar event:", fetchError);
+            throw new Error(`일정 조회 실패: ${fetchError.message}`);
+        }
+
+        if (existingEvent?.user_id !== currentUserId) {
+            throw new Error("일정을 수정할 권한이 없습니다. 생성자만 수정할 수 있습니다.");
+        }
+    }
+
     const { data: event, error } = await supabase
         .from("calendar_events")
         .update(data)
@@ -105,7 +167,28 @@ export async function updateCalendarEvent(
 /**
  * 일정 삭제
  */
-export async function deleteCalendarEvent(eventId: string): Promise<void> {
+export async function deleteCalendarEvent(
+    eventId: string,
+    currentUserId?: string
+): Promise<void> {
+    // 권한 체크: 생성자만 삭제 가능
+    if (currentUserId) {
+        const { data: existingEvent, error: fetchError } = await supabase
+            .from("calendar_events")
+            .select("user_id")
+            .eq("id", eventId)
+            .single();
+
+        if (fetchError) {
+            console.error("Error fetching calendar event:", fetchError);
+            throw new Error(`일정 조회 실패: ${fetchError.message}`);
+        }
+
+        if (existingEvent?.user_id !== currentUserId) {
+            throw new Error("일정을 삭제할 권한이 없습니다. 생성자만 삭제할 수 있습니다.");
+        }
+    }
+
     const { error } = await supabase
         .from("calendar_events")
         .delete()
@@ -317,16 +400,24 @@ export function vacationToCalendarEvent(
         PM: "오후반차",
     };
 
+    const leaveTypeText = leaveTypeMap[vacation.leave_type] || vacation.leave_type;
+
     const title = userName
-        ? `휴가 - ${userName} (${
-              leaveTypeMap[vacation.leave_type] || vacation.leave_type
-          })`
-        : `휴가 (${leaveTypeMap[vacation.leave_type] || vacation.leave_type})`;
+        ? `휴가 - ${userName} ${leaveTypeText}`
+        : `휴가 ${leaveTypeText}`;
+
+    // 상태에 따라 색상 변경
+    let color = "#60a5fa"; // 기본 파란색 (승인 완료)
+    if (vacation.status === "pending") {
+        color = "#3b82f6"; // 밝은 파란색 (대기 중)
+    } else if (vacation.status === "rejected") {
+        color = "#ef4444"; // 빨간색 (반려)
+    }
 
     return {
         id: `vacation-${vacation.id}`,
         title,
-        color: "#60a5fa",
+        color,
         startDate: vacation.date,
         endDate: vacation.date,
         attendees: vacation.user_id ? [vacation.user_id] : undefined,
@@ -392,5 +483,6 @@ export function calendarEventRecordToCalendarEvent(
         color: "#fb923c", // 주황색 (일정)
         startDate: record.start_date,
         endDate: record.end_date,
+        userId: record.user_id, // 생성자 ID 포함
     };
 }

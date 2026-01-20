@@ -1,5 +1,4 @@
 import React from "react";
-import CalendarTag from "../common/CalendarTag";
 import DayCell from "./DayCell";
 import { CalendarEvent } from "../../types";
 
@@ -25,6 +24,7 @@ interface WeekRowProps {
     maxVisibleRows: number;
     tagHeight: number;
     tagSpacing: number;
+    cellHeights: Record<string, number>;
     onEditEvent: (event: CalendarEvent) => void;
     onDeleteEvent: (eventId: string) => void;
     onEventClick: (event: CalendarEvent, e: React.MouseEvent) => void;
@@ -34,9 +34,10 @@ interface WeekRowProps {
     onHiddenCountClick: (dateKey: string, threshold: number) => void;
 }
 
+const pad = (n: number) => (n < 10 ? "0" + n : String(n));
+
 const WeekRow: React.FC<WeekRowProps> = ({
     week,
-    weekIdx,
     weekEventRows,
     today,
     dragStart,
@@ -46,9 +47,9 @@ const WeekRow: React.FC<WeekRowProps> = ({
     getColumnPadding,
     getSafeDateKey,
     getEventsForDate,
-    maxVisibleRows,
     tagHeight,
     tagSpacing,
+    cellHeights,
     onEditEvent,
     onDeleteEvent,
     onEventClick,
@@ -57,142 +58,125 @@ const WeekRow: React.FC<WeekRowProps> = ({
     onDragEnter,
     onHiddenCountClick,
 }) => {
-    const pad = (n: number) => (n < 10 ? "0" + n : String(n));
+    const TAG_LAYER_TOP = 54; // 날짜 숫자(30px) + 상단 패딩(12px) + 간격(10px) = 52px (여유 2px)
+    const HIDDEN_COUNT_HEIGHT = 24;
 
-    // 각 날짜별로 마지막 행 태그와 +n개 겹침 여부를 미리 계산
-    const shouldHideLastRowTag = new Map<number, boolean>();
+    // 각 날짜별로 보여줄 태그와 숨길 태그 계산
+    const dateTagInfo = new Map<
+        string,
+        { visibleSegments: WeekEventSegment[]; hiddenCount: number }
+    >();
+
     week.forEach(({ date }, dayIdx) => {
         const dateKey = `${date.getFullYear()}-${pad(
             date.getMonth() + 1
         )}-${pad(date.getDate())}`;
-        
-        const dayEvents = getEventsForDate(dateKey);
-        const daySegments = weekEventRows.filter(
-            (segment) =>
-                segment.startOffset <= dayIdx &&
-                dayIdx < segment.startOffset + segment.duration
-        );
-        
-        const visibleRowIndices = new Set(
-            daySegments
-                .filter((s) => s.rowIndex < maxVisibleRows)
-                .map((s) => s.rowIndex)
-        );
-        
-        const hiddenCountRaw = dayEvents.filter((event) => {
-            const segment = daySegments.find(
-                (s) => s.event.id === event.id
-            );
-            return segment && !visibleRowIndices.has(segment.rowIndex);
-        }).length;
-        
-        const hasLastRowTag = daySegments.some(
-            (s) => s.rowIndex === maxVisibleRows - 1
-        );
-        
-        // 마지막 행에 태그가 있고 숨겨진 태그가 있으면, 마지막 행 태그를 숨김
-        shouldHideLastRowTag.set(dayIdx, hasLastRowTag && hiddenCountRaw > 0);
-    });
 
-    // 태그는 maxVisibleRows까지 표시하되, 특정 날짜의 마지막 행 태그는 조건부로 숨김
-    const visibleSegments = weekEventRows.filter((segment) => {
-        if (segment.rowIndex >= maxVisibleRows) return false;
-        
-        // 마지막 행 태그인 경우, 해당 날짜에서 숨겨야 하는지 확인
-        if (segment.rowIndex === maxVisibleRows - 1) {
-            // 이 세그먼트가 포함된 모든 날짜를 확인
-            for (let dayIdx = segment.startOffset; dayIdx < segment.startOffset + segment.duration; dayIdx++) {
-                if (shouldHideLastRowTag.get(dayIdx)) {
-                    return false; // 이 날짜에서 마지막 행 태그를 숨김
-                }
+        const cellHeight = cellHeights[dateKey] || 0;
+
+        // 해당 날짜에 해당하는 세그먼트 필터링
+        const daySegments = weekEventRows
+            .filter(
+                (seg) =>
+                    seg.startOffset <= dayIdx &&
+                    dayIdx < seg.startOffset + seg.duration
+            )
+            .sort((a, b) => a.rowIndex - b.rowIndex);
+
+        // 셀 높이가 측정되지 않았으면 모든 태그 표시
+        if (cellHeight === 0) {
+            dateTagInfo.set(dateKey, {
+                visibleSegments: daySegments,
+                hiddenCount: 0,
+            });
+            return;
+        }
+
+        // 태그가 하나도 없으면 처리할 필요 없음
+        if (daySegments.length === 0) {
+            dateTagInfo.set(dateKey, {
+                visibleSegments: [],
+                hiddenCount: 0,
+            });
+            return;
+        }
+
+        // cellHeight는 ResizeObserver로 측정된 셀의 실제 높이 (content box)
+        // 태그 컨테이너는 top: TAG_LAYER_TOP (54px)에서 시작
+
+        // 태그가 들어갈 수 있는 공간 (태그 컨테이너 시작점부터 셀 하단까지)
+        const availableHeight = cellHeight - TAG_LAYER_TOP;
+
+        // availableHeight가 0 이하이면 태그를 표시할 수 없음
+        if (availableHeight <= 0) {
+            dateTagInfo.set(dateKey, {
+                visibleSegments: [],
+                hiddenCount: daySegments.length,
+            });
+            return;
+        }
+
+        // 각 태그의 위치 계산 (태그 컨테이너 기준 - 0부터 시작)
+        // 태그는 컨테이너 내부에서 rowIndex * (tagHeight + tagSpacing)에 위치
+        const tagPositions = daySegments.map((seg) => {
+            const tagTop = seg.rowIndex * (tagHeight + tagSpacing);
+            const tagBottom = tagTop + tagHeight;
+            return { seg, tagTop, tagBottom };
+        });
+
+        // 마지막 태그의 하단 위치
+        const lastTagBottom = tagPositions.length > 0
+            ? Math.max(...tagPositions.map(p => p.tagBottom))
+            : 0;
+
+        // +N개 공간을 확보한 최대 높이
+        const maxVisibleHeightWithHidden = availableHeight - HIDDEN_COUNT_HEIGHT;
+
+        // 모든 태그가 availableHeight 안에 들어가는지 확인
+        if (lastTagBottom <= availableHeight) {
+            // 모든 태그가 들어가지만, +N개 공간을 미리 확보하지 않음
+            dateTagInfo.set(dateKey, {
+                visibleSegments: daySegments,
+                hiddenCount: 0,
+            });
+            return;
+        }
+
+        // 태그가 넘어가는 경우, +N개 공간(24px)을 확보하고 보여줄 태그 계산
+        // 태그가 들어갈 수 있는 최대 높이 (태그 컨테이너 기준)
+        const maxVisibleHeight = maxVisibleHeightWithHidden;
+
+        // 보여줄 수 있는 태그들 선택 (완전히 들어가는 것만)
+        // 태그의 하단이 maxVisibleHeight 이하이면 완전히 보임
+        const visibleSegments: WeekEventSegment[] = [];
+        for (const { seg, tagBottom } of tagPositions) {
+            if (tagBottom <= maxVisibleHeight) {
+                visibleSegments.push(seg);
+            } else {
+                // 태그가 잘리면 더 이상 추가하지 않음
+                break;
             }
         }
-        
-        return true;
+
+        // 숨겨진 태그 개수 = 전체 세그먼트 수 - 보이는 세그먼트 수
+        const hiddenCount = daySegments.length - visibleSegments.length;
+
+        dateTagInfo.set(dateKey, {
+            visibleSegments,
+            hiddenCount,
+        });
     });
 
     return (
-        <div
-            key={weekIdx}
-            className="flex-1 grid grid-cols-7 border-b border-gray-200 relative overflow-hidden"
-        >
-            {/* 주 단위 이벤트 렌더링 */}
-            <div
-                className="absolute inset-0 pointer-events-none"
-                style={{ top: "46px" }}
-            >
-                {visibleSegments.map((segment) => {
-                    const left = (segment.startOffset / 7) * 100;
-                    const width = (segment.duration / 7) * 100;
-
-                    const startDayDate = week[segment.startOffset]?.date;
-                    const endDayDate =
-                        week[
-                            Math.min(
-                                6,
-                                segment.startOffset + segment.duration - 1
-                            )
-                        ]?.date;
-
-                    if (!startDayDate || !endDayDate) return null;
-
-                    const isEventStart =
-                        segment.event.startDate ===
-                        getSafeDateKey(startDayDate);
-                    const isEventEnd =
-                        segment.event.endDate === getSafeDateKey(endDayDate);
-
-                    return (
-                        <CalendarTag
-                            key={`${segment.event.id}-${segment.startOffset}-${segment.rowIndex}`}
-                            title={
-                                isEventStart || segment.startOffset === 0
-                                    ? segment.event.title
-                                    : ""
-                            }
-                            variant={
-                                segment.event.isHoliday ? "holiday" : "event"
-                            }
-                            color={segment.event.color}
-                            isStart={isEventStart}
-                            isEnd={isEventEnd}
-                            left={`${left}%`}
-                            width={`calc(${width}% - ${
-                                isEventStart ? 8 : 0
-                            }px - ${isEventEnd ? 8 : 0}px)`}
-                            top={`${
-                                segment.rowIndex * (tagHeight + tagSpacing)
-                            }px`}
-                            onEdit={
-                                segment.event.isHoliday
-                                    ? undefined
-                                    : () => onEditEvent(segment.event)
-                            }
-                            onDelete={
-                                segment.event.isHoliday
-                                    ? undefined
-                                    : () => onDeleteEvent(segment.event.id)
-                            }
-                            onClick={
-                                segment.event.isHoliday
-                                    ? undefined
-                                    : (e) => onEventClick(segment.event, e)
-                            }
-                        />
-                    );
-                })}
-            </div>
-
-            {/* 각 날짜 셀 렌더링 */}
+        <div className="flex-1 grid grid-cols-7 border-b border-gray-200 relative">
+            {/* 날짜 셀 */}
             {week.map(({ date, inMonth }, dayIdx) => {
                 const dateKey = `${date.getFullYear()}-${pad(
                     date.getMonth() + 1
                 )}-${pad(date.getDate())}`;
 
                 const isToday =
-                    date.getFullYear() === today.getFullYear() &&
-                    date.getMonth() === today.getMonth() &&
-                    date.getDate() === today.getDate();
+                    date.toDateString() === today.toDateString();
 
                 // 드래그 선택 범위 확인
                 const isInDragRange =
@@ -207,37 +191,8 @@ const WeekRow: React.FC<WeekRowProps> = ({
                         return current >= minDate && current <= maxDate;
                     })();
 
-                const columnPadding = getColumnPadding(dayIdx);
-
-                // 해당 날짜의 이벤트 가져오기
-                const dayEvents = getEventsForDate(dateKey);
-
-                // 해당 날짜에 해당하는 세그먼트 필터링
-                const daySegments = weekEventRows.filter(
-                    (segment) =>
-                        segment.startOffset <= dayIdx &&
-                        dayIdx < segment.startOffset + segment.duration
-                );
-
-                // 숨겨진 이벤트 개수 계산
-                const visibleRowIndices = new Set(
-                    daySegments
-                        .filter((s) => s.rowIndex < maxVisibleRows)
-                        .map((s) => s.rowIndex)
-                );
-                
-                const hiddenCountRaw = dayEvents.filter((event) => {
-                    const segment = daySegments.find(
-                        (s) => s.event.id === event.id
-                    );
-                    return segment && !visibleRowIndices.has(segment.rowIndex);
-                }).length;
-                
-                // 마지막 행 태그가 숨겨져 있으면 +n개에 포함
-                const isLastRowTagHidden = shouldHideLastRowTag.get(dayIdx) || false;
-                const hiddenCount = isLastRowTagHidden 
-                    ? hiddenCountRaw + 1 
-                    : hiddenCountRaw;
+                const tagInfo = dateTagInfo.get(dateKey);
+                const cellHeight = cellHeights[dateKey] || 0;
 
                 return (
                     <DayCell
@@ -248,15 +203,37 @@ const WeekRow: React.FC<WeekRowProps> = ({
                         dateKey={dateKey}
                         isToday={isToday}
                         isInDragRange={!!isInDragRange}
-                        columnPadding={columnPadding}
-                        hiddenCount={hiddenCount}
-                        maxVisibleRows={maxVisibleRows}
+                        columnPadding={getColumnPadding(dayIdx)}
+                        hiddenCount={tagInfo?.hiddenCount ?? 0}
+                        onHiddenCountClick={() =>
+                            onHiddenCountClick(dateKey, tagInfo?.visibleSegments.length ?? 0)
+                        }
                         cellRefs={cellRefs}
-                        onMouseDown={(e) => {
-                            if (e.button === 0) {
-                                onDragStart(dateKey, e);
-                            }
-                        }}
+                        tagHeight={tagHeight}
+                        tagSpacing={tagSpacing}
+                        tagLayerTop={TAG_LAYER_TOP}
+                        visibleSegments={
+                            cellHeight > 0
+                                ? weekEventRows.filter((segment) => {
+                                    const segmentEnd = segment.startOffset + segment.duration;
+                                    const overlaps = segment.startOffset <= dayIdx && dayIdx < segmentEnd;
+                                    if (!overlaps) return false;
+                                    return tagInfo?.visibleSegments.some(
+                                        (s) => s.event.id === segment.event.id
+                                    );
+                                })
+                                : weekEventRows.filter(
+                                    (seg) =>
+                                        seg.startOffset <= dayIdx &&
+                                        dayIdx < seg.startOffset + seg.duration
+                                )
+                        }
+                        week={week}
+                        getSafeDateKey={getSafeDateKey}
+                        onEditEvent={onEditEvent}
+                        onDeleteEvent={onDeleteEvent}
+                        onEventClick={onEventClick}
+                        onMouseDown={(e) => onDragStart(dateKey, e)}
                         onMouseEnter={() => {
                             if (isDragging && dragStart) {
                                 onDragEnter(dateKey);
@@ -267,9 +244,6 @@ const WeekRow: React.FC<WeekRowProps> = ({
                             if (!isDragging && !dragStart) {
                                 onDateClick(dateKey, e);
                             }
-                        }}
-                        onHiddenCountClick={() => {
-                            onHiddenCountClick(dateKey, maxVisibleRows);
                         }}
                     />
                 );
