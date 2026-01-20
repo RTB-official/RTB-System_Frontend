@@ -59,9 +59,8 @@ export default function DashboardPage() {
                 const isCEO = profile.position === "대표";
                 const isAdmin = profile.role === "admin" || profile.department === "공무팀";
                 
-                // 공사팀(스태프)만 접근 불가
+                // 공사팀(스태프)만 접근 불가 - 조용히 리다이렉트
                 if (isStaff && !isCEO && !isAdmin) {
-                    alert("접근 권한이 없습니다.");
                     navigate("/workload", { replace: true });
                 }
             }

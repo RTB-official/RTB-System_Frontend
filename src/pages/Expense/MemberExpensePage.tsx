@@ -102,7 +102,6 @@ export default function MemberExpensePage() {
                 if (profile) {
                     const isStaff = profile.role === "staff" || profile.department === "공사팀";
                     if (isStaff) {
-                        alert("접근 권한이 없습니다.");
                         navigate("/expense", { replace: true });
                         return;
                     }

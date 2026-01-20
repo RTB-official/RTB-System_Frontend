@@ -108,8 +108,8 @@ export default function WorkloadPage() {
     const handleRowClick = (row: WorkloadTableRow) => {
         const isStaff = userRole === "staff" || userDepartment === "공사팀";
         // 공사팀(스태프)인 경우 본인 ID와 일치하는 경우만 상세 페이지로 이동
+        // (이미 자동 리다이렉트되므로 이 핸들러는 사실상 사용되지 않지만, 안전장치로 유지)
         if (isStaff && row.id !== currentUserId) {
-            alert("본인의 상세 페이지만 조회할 수 있습니다.");
             return;
         }
         navigate(`/workload/detail/${encodeURIComponent(row.name)}`);
