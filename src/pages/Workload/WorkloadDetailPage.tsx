@@ -150,7 +150,7 @@ export default function WorkloadDetailPage() {
             {/* Main Content */}
             <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
                 <Header
-                    title={`${personName} 작업자 워크로드`}
+                    title={`${personName}의 워크로드`}
                     onMenuClick={() => setSidebarOpen(true)}
                     leftContent={
                         <button
