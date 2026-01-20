@@ -23,7 +23,7 @@ export default function Avatar({ email, size = 32, position }: Props) {
             case "과장":
                 return "#A855F7"; // purple
             case "차장":
-                return "#F97316"; // orange
+                return "#efc404"; // yellow (노란색)
             case "부장":
                 return "#EF4444"; // red
             case "감사":

@@ -65,6 +65,12 @@ export default function Chip({
                 border: "border-blue-500",
                 borderOutline: "border-blue-500",
             },
+            "blue-600": {
+                text: "text-blue-600",
+                bg: "bg-blue-50",
+                border: "border-blue-600",
+                borderOutline: "border-blue-600",
+            },
             "green-400": {
                 text: "text-green-500",
                 bg: "bg-green-500/10",
@@ -76,6 +82,12 @@ export default function Chip({
                 bg: "bg-green-500/10",
                 border: "border-green-500",
                 borderOutline: "border-green-500",
+            },
+            "green-700": {
+                text: "text-green-700",
+                bg: "bg-green-50",
+                border: "border-green-700",
+                borderOutline: "border-green-700",
             },
             "purple-400": {
                 text: "text-purple-500",
@@ -107,6 +119,12 @@ export default function Chip({
                 border: "border-red-600",
                 borderOutline: "border-red-600",
             },
+            "red-700": {
+                text: "text-red-700",
+                bg: "bg-red-50",
+                border: "border-red-700",
+                borderOutline: "border-red-700",
+            },
         };
 
         const colors = colorMap[baseColor] || colorMap["gray-500"];
@@ -128,10 +146,13 @@ export default function Chip({
             const filledBgMap: Record<string, string> = {
                 "text-orange-500": "bg-orange-500",
                 "text-blue-500": "bg-blue-500",
+                "text-blue-600": "bg-blue-600",
                 "text-green-500": "bg-green-500",
+                "text-green-700": "bg-green-700",
                 "text-purple-500": "bg-purple-500",
                 "text-gray-500": "bg-gray-500",
                 "text-red-600": "bg-red-600",
+                "text-red-700": "bg-red-700",
             };
             return {
                 text: "text-white",
@@ -153,11 +174,9 @@ export default function Chip({
     const baseClasses =
         "inline-flex items-center justify-center font-medium transition-all whitespace-nowrap border";
 
-    const combinedClasses = `${baseClasses} ${sizeStyles[size]} ${
-        colorClasses.text
-    } ${colorClasses.bg} ${colorClasses.border} ${
-        onClick ? "cursor-pointer hover:opacity-80" : "cursor-default"
-    } ${className}`;
+    const combinedClasses = `${baseClasses} ${sizeStyles[size]} ${colorClasses.text
+        } ${colorClasses.bg} ${colorClasses.border} ${onClick ? "cursor-pointer hover:opacity-80" : "cursor-default"
+        } ${className}`;
 
     if (!onClick) {
         return (

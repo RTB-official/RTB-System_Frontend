@@ -286,7 +286,7 @@ export default function AddMemberModal({
 
                         {/* 이름 (2칸) */}
                         <div className="mb-3 grid grid-cols-2 gap-3">
-                        <Input
+                            <Input
                                 label="성 (Last Name)"
                                 labelClassName="text-[12px] font-medium text-gray-900"
                                 value={passportLastName}
@@ -308,7 +308,7 @@ export default function AddMemberModal({
 
                         {/* 여권 번호 / 만료 기간 (2칸) */}
                         <div className="grid grid-cols-2 gap-3">
-                        <Input
+                            <Input
                                 label="여권 번호"
                                 labelClassName="text-[12px] font-medium text-gray-900"
                                 value={passportNo}

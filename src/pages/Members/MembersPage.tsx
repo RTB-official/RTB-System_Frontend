@@ -35,6 +35,7 @@ type Member = {
     passportLastName: string; // profiles.passport_last_name
     passportFirstName: string; // profiles.passport_first_name
     passportExpiry: string; // profiles.passport_expiry_date (YYMMDD로 보여주기)
+    passportExpiryISO: string; // profiles.passport_expiry_date (ISO 형식, 날짜 비교용)
 };
 
 export default function MembersPage() {
@@ -199,7 +200,7 @@ export default function MembersPage() {
         (passportsData ?? []).forEach((pp: any) => {
             passportsMap.set(pp.user_id, pp);
         });
-        
+
         // 디버깅: 여권정보 확인
         console.log("🔍 [Members] isAdmin:", admin);
         console.log("🔍 [Members] passportsData count:", passportsData?.length || 0);
@@ -237,13 +238,14 @@ export default function MembersPage() {
                 passportExpiry: pp?.passport_expiry_date
                     ? toYYMMDD(pp.passport_expiry_date)
                     : "",
+                passportExpiryISO: pp?.passport_expiry_date ?? "",
             };
         });
 
         setMembers(mapped);
         try {
             localStorage.setItem(MEMBERS_CACHE_KEY, JSON.stringify(mapped));
-        } catch {}
+        } catch { }
         setLoading(false);
     };
 
@@ -337,11 +339,10 @@ export default function MembersPage() {
           fixed lg:static inset-y-0 left-0 z-30
           w-[239px] h-screen shrink-0
           transform transition-transform duration-300 ease-in-out
-          ${
-              sidebarOpen
-                  ? "translate-x-0"
-                  : "-translate-x-full lg:translate-x-0"
-          }
+          ${sidebarOpen
+                        ? "translate-x-0"
+                        : "-translate-x-full lg:translate-x-0"
+                    }
         `}
             >
                 <Sidebar onClose={() => setSidebarOpen(false)} />
@@ -404,7 +405,7 @@ export default function MembersPage() {
                                             {
                                                 key: "name",
                                                 label: "이름",
-                                                width: "10%",
+                                                width: "8%",
                                                 render: (_, row) => (
                                                     <div className="flex items-center gap-3">
                                                         <Avatar
@@ -426,6 +427,7 @@ export default function MembersPage() {
                                             {
                                                 key: "role",
                                                 label: "직급",
+                                                width: "2%",
                                                 render: (value) => (
                                                     <div className="text-[14px] text-gray-900 w-[90px] min-w-[90px]">
                                                         {value}
@@ -435,7 +437,7 @@ export default function MembersPage() {
                                             {
                                                 key: "phone",
                                                 label: "전화번호",
-                                                width: "8%",
+                                                width: "6%",
                                                 render: (value) => (
                                                     <div className="text-[14px] text-gray-900 w-[140px] min-w-[140px]">
                                                         {value}
@@ -445,7 +447,7 @@ export default function MembersPage() {
                                             {
                                                 key: "address",
                                                 label: "주소",
-                                                width: "28%",
+                                                width: "24%",
                                                 render: (_, row) => (
                                                     <div className="text-[14px] text-gray-900 w-[320px] min-w-[320px] max-w-[320px]">
                                                         <div className="wrap-break-word whitespace-normal">
@@ -460,6 +462,7 @@ export default function MembersPage() {
                                             {
                                                 key: "joinDate",
                                                 label: "입사일",
+                                                width: "4%",
                                                 render: (value) => (
                                                     <div className="text-[14px] text-gray-900 w-[100px] min-w-[100px]">
                                                         {value}
@@ -469,6 +472,7 @@ export default function MembersPage() {
                                             {
                                                 key: "birth",
                                                 label: "생년월일",
+                                                width: "4%",
                                                 render: (value) => (
                                                     <div className="text-[14px] text-gray-900 w-[110px] min-w-[110px]">
                                                         {value}
@@ -478,7 +482,7 @@ export default function MembersPage() {
                                             {
                                                 key: "etc",
                                                 label: "여권정보",
-                                                width: "20%",
+                                                width: "15%",
                                                 render: (_, row) => {
                                                     // 여권 정보 확인
                                                     const hasPassportNo = !!row.passportNo;
@@ -496,7 +500,90 @@ export default function MembersPage() {
                                                                 </div>
                                                                 {(isAdmin ||
                                                                     row.id ===
-                                                                        myUserId) && (
+                                                                    myUserId) && (
+                                                                        <button
+                                                                            className="ml-3 flex-none w-8 h-8 rounded-lg hover:bg-gray-100 transition flex items-center justify-center text-gray-400"
+                                                                            onClick={(
+                                                                                e
+                                                                            ) => {
+                                                                                e.stopPropagation();
+                                                                                setSelectedMemberId(
+                                                                                    row.id
+                                                                                );
+                                                                                setActionAnchor(
+                                                                                    e.currentTarget
+                                                                                );
+                                                                                setActionOpen(
+                                                                                    true
+                                                                                );
+                                                                            }}
+                                                                            aria-label="more"
+                                                                        >
+                                                                            <IconMore className="w-5 h-5" />
+                                                                        </button>
+                                                                    )}
+                                                            </div>
+                                                        );
+                                                    }
+
+                                                    // 251227 -> 25년 12월 만료 형식으로 변환 (YYMMDD)
+                                                    let formattedExpiry = "";
+                                                    let isExpiryWithinYear = false;
+                                                    if (hasExpiry && row.passportExpiry.length === 6) {
+                                                        const yy = parseInt(row.passportExpiry.slice(0, 2), 10);
+                                                        const mm = parseInt(row.passportExpiry.slice(2, 4), 10);
+                                                        formattedExpiry = `${String(yy).padStart(2, '0')}년 ${mm}월 만료`;
+
+                                                        // ISO 날짜가 있으면 직접 사용, 없으면 YYMMDD에서 변환
+                                                        if (row.passportExpiryISO) {
+                                                            const expiryDate = new Date(row.passportExpiryISO);
+                                                            expiryDate.setHours(0, 0, 0, 0);
+
+                                                            const today = new Date();
+                                                            today.setHours(0, 0, 0, 0);
+
+                                                            // 오늘로부터 1년 후 날짜 계산
+                                                            const oneYearLater = new Date(today);
+                                                            oneYearLater.setFullYear(today.getFullYear() + 1);
+
+                                                            // 만료일이 오늘 이후이고 1년 이내인지 확인
+                                                            isExpiryWithinYear = expiryDate >= today && expiryDate <= oneYearLater;
+                                                        }
+                                                    }
+
+                                                    const passportName = `${row.passportLastName || ""} ${row.passportFirstName || ""}`.trim();
+
+                                                    // 여권정보가 있으면 있는 정보만 표시
+                                                    return (
+                                                        <div className="flex items-start pr-2 w-[260px] min-w-[260px]">
+                                                            <div className="flex-1 min-w-0">
+                                                                <div className="flex items-center gap-2 flex-wrap">
+                                                                    {hasPassportNo && (
+                                                                        <span className="text-[14px] font-semibold text-gray-900 truncate max-w-[140px]">
+                                                                            {row.passportNo}
+                                                                        </span>
+                                                                    )}
+
+                                                                    {formattedExpiry && (
+                                                                        <Chip
+                                                                            color={isExpiryWithinYear ? "red-600" : "gray-400"}
+                                                                            variant="solid"
+                                                                            size="sm"
+                                                                        >
+                                                                            {formattedExpiry}
+                                                                        </Chip>
+                                                                    )}
+                                                                </div>
+
+                                                                {passportName && (
+                                                                    <div className="text-[12px] text-gray-500 uppercase tracking-tight mt-1">
+                                                                        {passportName}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                            {(isAdmin ||
+                                                                row.id ===
+                                                                myUserId) && (
                                                                     <button
                                                                         className="ml-3 flex-none w-8 h-8 rounded-lg hover:bg-gray-100 transition flex items-center justify-center text-gray-400"
                                                                         onClick={(
@@ -518,76 +605,6 @@ export default function MembersPage() {
                                                                         <IconMore className="w-5 h-5" />
                                                                     </button>
                                                                 )}
-                                                            </div>
-                                                        );
-                                                    }
-
-                                                    // 251227 -> 25년 12월 만료 형식으로 변환 (YYMMDD)
-                                                    let formattedExpiry = "";
-                                                    if (hasExpiry && row.passportExpiry.length === 6) {
-                                                        const year =
-                                                            row.passportExpiry.slice(0, 2);
-                                                        const month = parseInt(
-                                                            row.passportExpiry.slice(2, 4),
-                                                            10
-                                                        );
-                                                        formattedExpiry = `${year}년 ${month}월 만료`;
-                                                    }
-
-                                                    const passportName = `${row.passportLastName || ""} ${row.passportFirstName || ""}`.trim();
-
-                                                    // 여권정보가 있으면 있는 정보만 표시
-                                                    return (
-                                                        <div className="flex items-start pr-2 w-[260px] min-w-[260px]">
-                                                            <div className="flex-1 min-w-0">
-                                                                <div className="flex items-center gap-2 flex-wrap">
-                                                                    {hasPassportNo && (
-                                                                        <span className="text-[14px] font-semibold text-gray-900 truncate max-w-[140px]">
-                                                                            {row.passportNo}
-                                                                        </span>
-                                                                    )}
-
-                                                                    {formattedExpiry && (
-                                                                        <Chip
-                                                                            color="red-600"
-                                                                            variant="solid"
-                                                                            size="sm"
-                                                                        >
-                                                                            {formattedExpiry}
-                                                                        </Chip>
-                                                                    )}
-                                                                </div>
-
-                                                                {passportName && (
-                                                                    <div className="text-[12px] text-gray-500 uppercase tracking-tight mt-1">
-                                                                        {passportName}
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                            {(isAdmin ||
-                                                                row.id ===
-                                                                    myUserId) && (
-                                                                <button
-                                                                    className="ml-3 flex-none w-8 h-8 rounded-lg hover:bg-gray-100 transition flex items-center justify-center text-gray-400"
-                                                                    onClick={(
-                                                                        e
-                                                                    ) => {
-                                                                        e.stopPropagation();
-                                                                        setSelectedMemberId(
-                                                                            row.id
-                                                                        );
-                                                                        setActionAnchor(
-                                                                            e.currentTarget
-                                                                        );
-                                                                        setActionOpen(
-                                                                            true
-                                                                        );
-                                                                    }}
-                                                                    aria-label="more"
-                                                                >
-                                                                    <IconMore className="w-5 h-5" />
-                                                                </button>
-                                                            )}
                                                         </div>
                                                     );
                                                 },
@@ -724,25 +741,25 @@ export default function MembersPage() {
                 onDelete={
                     isAdmin
                         ? async () => {
-                              if (!selectedMemberId) return;
-                              if (!confirm("정말 삭제하시겠습니까?")) return;
+                            if (!selectedMemberId) return;
+                            if (!confirm("정말 삭제하시겠습니까?")) return;
 
-                              const { error } = await supabase
-                                  .from("profiles")
-                                  .delete()
-                                  .eq("id", selectedMemberId);
+                            const { error } = await supabase
+                                .from("profiles")
+                                .delete()
+                                .eq("id", selectedMemberId);
 
-                              if (error) {
-                                  console.error("삭제 실패:", error.message);
-                                  alert("삭제에 실패했습니다.");
-                                  return;
-                              }
+                            if (error) {
+                                console.error("삭제 실패:", error.message);
+                                alert("삭제에 실패했습니다.");
+                                return;
+                            }
 
-                              alert("삭제 완료");
-                              setActionOpen(false);
-                              setActionAnchor(null);
-                              await fetchMembers();
-                          }
+                            alert("삭제 완료");
+                            setActionOpen(false);
+                            setActionAnchor(null);
+                            await fetchMembers();
+                        }
                         : undefined
                 }
                 showDelete={isAdmin}
@@ -824,7 +841,7 @@ export default function MembersPage() {
                                 errorDetails: JSON.stringify(error, null, 2),
                                 data,
                             });
-                            
+
                             // 에러 응답 본문에서 상세 메시지 추출 시도
                             let errorMessage = "비밀번호 재설정에 실패했습니다.";
                             if (error.message) {
@@ -832,7 +849,7 @@ export default function MembersPage() {
                             } else if (typeof error === 'object' && 'error' in error) {
                                 errorMessage = String(error.error);
                             }
-                            
+
                             alert(errorMessage);
                             return false;
                         }

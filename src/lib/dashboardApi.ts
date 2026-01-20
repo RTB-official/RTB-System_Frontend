@@ -400,16 +400,24 @@ export function vacationToCalendarEvent(
         PM: "오후반차",
     };
 
+    const leaveTypeText = leaveTypeMap[vacation.leave_type] || vacation.leave_type;
+
     const title = userName
-        ? `휴가 - ${userName} (${
-              leaveTypeMap[vacation.leave_type] || vacation.leave_type
-          })`
-        : `휴가 (${leaveTypeMap[vacation.leave_type] || vacation.leave_type})`;
+        ? `휴가 - ${userName} ${leaveTypeText}`
+        : `휴가 ${leaveTypeText}`;
+
+    // 상태에 따라 색상 변경
+    let color = "#60a5fa"; // 기본 파란색 (승인 완료)
+    if (vacation.status === "pending") {
+        color = "#3b82f6"; // 밝은 파란색 (대기 중)
+    } else if (vacation.status === "rejected") {
+        color = "#ef4444"; // 빨간색 (반려)
+    }
 
     return {
         id: `vacation-${vacation.id}`,
         title,
-        color: "#60a5fa",
+        color,
         startDate: vacation.date,
         endDate: vacation.date,
         attendees: vacation.user_id ? [vacation.user_id] : undefined,

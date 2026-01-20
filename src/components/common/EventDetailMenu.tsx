@@ -42,10 +42,10 @@ const EventDetailMenu: React.FC<EventDetailMenuProps> = ({
     const eventType = event?.id.startsWith("vacation-")
         ? "vacation"
         : event?.id.startsWith("worklog-")
-        ? "worklog"
-        : event?.id.startsWith("event-")
-        ? "event"
-        : null;
+            ? "worklog"
+            : event?.id.startsWith("event-")
+                ? "event"
+                : null;
 
     // 휴가 데이터 로드
     useEffect(() => {
@@ -181,6 +181,16 @@ const EventDetailMenu: React.FC<EventDetailMenuProps> = ({
         return statusMap[status] || status;
     };
 
+    // 상태에 따른 Chip 색상 (휴가 관리 페이지와 동일)
+    const getStatusColor = (status: string): string => {
+        const colorMap: Record<string, string> = {
+            pending: "blue-600",
+            approved: "green-700",
+            rejected: "red-700",
+        };
+        return colorMap[status] || "gray-500";
+    };
+
     // 휴가 UI
     const renderVacationUI = () => {
         if (loading) {
@@ -207,7 +217,7 @@ const EventDetailMenu: React.FC<EventDetailMenuProps> = ({
                             <h3 className="text-lg font-semibold text-gray-900">
                                 휴가
                             </h3>
-                            <Chip color="gray-400" variant="solid" size="sm">
+                            <Chip color={getStatusColor(vacationData.status)} variant="solid" size="sm">
                                 {getStatusText(vacationData.status)}
                             </Chip>
                         </div>

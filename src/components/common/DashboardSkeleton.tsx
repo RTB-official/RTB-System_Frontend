@@ -5,12 +5,12 @@ export default function DashboardSkeleton() {
     return (
         <div className="flex-1 flex flex-col min-h-0">
             {/* 캘린더 헤더 - 실제처럼 보이게 */}
-            <div className="flex items-center justify-between mb-6 shrink-0">
-                <div className="h-9 w-48 pl-9 bg-gray-200 rounded animate-pulse" />
-                <div className="flex items-center gap-1 pr-9">
-                    <div className="h-10 w-10 bg-gray-200 rounded animate-pulse" />
-                    <div className="h-10 w-16 bg-gray-200 rounded animate-pulse" />
-                    <div className="h-10 w-10 bg-gray-200 rounded animate-pulse" />
+            <div className="flex items-center justify-between mb-6 shrink-0 px-9">
+                <div className="h-9 w-48 bg-gray-200 rounded animate-pulse" />
+                <div className="flex items-center gap-1">
+                    <div className="h-9 w-9 bg-gray-200 rounded animate-pulse" />
+                    <div className="h-9 w-12 bg-gray-200 rounded animate-pulse" />
+                    <div className="h-9 w-9 bg-gray-200 rounded animate-pulse" />
                 </div>
             </div>
 

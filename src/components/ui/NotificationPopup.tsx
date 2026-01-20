@@ -135,7 +135,7 @@ export default function NotificationPopup({
                             <div
                                 key={it.id}
                                 onClick={() => handleNotificationClick(it)}
-                                className={`flex flex-col gap-0.5 px-5 py-3 transition-colors cursor-pointer relative group border-b border-gray-50 last:border-0 ${
+                                className={`flex flex-col gap-1 px-5 py-4 transition-colors cursor-pointer relative group border-b border-gray-50 last:border-0 ${
                                     isRead
                                         ? "bg-white hover:bg-gray-50"
                                         : "bg-blue-50 hover:bg-gray-100"
@@ -152,7 +152,7 @@ export default function NotificationPopup({
                                         {it.title}
                                     </p>
                                     {!isRead && (
-                                        <div className="shrink-0 w-2 h-2 rounded-full bg-blue-500 mt-1.5"></div>
+                                        <div className="shrink-0 w-2 h-2 rounded-full bg-blue-400 mt-1.5"></div>
                                     )}
                                 </div>
                                 <p
@@ -165,7 +165,7 @@ export default function NotificationPopup({
                                     {it.message}
                                 </p>
                                 {(it.created_at || it.meta) && (
-                                    <p className="text-[13px] text-gray-400 mt-1">
+                                    <p className="text-[13px] text-gray-400 mt-0.5">
                                         {it.meta ||
                                             (it.created_at &&
                                                 formatNotificationDate(

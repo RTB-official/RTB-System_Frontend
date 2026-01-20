@@ -139,7 +139,9 @@ export async function getVacations(
         query = query.eq("user_id", userId);
     }
 
-    if (filters?.status) {
+    // status 필터가 명시적으로 전달된 경우에만 필터링
+    // 필터가 없으면 모든 상태(pending, approved, rejected)를 가져옴
+    if (filters?.status !== undefined) {
         query = query.eq("status", filters.status);
     }
 

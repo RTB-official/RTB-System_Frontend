@@ -508,8 +508,30 @@ export default function Sidebar({ onClose }: SidebarProps) {
                                     id: n.id,
                                     title: n.title,
                                     message: n.message,
+                                    type: n.type,
                                     created_at: n.created_at,
+                                    read_at: n.read_at,
                                 }))}
+                                onNotificationRead={async (notificationId) => {
+                                    if (currentUserId) {
+                                        try {
+                                            // 알림 목록 업데이트
+                                            const [notificationList, count] =
+                                                await Promise.all([
+                                                    getUserNotifications(
+                                                        currentUserId
+                                                    ),
+                                                    getUnreadNotificationCount(
+                                                        currentUserId
+                                                    ),
+                                                ]);
+                                            setNotifications(notificationList);
+                                            setUnreadCount(count);
+                                        } catch (error) {
+                                            console.error("알림 업데이트 실패:", error);
+                                        }
+                                    }
+                                }}
                                 onMarkAllAsRead={async () => {
                                     if (currentUserId) {
                                         try {
