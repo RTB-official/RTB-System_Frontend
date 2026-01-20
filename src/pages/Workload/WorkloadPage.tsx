@@ -29,28 +29,29 @@ import {
 // 커스텀 툴팁
 const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
+        const byKey = (key: string) =>
+            payload.find((p: any) => p?.dataKey === key)?.value ?? 0;
+
         return (
             <div className="bg-white border border-gray-100 rounded-xl p-4 shadow-lg">
-                <p className="font-semibold text-sm text-gray-900 mb-2">
-                    {label}
-                </p>
+                <p className="font-semibold text-sm text-gray-900 mb-2">{label}</p>
                 <div className="flex flex-col gap-1.5">
                     <div className="flex items-center gap-1.5">
                         <div className="w-3.5 h-3.5 rounded bg-[#51a2ff]" />
                         <span className="text-sm text-gray-600">
-                            작업 {payload[0]?.value}시간
+                            작업 {byKey("작업")}시간
                         </span>
                     </div>
                     <div className="flex items-center gap-1.5">
                         <div className="w-3.5 h-3.5 rounded bg-[#fd9a00]" />
                         <span className="text-sm text-gray-600">
-                            이동 {payload[1]?.value}시간
+                            이동 {byKey("이동")}시간
                         </span>
                     </div>
                     <div className="flex items-center gap-1.5">
                         <div className="w-3.5 h-3.5 rounded bg-gray-300" />
                         <span className="text-sm text-gray-600">
-                            대기 {payload[2]?.value}시간
+                            대기 {byKey("대기")}시간
                         </span>
                     </div>
                 </div>
@@ -59,6 +60,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
     }
     return null;
 };
+
 
 export default function WorkloadPage() {
     const navigate = useNavigate();
@@ -89,7 +91,7 @@ export default function WorkloadPage() {
             setLoading(true);
             try {
                 const yearNum = parseInt(selectedYear.replace("년", ""));
-                const monthNum = parseInt(selectedMonth.replace("월", "")) - 1;
+                const monthNum = parseInt(selectedMonth.replace("월", ""));
 
                 const entries = await getWorkloadData({
                     year: yearNum,
@@ -290,10 +292,10 @@ export default function WorkloadPage() {
                                                     }}
                                                 />
                                                 <Bar
-                                                    dataKey="대기"
+                                                    dataKey="작업"
                                                     stackId="a"
-                                                    fill="#d1d5dc"
-                                                    radius={[0, 0, 0, 0]}
+                                                    fill="#51a2ff"
+                                                    radius={[4, 4, 0, 0]}
                                                 />
                                                 <Bar
                                                     dataKey="이동"
@@ -302,10 +304,10 @@ export default function WorkloadPage() {
                                                     radius={[0, 0, 0, 0]}
                                                 />
                                                 <Bar
-                                                    dataKey="작업"
+                                                    dataKey="대기"
                                                     stackId="a"
-                                                    fill="#51a2ff"
-                                                    radius={[4, 4, 4, 4]}
+                                                    fill="#d1d5dc"
+                                                    radius={[0, 0, 4, 4]}
                                                 />
                                             </BarChart>
                                         </ResponsiveContainer>
