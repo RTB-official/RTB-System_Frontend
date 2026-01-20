@@ -357,10 +357,12 @@ export default function Sidebar({ onClose }: SidebarProps) {
     const reportActive = isReportRoute || menuFocus === "REPORT";
     const expenseActive = isExpenseRoute || menuFocus === "EXPENSE";
 
-    // 권한 확인
-    const isCEO = currentUser?.position === "대표";
-    const isAdmin = currentUser?.role === "admin" || currentUser?.department === "공무팀";
-    const isStaff = currentUser?.role === "staff" || currentUser?.department === "공사팀";
+    // 권한 확인 - currentUser가 로드되고 role/department가 확실히 설정된 후에만 판단
+    // role이나 department가 null이 아닐 때만 판단하여 초기 로딩 시 메뉴 깜빡임 방지
+    const hasUserInfo = currentUser && (currentUser.role !== null || currentUser.department !== null);
+    const isCEO = hasUserInfo && currentUser.position === "대표";
+    const isAdmin = hasUserInfo && (currentUser.role === "admin" || currentUser.department === "공무팀");
+    const isStaff = hasUserInfo && (currentUser.role === "staff" || currentUser.department === "공사팀");
 
     const reportSubMenuItems = [
         { label: "보고서 목록", to: PATHS.reportList },
@@ -707,8 +709,8 @@ export default function Sidebar({ onClose }: SidebarProps) {
                             </>
                         )}
 
-                        {/* 휴가 관리 - 공사팀 제외 */}
-                        {!isStaff && (
+                        {/* 휴가 관리 - 공사팀 제외 (사용자 정보가 완전히 로드되고 공사팀이 아닐 때만 표시) */}
+                        {hasUserInfo && !isStaff && (
                             <MainLink
                                 to={PATHS.vacation}
                                 icon={<IconVacation />}

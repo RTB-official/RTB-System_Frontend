@@ -61,7 +61,7 @@ export default function DashboardPage() {
                 
                 // 공사팀(스태프)만 접근 불가 - 조용히 리다이렉트
                 if (isStaff && !isCEO && !isAdmin) {
-                    navigate("/workload", { replace: true });
+                    navigate("/report", { replace: true });
                 }
             }
         };

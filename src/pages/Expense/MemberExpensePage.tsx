@@ -102,7 +102,7 @@ export default function MemberExpensePage() {
                 if (profile) {
                     const isStaff = profile.role === "staff" || profile.department === "공사팀";
                     if (isStaff) {
-                        navigate("/expense", { replace: true });
+                        navigate("/report", { replace: true });
                         return;
                     }
                 }
