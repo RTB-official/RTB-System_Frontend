@@ -122,20 +122,49 @@ export default function Sidebar({ onClose }: SidebarProps) {
         const cachedEmail = localStorage.getItem("sidebarEmail") || "";
         const cachedId = localStorage.getItem("sidebarLoginId") || "";
         const cachedPosition = localStorage.getItem("sidebarPosition") || "";
+        const cachedRole = localStorage.getItem("sidebarRole");
+        const cachedDepartment = localStorage.getItem("sidebarDepartment");
+
         if (!cachedEmail && !cachedId) return null;
 
         return {
             displayName: cachedId || "",
             email: cachedEmail,
             position: cachedPosition || null,
-            role: null,
-            department: null,
+            role: cachedRole || null,
+            department: cachedDepartment || null,
         };
     });
 
     // role과 department를 별도로 관리하여 한 번 설정되면 유지
-    const [userRole, setUserRole] = useState<string | null>(null);
-    const [userDepartment, setUserDepartment] = useState<string | null>(null);
+    // localStorage에서 초기값 읽기 (새로고침 시 깜빡임 방지)
+    const [userRole, setUserRole] = useState<string | null>(() => {
+        const cached = localStorage.getItem("sidebarRole");
+        return cached || null;
+    });
+    const [userDepartment, setUserDepartment] = useState<string | null>(() => {
+        const cached = localStorage.getItem("sidebarDepartment");
+        return cached || null;
+    });
+    // 사용자 권한 정보를 ref로 저장하여 절대 변경되지 않도록 보장 (메뉴 클릭 시 깜빡임 완전 방지)
+    const userPermissionsRef = useRef<{
+        isCEO: boolean;
+        isAdmin: boolean;
+        isStaff: boolean;
+        showHomeMenu: boolean;
+        showVacationMenu: boolean;
+        initialized: boolean;
+    }>({
+        isCEO: false,
+        isAdmin: false,
+        isStaff: false,
+        showHomeMenu: false,
+        showVacationMenu: false,
+        initialized: false,
+    });
+
+    // 권한 정보를 state로 관리 (ref 값을 기반으로 초기화, 이후 변경되지 않음)
+    const [userPermissions, setUserPermissions] = useState(userPermissionsRef.current);
 
 
 
@@ -165,13 +194,17 @@ export default function Sidebar({ onClose }: SidebarProps) {
             // ✅ DB 조회 전에 먼저 렌더링 값 확보 (깜빡임 방지)
             // ✅ 직급은 캐시(sidebarPosition)를 먼저 넣어 Avatar 색 깜빡임 제거
             const cachedPosition = localStorage.getItem("sidebarPosition") || "";
+            // localStorage에서 role/department 읽기 (DB 조회 전 안정적 상태 유지)
+            const cachedRole = localStorage.getItem("sidebarRole");
+            const cachedDepartment = localStorage.getItem("sidebarDepartment");
 
+            // 즉시 currentUser 업데이트하여 메뉴 깜빡임 방지
             setCurrentUser({
                 displayName: sessionId || "사용자",
                 email: sessionEmail,
                 position: cachedPosition || null,
-                role: userRole, // 기존 값 유지
-                department: userDepartment, // 기존 값 유지
+                role: userRole || cachedRole || null, // state 값 우선, 없으면 localStorage
+                department: userDepartment || cachedDepartment || null, // state 값 우선, 없으면 localStorage
             });
 
 
@@ -214,19 +247,30 @@ export default function Sidebar({ onClose }: SidebarProps) {
 
 
             // role과 department를 별도 state에 저장 (한 번 설정되면 유지)
+            // null이나 undefined도 저장 (명시적으로 처리)
+            setUserRole(data?.role ?? null);
+            setUserDepartment(data?.department ?? null);
+
             if (data?.role !== null && data?.role !== undefined) {
-                setUserRole(data.role);
+                localStorage.setItem("sidebarRole", data.role);
             }
             if (data?.department !== null && data?.department !== undefined) {
-                setUserDepartment(data.department);
+                localStorage.setItem("sidebarDepartment", data.department);
             }
 
             setCurrentUser({
                 displayName: data?.username ?? data?.name ?? (user.email ?? "사용자"),
                 email,
                 position: data?.position ?? null,
-                role: data?.role ?? userRole ?? null, // DB 값 또는 기존 값
-                department: data?.department ?? userDepartment ?? null, // DB 값 또는 기존 값
+                role: data?.role ?? null,
+                department: data?.department ?? null,
+            });
+
+            console.log("[Sidebar] 사용자 정보 로드:", {
+                "DB 데이터": data,
+                position: data?.position,
+                role: data?.role,
+                department: data?.department,
             });
 
 
@@ -355,21 +399,69 @@ export default function Sidebar({ onClose }: SidebarProps) {
     const reportActive = isReportRoute || menuFocus === "REPORT";
     const expenseActive = isExpenseRoute || menuFocus === "EXPENSE";
 
-    // 권한 확인 - userRole과 userDepartment를 사용하여 안정적으로 판단
-    const { hasUserInfo, isCEO, isAdmin, isStaff } = useMemo(() => {
-        // userRole 또는 userDepartment가 설정되어 있으면 사용자 정보가 로드된 것으로 간주
-        const hasInfo = userRole !== null || userDepartment !== null;
-        const role = userRole || currentUser?.role;
-        const department = userDepartment || currentUser?.department;
-        const position = currentUser?.position;
+    // 사용자 권한 정보를 한 번만 계산하여 ref에 저장 (절대 변경되지 않음)
+    useEffect(() => {
+        // 이미 초기화되었으면 다시 계산하지 않음
+        if (userPermissionsRef.current.initialized) {
+            return;
+        }
 
-        return {
-            hasUserInfo: hasInfo,
-            isCEO: hasInfo && position === "대표",
-            isAdmin: hasInfo && (role === "admin" || department === "공무팀"),
-            isStaff: hasInfo && (role === "staff" || department === "공사팀"),
+        // currentUser가 없으면 대기
+        if (!currentUser) {
+            return;
+        }
+
+        // role/department 정보를 우선순위로 가져오기 (state > currentUser > localStorage)
+        const position = currentUser.position;
+        // userRole/userDepartment가 null이 아닐 때만 사용, 그렇지 않으면 currentUser의 값 사용
+        const role = (userRole !== null && userRole !== undefined) ? userRole : (currentUser.role || localStorage.getItem("sidebarRole"));
+        const department = (userDepartment !== null && userDepartment !== undefined) ? userDepartment : (currentUser.department || localStorage.getItem("sidebarDepartment"));
+
+        // 권한 계산 (한 번만 계산하고 절대 변경되지 않음)
+        // 대표님 체크
+        const isCEO = position === "대표";
+
+        // 공무팀(admin) 체크: role이 "admin"이거나 department가 "공무팀"
+        const isAdmin = role === "admin" || department === "공무팀";
+
+        // 공사팀(staff) 체크: role이 "staff"이거나 department가 "공사팀"
+        const isStaff = role === "staff" || department === "공사팀";
+
+        // 홈 메뉴: 대표님이거나 공무팀(admin)만 표시
+        const showHomeMenu = isCEO || isAdmin;
+
+        // 휴가 관리 메뉴: 공사팀(staff)이 아니면 표시
+        const showVacationMenu = !isStaff;
+
+        console.log("[Sidebar] 권한 계산:", {
+            position,
+            role,
+            department,
+            userRole,
+            userDepartment,
+            currentUserRole: currentUser.role,
+            currentUserDepartment: currentUser.department,
+            isCEO,
+            isAdmin,
+            isStaff,
+            showHomeMenu,
+            showVacationMenu,
+            "계산 결과": { isAdmin, showHomeMenu }
+        });
+
+        // ref에 저장 (절대 변경되지 않음)
+        userPermissionsRef.current = {
+            isCEO,
+            isAdmin,
+            isStaff,
+            showHomeMenu,
+            showVacationMenu,
+            initialized: true,
         };
-    }, [userRole, userDepartment, currentUser?.role, currentUser?.department, currentUser?.position]);
+
+        // state 업데이트 (한 번만)
+        setUserPermissions(userPermissionsRef.current);
+    }, [currentUser, userRole, userDepartment]);
 
     const reportSubMenuItems = [
         { label: "보고서 목록", to: PATHS.reportList },
@@ -385,20 +477,26 @@ export default function Sidebar({ onClose }: SidebarProps) {
 
     // 권한별 지출 관리 서브메뉴
     const expenseSubMenuItems = useMemo(() => {
-        if (isCEO || isAdmin) {
+        console.log("[Sidebar] expenseSubMenuItems 계산:", {
+            isCEO: userPermissions.isCEO,
+            isAdmin: userPermissions.isAdmin,
+            isStaff: userPermissions.isStaff,
+        });
+
+        if (userPermissions.isCEO || userPermissions.isAdmin) {
             // 대표님, 공무팀: 전체 지출 관리
             return [
                 { label: "개인 지출 기록", to: PATHS.expensePersonal },
                 { label: "구성원 지출 관리", to: PATHS.expenseTeam },
             ];
-        } else if (isStaff) {
+        } else if (userPermissions.isStaff) {
             // 공사팀: 개인 지출 기록만
             return [
                 { label: "개인 지출 기록", to: PATHS.expensePersonal },
             ];
         }
         return [];
-    }, [isCEO, isAdmin, isStaff]);
+    }, [userPermissions.isCEO, userPermissions.isAdmin, userPermissions.isStaff]);
 
     // 라우트 변경 시: 해당 라우트의 메뉴는 자동으로 열림 + 포커스 자동 정렬
     useEffect(() => {
@@ -411,25 +509,21 @@ export default function Sidebar({ onClose }: SidebarProps) {
 
         if (isExpenseRoute) {
             setMenuFocus("EXPENSE");
-            // 하위메뉴가 1개일 때는 하위메뉴를 열지 않음
-            const hasMultipleSubMenus = expenseSubMenuItems.length > 1;
-            if (hasMultipleSubMenus) {
+            // 하위메뉴가 2개 이상이면 항상 열기
+            if (expenseSubMenuItems.length > 1) {
                 setExpenseOpen(true);
             } else {
-                // 하위메뉴가 1개일 때는 항상 닫힌 상태 유지 (이미 false면 변경하지 않음)
-                if (expenseOpen) {
-                    setExpenseOpen(false);
-                }
-            }
-        } else {
-            if (expenseOpen) {
+                // 하위메뉴가 1개일 때는 닫힌 상태 유지
                 setExpenseOpen(false);
             }
+        } else {
+            // 지출 관리 라우트가 아니면 닫기
+            setExpenseOpen(false);
         }
 
         // 라우트 이동 시 알림 팝업은 닫아두는 게 UX 안전
         setShowNotifications(false);
-    }, [location.pathname, isReportRoute, isExpenseRoute]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [location.pathname, isReportRoute, isExpenseRoute, expenseSubMenuItems.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
     return (
         <aside className="w-[239px] h-full bg-gray-50 border-r border-gray-200 flex flex-col">
@@ -647,18 +741,15 @@ export default function Sidebar({ onClose }: SidebarProps) {
                     <div className="h-px bg-gray-200 rounded-full" />
 
                     <nav className="flex flex-col gap-2">
-                        {/* 대시보드 - 대표님, 공무팀만 (항상 렌더링하여 높이 유지, 사용자 정보 로드 후에만 표시) */}
-                        <div style={{ 
-                            display: (hasUserInfo && (isCEO || isAdmin)) ? 'block' : 'none',
-                            minHeight: hasUserInfo ? '0' : '0'
-                        }}>
+                        {/* 대시보드 - 대표님, 공무팀만 (조건부 렌더링) */}
+                        {(userPermissions.isCEO || userPermissions.isAdmin) && (
                             <MainLink
                                 to={PATHS.dashboard}
                                 icon={<IconHome />}
                                 label="홈"
                                 kind="HOME"
                             />
-                        </div>
+                        )}
 
                         {/* 출장 보고서 - 모두 접근 가능 */}
                         <button
@@ -709,15 +800,14 @@ export default function Sidebar({ onClose }: SidebarProps) {
                                 setShowNotifications(false);
                                 setMenuFocus("EXPENSE");
                                 setReportOpen(false);
-                                // 하위메뉴가 1개일 때는 바로 이동, 2개 이상일 때는 하위메뉴 토글
+                                // 하위메뉴가 1개일 때는 바로 이동
                                 if (expenseSubMenuItems.length === 1) {
                                     navigate(expenseSubMenuItems[0].to);
-                                    setExpenseOpen(false); // 하위메뉴는 항상 닫힌 상태 유지
-                                } else {
-                                    setExpenseOpen(!expenseOpen);
-                                    if (!expenseOpen) {
-                                        navigate(PATHS.expensePersonal);
-                                    }
+                                    setExpenseOpen(false);
+                                } else if (expenseSubMenuItems.length > 1) {
+                                    // 2개 이상일 때는 하위메뉴 열고 첫 번째 메뉴로 이동 (출장 보고서처럼)
+                                    setExpenseOpen(true);
+                                    navigate(PATHS.expensePersonal);
                                 }
                             }}
                             className={`w-full flex gap-6 items-center p-3 rounded-xl transition-colors ${expenseActive
@@ -751,15 +841,18 @@ export default function Sidebar({ onClose }: SidebarProps) {
                             ))}
                         </div>
 
-                        {/* 휴가 관리 - 공사팀 제외 (항상 렌더링하여 높이 유지) */}
-                        <div style={{ display: (hasUserInfo && !isStaff) ? 'block' : 'none' }}>
-                            <MainLink
-                                to={PATHS.vacation}
-                                icon={<IconVacation />}
-                                label="휴가 관리"
-                                kind="VACATION"
-                            />
-                        </div>
+                        {/* 휴가 관리 - 공사팀 제외 (항상 렌더링, visibility로 제어하여 레이아웃 유지) */}
+                        {/* 공사팀(isStaff)이면 절대 표시하지 않음 */}
+                        {!userPermissions.isStaff && (
+                            <div>
+                                <MainLink
+                                    to={PATHS.vacation}
+                                    icon={<IconVacation />}
+                                    label="휴가 관리"
+                                    kind="VACATION"
+                                />
+                            </div>
+                        )}
 
                         {/* 구성원 관리 - 모두 접근 가능 */}
                         <MainLink
