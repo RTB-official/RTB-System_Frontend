@@ -1,6 +1,6 @@
 // src/components/Sidebar.tsx
 import { useEffect, useMemo, useState, useRef } from "react";
-import { NavLink, useLocation, matchPath, useNavigate } from "react-router-dom";
+import { useLocation, matchPath, useNavigate } from "react-router-dom";
 import NotificationPopup from "./ui/NotificationPopup";
 import ActionMenu from "./common/ActionMenu";
 import ResetPasswordModal from "./modals/ResetPasswordModal";
@@ -8,12 +8,7 @@ import BaseModal from "./ui/BaseModal";
 import Button from "./common/Button";
 import { supabase } from "../lib/supabase";
 import Avatar from "./common/Avatar";
-import {
-    getUserNotifications,
-    getUnreadNotificationCount,
-    markAllNotificationsAsRead,
-    type Notification,
-} from "../lib/notificationApi";
+import { markAllNotificationsAsRead } from "../lib/notificationApi";
 import {
     IconHome,
     IconReport,
@@ -24,6 +19,12 @@ import {
     IconNotifications,
     IconClose,
 } from "./icons/Icons";
+import { useUser } from "../hooks/useUser";
+import { useNotifications } from "../hooks/useNotifications";
+import { PATHS } from "../utils/paths";
+import MainLink from "./sidebar/MainLink";
+import MenuButton from "./sidebar/MenuButton";
+import SubMenu from "./sidebar/SubMenu";
 
 interface SidebarProps {
     onClose?: () => void;
@@ -35,470 +36,81 @@ export default function Sidebar({ onClose }: SidebarProps) {
     const location = useLocation();
     const navigate = useNavigate();
 
-    const handleLogout = async () => {
-        const { error } = await supabase.auth.signOut();
-        if (error) {
-            console.error("로그아웃 실패:", error.message);
-            return;
-        }
-        localStorage.removeItem("sidebarLoginId");
-        localStorage.removeItem("sidebarEmail");
-        localStorage.removeItem("sidebarPosition");
-        navigate("/login");
-    };
+    // 사용자 정보 및 권한
+    const { currentUser, currentUserId, sidebarLoginId, userPermissions, handleLogout } =
+        useUser();
 
+    // 알림 관련
+    const {
+        showNotifications,
+        setShowNotifications,
+        notifications,
+        unreadCount,
+        notificationRef,
+        refreshNotifications,
+    } = useNotifications(currentUserId);
 
-    // ✅ 프로젝트 라우터와 100% 동일해야 함 (대/소문자 포함)
-    const PATHS = useMemo(
-        () => ({
-            dashboard: "/dashboard",
-            reportList: "/report",
-            reportCreate: "/reportcreate",
-            workload: "/workload",
-
-            expenseTeam: "/expense/member",
-            expensePersonal: "/expense", // Changed to /expense
-            // expensePersonal: "/expense/personal", // Original
-
-            vacation: "/Vacation",
-            members: "/members",
-        }),
-        []
-    );
-
-    const isMatch = (pattern: string) =>
-        !!matchPath({ path: pattern, end: false }, location.pathname);
-
-    // ✅ 보고서 수정 진입 감지:
-    // 1) /reportcreate?id=123 같은 쿼리 방식
-    const searchParams = new URLSearchParams(location.search);
-    const isReportEditByQuery =
-        isMatch(PATHS.reportCreate) && !!searchParams.get("id");
-
-    // 2) 혹시 쓰는 경우를 대비한 path param 방식도 유지
-    const isReportEditByPath =
-        !!matchPath({ path: "/report/edit/:id", end: false }, location.pathname) ||
-        !!matchPath({ path: "/report/:id/edit", end: false }, location.pathname);
-
-    const isReportEditRoute = isReportEditByQuery || isReportEditByPath;
-
-    const isReportRoute =
-        isMatch(PATHS.reportList) || isMatch(PATHS.reportCreate) || isReportEditRoute;
-
-
-    const isExpenseRoute =
-        isMatch(PATHS.expenseTeam) || isMatch(PATHS.expensePersonal);
-
-    // ✅ "펼침/선택"만 해도 강조되게 하는 포커스 상태
+    // 메뉴 포커스 및 상태
     const [menuFocus, setMenuFocus] = useState<MenuFocus>(null);
-
-    // ✅ 서브메뉴 open
-    const [reportOpen, setReportOpen] = useState(isReportRoute);
-    const [expenseOpen, setExpenseOpen] = useState(isExpenseRoute);
-
-    // ✅ notification 브랜치 기능 이식: 알림 패널 토글
-    const [showNotifications, setShowNotifications] = useState(false);
-    const [notifications, setNotifications] = useState<Notification[]>([]);
-    const [unreadCount, setUnreadCount] = useState(0);
-    const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+    const [reportOpen, setReportOpen] = useState(false);
+    const [expenseOpen, setExpenseOpen] = useState(false);
 
     // 사용자 메뉴 상태
     const [userMenuOpen, setUserMenuOpen] = useState(false);
     const [resetPasswordModalOpen, setResetPasswordModalOpen] = useState(false);
     const [logoutConfirmModalOpen, setLogoutConfirmModalOpen] = useState(false);
     const usernameRef = useRef<HTMLDivElement>(null);
-    const notificationRef = useRef<HTMLDivElement>(null);
-    const [sidebarLoginId, setSidebarLoginId] = useState<string>(() => {
-        return localStorage.getItem("sidebarLoginId") || "";
-    });
 
-    const [currentUser, setCurrentUser] = useState<{
-        displayName: string;
-        email: string;
-        position?: string | null;
-        role?: string | null;
-        department?: string | null;
-    } | null>(() => {
-        const cachedEmail = localStorage.getItem("sidebarEmail") || "";
-        const cachedId = localStorage.getItem("sidebarLoginId") || "";
-        const cachedPosition = localStorage.getItem("sidebarPosition") || "";
-        const cachedRole = localStorage.getItem("sidebarRole");
-        const cachedDepartment = localStorage.getItem("sidebarDepartment");
+    // 경로 매칭 함수
+    const isMatch = (pattern: string) =>
+        !!matchPath({ path: pattern, end: false }, location.pathname);
 
-        if (!cachedEmail && !cachedId) return null;
+    // 보고서 수정 진입 감지
+    const searchParams = new URLSearchParams(location.search);
+    const isReportEditByQuery =
+        isMatch(PATHS.reportCreate) && !!searchParams.get("id");
+    const isReportEditByPath =
+        !!matchPath({ path: "/report/edit/:id", end: false }, location.pathname) ||
+        !!matchPath({ path: "/report/:id/edit", end: false }, location.pathname);
+    const isReportEditRoute = isReportEditByQuery || isReportEditByPath;
 
-        return {
-            displayName: cachedId || "",
-            email: cachedEmail,
-            position: cachedPosition || null,
-            role: cachedRole || null,
-            department: cachedDepartment || null,
-        };
-    });
+    const isReportRoute =
+        isMatch(PATHS.reportList) || isMatch(PATHS.reportCreate) || isReportEditRoute;
+    const isExpenseRoute =
+        isMatch(PATHS.expenseTeam) || isMatch(PATHS.expensePersonal);
 
-    // role과 department를 별도로 관리하여 한 번 설정되면 유지
-    // localStorage에서 초기값 읽기 (새로고침 시 깜빡임 방지)
-    const [userRole, setUserRole] = useState<string | null>(() => {
-        const cached = localStorage.getItem("sidebarRole");
-        return cached || null;
-    });
-    const [userDepartment, setUserDepartment] = useState<string | null>(() => {
-        const cached = localStorage.getItem("sidebarDepartment");
-        return cached || null;
-    });
-    // 사용자 권한 정보를 ref로 저장하여 절대 변경되지 않도록 보장 (메뉴 클릭 시 깜빡임 완전 방지)
-    const userPermissionsRef = useRef<{
-        isCEO: boolean;
-        isAdmin: boolean;
-        isStaff: boolean;
-        showHomeMenu: boolean;
-        showVacationMenu: boolean;
-        initialized: boolean;
-    }>({
-        isCEO: false,
-        isAdmin: false,
-        isStaff: false,
-        showHomeMenu: false,
-        showVacationMenu: false,
-        initialized: false,
-    });
-
-    // 권한 정보를 state로 관리 (ref 값을 기반으로 초기화, 이후 변경되지 않음)
-    const [userPermissions, setUserPermissions] = useState(userPermissionsRef.current);
-
-
-
-    useEffect(() => {
-        const fetchUser = async () => {
-            const {
-                data: { user },
-                error: authError,
-            } = await supabase.auth.getUser();
-
-            if (authError || !user) {
-                console.error("유저 세션 없음:", authError?.message);
-                setCurrentUser(null);
-                return;
-            }
-
-            const sessionEmail = (user.email ?? "").toString();
-            const sessionId = sessionEmail ? sessionEmail.split("@")[0] : "";
-
-            // ✅ 새로고침 직후에도 즉시 동일하게 보이도록 캐시
-            if (sessionEmail) localStorage.setItem("sidebarEmail", sessionEmail);
-            if (sessionId) {
-                setSidebarLoginId(sessionId);
-                localStorage.setItem("sidebarLoginId", sessionId);
-            }
-
-            // ✅ DB 조회 전에 먼저 렌더링 값 확보 (깜빡임 방지)
-            // ✅ 직급은 캐시(sidebarPosition)를 먼저 넣어 Avatar 색 깜빡임 제거
-            const cachedPosition = localStorage.getItem("sidebarPosition") || "";
-            // localStorage에서 role/department 읽기 (DB 조회 전 안정적 상태 유지)
-            const cachedRole = localStorage.getItem("sidebarRole");
-            const cachedDepartment = localStorage.getItem("sidebarDepartment");
-
-            // 즉시 currentUser 업데이트하여 메뉴 깜빡임 방지
-            setCurrentUser({
-                displayName: sessionId || "사용자",
-                email: sessionEmail,
-                position: cachedPosition || null,
-                role: userRole || cachedRole || null, // state 값 우선, 없으면 localStorage
-                department: userDepartment || cachedDepartment || null, // state 값 우선, 없으면 localStorage
-            });
-
-
-            const { data, error } = await supabase
-                .from("profiles")
-                .select("name, email, username, position, role, department")
-                .eq("id", user.id)
-                .single();
-
-            if (error) {
-                console.error("유저 정보 조회 실패:", error.message);
-
-                const email = (user.email ?? "").toString();
-                const id = email ? email.split("@")[0] : "";
-
-                const cachedPosition = localStorage.getItem("sidebarPosition") || "";
-
-                setCurrentUser({
-                    displayName: user.email ?? "사용자",
-                    email,
-                    position: cachedPosition || null,
-                    role: userRole, // 기존 값 유지
-                    department: userDepartment, // 기존 값 유지
-                });
-
-                if (id) {
-                    setSidebarLoginId(id);
-                    localStorage.setItem("sidebarLoginId", id);
-                }
-                return;
-            }
-
-            const email = (data.email ?? user.email ?? "").toString();
-            if (email) localStorage.setItem("sidebarEmail", email);
-            const id = email ? email.split("@")[0] : "";
-
-            const pos = (data?.position ?? "").toString();
-            if (pos) localStorage.setItem("sidebarPosition", pos);
-            else localStorage.removeItem("sidebarPosition");
-
-
-            // role과 department를 별도 state에 저장 (한 번 설정되면 유지)
-            // null이나 undefined도 저장 (명시적으로 처리)
-            setUserRole(data?.role ?? null);
-            setUserDepartment(data?.department ?? null);
-
-            if (data?.role !== null && data?.role !== undefined) {
-                localStorage.setItem("sidebarRole", data.role);
-            }
-            if (data?.department !== null && data?.department !== undefined) {
-                localStorage.setItem("sidebarDepartment", data.department);
-            }
-
-            setCurrentUser({
-                displayName: data?.username ?? data?.name ?? (user.email ?? "사용자"),
-                email,
-                position: data?.position ?? null,
-                role: data?.role ?? null,
-                department: data?.department ?? null,
-            });
-
-            console.log("[Sidebar] 사용자 정보 로드:", {
-                "DB 데이터": data,
-                position: data?.position,
-                role: data?.role,
-                department: data?.department,
-            });
-
-
-            if (id) {
-                setSidebarLoginId(id);
-                localStorage.setItem("sidebarLoginId", id);
-            }
-
-            // 알림 데이터 로드
-            setCurrentUserId(user.id);
-        };
-
-        fetchUser();
-    }, []);
-
-    // 알림 데이터 로드 및 업데이트
-    useEffect(() => {
-        if (!currentUserId) return;
-
-        const loadNotifications = async () => {
-            try {
-                const [notificationList, count] = await Promise.all([
-                    getUserNotifications(currentUserId),
-                    getUnreadNotificationCount(currentUserId),
-                ]);
-                setNotifications(notificationList);
-                setUnreadCount(count);
-            } catch (error) {
-                console.error("알림 로드 실패:", error);
-            }
-        };
-
-        loadNotifications();
-
-        // 30초마다 알림 업데이트
-        const interval = setInterval(loadNotifications, 30000);
-
-        return () => clearInterval(interval);
-    }, [currentUserId]);
-
-
-    // ✅ menuFocus가 있으면 다른 메뉴는 "강제로 비활성" 처리(워크로드 강조 잔상 제거)
-    const shouldForceInactive = (
-        _kind: "HOME" | "WORKLOAD" | "VACATION" | "MEMBERS"
-    ) => {
-        if (!menuFocus) return false;
-        // report/expense 포커스일 때는 다른 링크의 isActive를 무시
-        return true;
-    };
-
-    const MainLink = ({
-        to,
-        icon,
-        label,
-        kind,
-        onClick,
-    }: {
-        to: string;
-        icon: React.ReactNode;
-        label: string;
-        kind: "HOME" | "WORKLOAD" | "VACATION" | "MEMBERS";
-        onClick?: () => void;
-    }) => (
-        <NavLink
-            to={to}
-            end={false}
-            onClick={() => {
-                setMenuFocus(null); // 다른 메뉴 클릭하면 포커스 해제
-                setReportOpen(false);
-                setExpenseOpen(false);
-                setShowNotifications(false);
-                onClick?.();
-
-                // 모바일에서는 네비 후 사이드바 닫기(원래 props 유지)
-                onClose?.();
-            }}
-            className={({ isActive }) => {
-                const forcedInactive = shouldForceInactive(kind);
-                const active = forcedInactive ? false : isActive;
-
-                return `flex gap-6 items-center p-3 rounded-xl transition-colors ${active
-                    ? "bg-gray-700 text-white"
-                    : "text-gray-900 hover:bg-gray-200"
-                    }`;
-            }}
-        >
-            <div className="flex gap-3 items-center w-[162px]">
-                {icon}
-                <p className="font-medium text-[16px] leading-normal">
-                    {label}
-                </p>
-            </div>
-        </NavLink>
-    );
-
-    const SubLink = ({
-        to,
-        label,
-        focus,
-    }: {
-        to: string;
-        label: string;
-        focus: MenuFocus;
-    }) => (
-        <NavLink
-            to={to}
-            end={true}
-            onClick={() => {
-                setMenuFocus(focus);
-                setShowNotifications(false);
-                // 모바일에서는 네비 후 사이드바 닫기
-                onClose?.();
-            }}
-            className={({ isActive }) =>
-                `flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-left ${isActive
-                    ? "text-blue-600 font-medium"
-                    : "text-gray-500 hover:text-gray-900 hover:bg-gray-200"
-                }`
-            }
-        >
-            <span className="text-gray-400">ㄴ</span>
-            <p className="text-[14px]">{label}</p>
-        </NavLink>
-    );
-
+    // 메뉴 활성 상태
     const reportActive = isReportRoute || menuFocus === "REPORT";
     const expenseActive = isExpenseRoute || menuFocus === "EXPENSE";
 
-    // 사용자 권한 정보를 한 번만 계산하여 ref에 저장 (절대 변경되지 않음)
-    useEffect(() => {
-        // 이미 초기화되었으면 다시 계산하지 않음
-        if (userPermissionsRef.current.initialized) {
-            return;
-        }
-
-        // currentUser가 없으면 대기
-        if (!currentUser) {
-            return;
-        }
-
-        // role/department 정보를 우선순위로 가져오기 (state > currentUser > localStorage)
-        const position = currentUser.position;
-        // userRole/userDepartment가 null이 아닐 때만 사용, 그렇지 않으면 currentUser의 값 사용
-        const role = (userRole !== null && userRole !== undefined) ? userRole : (currentUser.role || localStorage.getItem("sidebarRole"));
-        const department = (userDepartment !== null && userDepartment !== undefined) ? userDepartment : (currentUser.department || localStorage.getItem("sidebarDepartment"));
-
-        // 권한 계산 (한 번만 계산하고 절대 변경되지 않음)
-        // 대표님 체크
-        const isCEO = position === "대표";
-
-        // 공무팀(admin) 체크: role이 "admin"이거나 department가 "공무팀"
-        const isAdmin = role === "admin" || department === "공무팀";
-
-        // 공사팀(staff) 체크: role이 "staff"이거나 department가 "공사팀"
-        const isStaff = role === "staff" || department === "공사팀";
-
-        // 홈 메뉴: 대표님이거나 공무팀(admin)만 표시
-        const showHomeMenu = isCEO || isAdmin;
-
-        // 휴가 관리 메뉴: 공사팀(staff)이 아니면 표시
-        const showVacationMenu = !isStaff;
-
-        console.log("[Sidebar] 권한 계산:", {
-            position,
-            role,
-            department,
-            userRole,
-            userDepartment,
-            currentUserRole: currentUser.role,
-            currentUserDepartment: currentUser.department,
-            isCEO,
-            isAdmin,
-            isStaff,
-            showHomeMenu,
-            showVacationMenu,
-            "계산 결과": { isAdmin, showHomeMenu }
-        });
-
-        // ref에 저장 (절대 변경되지 않음)
-        userPermissionsRef.current = {
-            isCEO,
-            isAdmin,
-            isStaff,
-            showHomeMenu,
-            showVacationMenu,
-            initialized: true,
-        };
-
-        // state 업데이트 (한 번만)
-        setUserPermissions(userPermissionsRef.current);
-    }, [currentUser, userRole, userDepartment]);
-
-    const reportSubMenuItems = [
-        { label: "보고서 목록", to: PATHS.reportList },
-        {
-            // ✅ 수정 화면일 때 라벨 변경
-            label: isReportEditRoute ? "보고서 작성(수정)" : "보고서 작성",
-            // ✅ 쿼리스트링까지 포함해야 NavLink 활성(파란색)이 정확히 잡힘
-            to: isReportEditRoute
-                ? `${location.pathname}${location.search}`
-                : PATHS.reportCreate,
-        },
-    ];
+    // 하위메뉴 아이템
+    const reportSubMenuItems = useMemo(
+        () => [
+            { label: "보고서 목록", to: PATHS.reportList },
+            {
+                label: isReportEditRoute ? "보고서 작성(수정)" : "보고서 작성",
+                to: isReportEditRoute
+                    ? `${location.pathname}${location.search}`
+                    : PATHS.reportCreate,
+            },
+        ],
+        [isReportEditRoute, location.pathname, location.search]
+    );
 
     // 권한별 지출 관리 서브메뉴
     const expenseSubMenuItems = useMemo(() => {
-        console.log("[Sidebar] expenseSubMenuItems 계산:", {
-            isCEO: userPermissions.isCEO,
-            isAdmin: userPermissions.isAdmin,
-            isStaff: userPermissions.isStaff,
-        });
-
         if (userPermissions.isCEO || userPermissions.isAdmin) {
-            // 대표님, 공무팀: 전체 지출 관리
             return [
                 { label: "개인 지출 기록", to: PATHS.expensePersonal },
                 { label: "구성원 지출 관리", to: PATHS.expenseTeam },
             ];
         } else if (userPermissions.isStaff) {
-            // 공사팀: 개인 지출 기록만
-            return [
-                { label: "개인 지출 기록", to: PATHS.expensePersonal },
-            ];
+            return [{ label: "개인 지출 기록", to: PATHS.expensePersonal }];
         }
         return [];
     }, [userPermissions.isCEO, userPermissions.isAdmin, userPermissions.isStaff]);
 
-    // 라우트 변경 시: 해당 라우트의 메뉴는 자동으로 열림 + 포커스 자동 정렬
+    // 라우트 변경 시 메뉴 상태 업데이트
     useEffect(() => {
         if (isReportRoute) {
             setReportOpen(true);
@@ -509,21 +121,49 @@ export default function Sidebar({ onClose }: SidebarProps) {
 
         if (isExpenseRoute) {
             setMenuFocus("EXPENSE");
-            // 하위메뉴가 2개 이상이면 항상 열기
             if (expenseSubMenuItems.length > 1) {
                 setExpenseOpen(true);
             } else {
-                // 하위메뉴가 1개일 때는 닫힌 상태 유지
                 setExpenseOpen(false);
             }
         } else {
-            // 지출 관리 라우트가 아니면 닫기
             setExpenseOpen(false);
         }
 
-        // 라우트 이동 시 알림 팝업은 닫아두는 게 UX 안전
         setShowNotifications(false);
-    }, [location.pathname, isReportRoute, isExpenseRoute, expenseSubMenuItems.length]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [
+        location.pathname,
+        isReportRoute,
+        isExpenseRoute,
+        expenseSubMenuItems.length,
+        setShowNotifications,
+    ]);
+
+    // 메뉴 클릭 핸들러
+    const handleMenuClick = (focus: MenuFocus | null) => {
+        if (focus) {
+            setMenuFocus(focus);
+        } else {
+            setMenuFocus(null);
+            setReportOpen(false);
+            setExpenseOpen(false);
+        }
+        setShowNotifications(false);
+    };
+
+    // menuFocus가 있으면 다른 메뉴는 "강제로 비활성" 처리
+    const shouldForceInactive = (
+        _kind: "HOME" | "WORKLOAD" | "VACATION" | "MEMBERS"
+    ) => {
+        if (!menuFocus) return false;
+        return true;
+    };
+
+    // 로그아웃 처리
+    const handleLogoutClick = async () => {
+        await handleLogout();
+        navigate("/login");
+    };
 
     return (
         <aside className="w-[239px] h-full bg-gray-50 border-r border-gray-200 flex flex-col">
@@ -558,11 +198,14 @@ export default function Sidebar({ onClose }: SidebarProps) {
                             setShowNotifications(false);
                         }}
                     >
-                        <Avatar email={currentUser?.email} size={28} position={currentUser?.position} />
+                        <Avatar
+                            email={currentUser?.email}
+                            size={28}
+                            position={currentUser?.position}
+                        />
                         <p className="font-semibold text-[16px] text-gray-900 leading-normal">
                             {sidebarLoginId || currentUser?.email?.split("@")[0] || ""}
                         </p>
-
                     </div>
 
                     {/* 사용자 액션 메뉴 */}
@@ -588,7 +231,6 @@ export default function Sidebar({ onClose }: SidebarProps) {
                                 : undefined
                         }
                         userEmail={currentUser?.email}
-
                     />
 
                     {/* 비밀번호 재설정 모달 */}
@@ -611,7 +253,6 @@ export default function Sidebar({ onClose }: SidebarProps) {
                         }}
                     />
 
-
                     {/* 로그아웃 확인 모달 */}
                     <BaseModal
                         isOpen={logoutConfirmModalOpen}
@@ -633,14 +274,10 @@ export default function Sidebar({ onClose }: SidebarProps) {
                                     variant="primary"
                                     size="lg"
                                     fullWidth
-                                    onClick={async () => {
-                                        setLogoutConfirmModalOpen(false);
-                                        await handleLogout();
-                                    }}
+                                    onClick={handleLogoutClick}
                                 >
                                     로그아웃
                                 </Button>
-
                             </div>
                         }
                     >
@@ -657,8 +294,8 @@ export default function Sidebar({ onClose }: SidebarProps) {
                                 setUserMenuOpen(false);
                             }}
                             className={`flex gap-6 items-center p-3 rounded-xl transition-colors w-full text-left ${showNotifications
-                                ? "bg-gray-100"
-                                : "text-gray-900 hover:bg-gray-200"
+                                    ? "bg-gray-100"
+                                    : "text-gray-900 hover:bg-gray-200"
                                 }`}
                         >
                             <div className="flex gap-3 items-center w-[162px]">
@@ -688,25 +325,8 @@ export default function Sidebar({ onClose }: SidebarProps) {
                                     created_at: n.created_at,
                                     read_at: n.read_at,
                                 }))}
-                                onNotificationRead={async (notificationId) => {
-                                    if (currentUserId) {
-                                        try {
-                                            // 알림 목록 업데이트
-                                            const [notificationList, count] =
-                                                await Promise.all([
-                                                    getUserNotifications(
-                                                        currentUserId
-                                                    ),
-                                                    getUnreadNotificationCount(
-                                                        currentUserId
-                                                    ),
-                                                ]);
-                                            setNotifications(notificationList);
-                                            setUnreadCount(count);
-                                        } catch (error) {
-                                            console.error("알림 업데이트 실패:", error);
-                                        }
-                                    }
+                                onNotificationRead={async () => {
+                                    await refreshNotifications();
                                 }}
                                 onMarkAllAsRead={async () => {
                                     if (currentUserId) {
@@ -714,23 +334,9 @@ export default function Sidebar({ onClose }: SidebarProps) {
                                             await markAllNotificationsAsRead(
                                                 currentUserId
                                             );
-                                            // 알림 다시 로드
-                                            const [notificationList, count] =
-                                                await Promise.all([
-                                                    getUserNotifications(
-                                                        currentUserId
-                                                    ),
-                                                    getUnreadNotificationCount(
-                                                        currentUserId
-                                                    ),
-                                                ]);
-                                            setNotifications(notificationList);
-                                            setUnreadCount(count);
+                                            await refreshNotifications();
                                         } catch (error) {
-                                            console.error(
-                                                "모두 읽음 처리 실패:",
-                                                error
-                                            );
+                                            console.error("모두 읽음 처리 실패:", error);
                                         }
                                     }
                                 }}
@@ -741,125 +347,102 @@ export default function Sidebar({ onClose }: SidebarProps) {
                     <div className="h-px bg-gray-200 rounded-full" />
 
                     <nav className="flex flex-col gap-2">
-                        {/* 대시보드 - 대표님, 공무팀만 (조건부 렌더링) */}
+                        {/* 대시보드 - 대표님, 공무팀만 */}
                         {(userPermissions.isCEO || userPermissions.isAdmin) && (
                             <MainLink
                                 to={PATHS.dashboard}
                                 icon={<IconHome />}
                                 label="홈"
                                 kind="HOME"
+                                onClose={onClose}
+                                shouldForceInactive={shouldForceInactive}
+                                onMenuClick={() => handleMenuClick(null)}
                             />
                         )}
 
-                        {/* 출장 보고서 - 모두 접근 가능 */}
-                        <button
+                        {/* 출장 보고서 */}
+                        <MenuButton
+                            icon={<IconReport />}
+                            label="출장 보고서"
+                            isActive={reportActive}
                             onClick={() => {
-                                setShowNotifications(false);
-                                setMenuFocus("REPORT");
+                                handleMenuClick("REPORT");
                                 setReportOpen(true);
                                 setExpenseOpen(false);
                                 navigate(PATHS.reportList);
                             }}
-                            className={`flex gap-6 items-center p-3 rounded-xl transition-colors ${reportActive
-                                ? "bg-gray-700 text-white"
-                                : "text-gray-900 hover:bg-gray-200"
-                                }`}
-                        >
-                            <div className="flex gap-3 items-center w-[162px]">
-                                <IconReport />
-                                <p className="font-medium text-[16px] leading-normal">
-                                    출장 보고서
-                                </p>
-                            </div>
-                        </button>
+                        />
 
-                        {reportOpen && (
-                            <div className="ml-4 mt-1 flex flex-col gap-1">
-                                {reportSubMenuItems.map((s) => (
-                                    <SubLink
-                                        key={s.label}
-                                        to={s.to}
-                                        label={s.label}
-                                        focus="REPORT"
-                                    />
-                                ))}
-                            </div>
-                        )}
+                        <SubMenu
+                            isOpen={reportOpen}
+                            items={reportSubMenuItems}
+                            focus="REPORT"
+                            onClose={onClose}
+                            onMenuClick={handleMenuClick}
+                        />
 
-                        {/* 워크로드 - 모두 접근 가능 */}
+                        {/* 워크로드 */}
                         <MainLink
                             to={PATHS.workload}
                             icon={<IconWorkload />}
                             label="워크로드"
                             kind="WORKLOAD"
+                            onClose={onClose}
+                            shouldForceInactive={shouldForceInactive}
+                            onMenuClick={() => handleMenuClick(null)}
                         />
 
-                        {/* 지출 관리 - 모두 접근 가능 (서브메뉴는 권한별로 다름) */}
-                        <button
+                        {/* 지출 관리 */}
+                        <MenuButton
+                            icon={<IconCard />}
+                            label="지출 관리"
+                            isActive={expenseActive}
                             onClick={() => {
-                                setShowNotifications(false);
-                                setMenuFocus("EXPENSE");
+                                handleMenuClick("EXPENSE");
                                 setReportOpen(false);
-                                // 하위메뉴가 1개일 때는 바로 이동
                                 if (expenseSubMenuItems.length === 1) {
                                     navigate(expenseSubMenuItems[0].to);
                                     setExpenseOpen(false);
                                 } else if (expenseSubMenuItems.length > 1) {
-                                    // 2개 이상일 때는 하위메뉴 열고 첫 번째 메뉴로 이동 (출장 보고서처럼)
                                     setExpenseOpen(true);
                                     navigate(PATHS.expensePersonal);
                                 }
                             }}
-                            className={`w-full flex gap-6 items-center p-3 rounded-xl transition-colors ${expenseActive
-                                ? "bg-gray-700 text-white"
-                                : "text-gray-900 hover:bg-gray-200"
-                                }`}
-                        >
-                            <div className="flex gap-3 items-center w-[162px]">
-                                <IconCard />
-                                <p className="font-medium text-[16px] leading-normal">
-                                    지출 관리
-                                </p>
-                            </div>
-                        </button>
+                        />
 
-                        {/* 하위메뉴 - 항상 렌더링하여 높이 유지, 조건부로 표시 */}
-                        <div
-                            className="ml-4 mt-1 flex flex-col gap-1"
-                            style={{
-                                display: (expenseOpen && expenseSubMenuItems.length > 1) ? 'flex' : 'none',
-                                minHeight: expenseSubMenuItems.length > 1 ? '0' : '0'
-                            }}
-                        >
-                            {expenseSubMenuItems.map((s) => (
-                                <SubLink
-                                    key={s.label}
-                                    to={s.to}
-                                    label={s.label}
-                                    focus="EXPENSE"
-                                />
-                            ))}
-                        </div>
-
-                        {/* 휴가 관리 - 공사팀 제외 (항상 렌더링, visibility로 제어하여 레이아웃 유지) */}
-                        {/* 공사팀(isStaff)이면 절대 표시하지 않음 */}
-                        {!userPermissions.isStaff && (
-                            <div>
-                                <MainLink
-                                    to={PATHS.vacation}
-                                    icon={<IconVacation />}
-                                    label="휴가 관리"
-                                    kind="VACATION"
-                                />
-                            </div>
+                        {/* 하위메뉴 */}
+                        {expenseSubMenuItems.length > 1 && (
+                            <SubMenu
+                                isOpen={expenseOpen}
+                                items={expenseSubMenuItems}
+                                focus="EXPENSE"
+                                onClose={onClose}
+                                onMenuClick={handleMenuClick}
+                            />
                         )}
 
-                        {/* 구성원 관리 - 모두 접근 가능 */}
+                        {/* 휴가 관리 - 공사팀 제외 */}
+                        {!userPermissions.isStaff && (
+                            <MainLink
+                                to={PATHS.vacation}
+                                icon={<IconVacation />}
+                                label="휴가 관리"
+                                kind="VACATION"
+                                onClose={onClose}
+                                shouldForceInactive={shouldForceInactive}
+                                onMenuClick={() => handleMenuClick(null)}
+                            />
+                        )}
+
+                        {/* 구성원 관리 */}
                         <MainLink
                             to={PATHS.members}
                             icon={<IconMembers />}
                             label="구성원 관리"
                             kind="MEMBERS"
+                            onClose={onClose}
+                            shouldForceInactive={shouldForceInactive}
+                            onMenuClick={() => handleMenuClick(null)}
                         />
                     </nav>
                 </div>
