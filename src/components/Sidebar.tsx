@@ -294,8 +294,8 @@ export default function Sidebar({ onClose }: SidebarProps) {
                                 setUserMenuOpen(false);
                             }}
                             className={`flex gap-6 items-center p-3 rounded-xl transition-colors w-full text-left ${showNotifications
-                                    ? "bg-gray-100"
-                                    : "text-gray-900 hover:bg-gray-200"
+                                ? "bg-gray-100"
+                                : "text-gray-900 hover:bg-gray-200"
                                 }`}
                         >
                             <div className="flex gap-3 items-center w-[162px]">

@@ -362,9 +362,9 @@ const EventDetailMenu: React.FC<EventDetailMenuProps> = ({
                 </div>
                 {/* 생성자만 수정/삭제 버튼 표시 */}
                 {event.userId === currentUserId && (
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 mt-2">
                         <Button
-                            variant="primary"
+                            variant="outline"
                             size="sm"
                             fullWidth
                             onClick={(e) => {
