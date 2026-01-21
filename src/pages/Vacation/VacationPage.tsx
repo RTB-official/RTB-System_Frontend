@@ -15,12 +15,15 @@ import {
     deleteVacation,
     getVacations,
     getVacationStats,
+    getVacationGrantHistory,
+    getCurrentTotalAnnualLeave,
     statusToKorean,
     leaveTypeToKorean,
     formatVacationDate,
     type Vacation,
     type VacationStatus as ApiVacationStatus,
 } from "../../lib/vacationApi";
+import type { VacationGrantHistory } from "../../lib/vacationCalculator";
 
 export type VacationStatus = "대기 중" | "승인 완료" | "반려";
 
@@ -97,6 +100,7 @@ export default function VacationPage() {
         used: 0,
         expired: 0,
     });
+    const [grantHistory, setGrantHistory] = useState<VacationGrantHistory[]>([]);
 
     // URL 파라미터로 모달 열기
     useEffect(() => {
@@ -120,11 +124,23 @@ export default function VacationPage() {
 
                 // 통계 조회
                 const stats = await getVacationStats(user.id, yearNum);
+                
+                // 지급/소멸 내역 조회 (해당 연도만)
+                const history = await getVacationGrantHistory(user.id, yearNum);
+                setGrantHistory(history);
+                
+                // 지급 총합 계산 (해당 연도만)
+                const totalGranted = history.reduce((sum, h) => sum + (h.granted || 0), 0);
+                const totalExpired = Math.abs(history.reduce((sum, h) => sum + (h.expired || 0), 0));
+                
+                // 현재 날짜 기준 총 연차 계산 (연도 무관)
+                const currentTotal = await getCurrentTotalAnnualLeave(user.id);
+                
                 setSummary({
-                    myAnnual: stats.total || 15, // 기본값 15일
-                    granted: stats.total || 0,
-                    used: stats.used,
-                    expired: 0, // 추후 구현
+                    myAnnual: currentTotal, // 항상 현재 날짜 기준 총 연차
+                    granted: totalGranted || stats.total || 0, // 해당 연도 지급
+                    used: stats.used, // 해당 연도 사용
+                    expired: totalExpired, // 해당 연도 소멸
                 });
             } catch (error) {
                 console.error("휴가 목록 조회 실패:", error);
@@ -166,10 +182,21 @@ export default function VacationPage() {
         });
     }, [vacations, summary.myAnnual]);
 
-    // 지급/소멸 내역 (추후 구현)
+    // 지급/소멸 내역 변환
     const grantExpireRows = useMemo<GrantExpireRow[]>(() => {
-        return [];
-    }, []);
+        return grantHistory.map((h, index) => {
+            const date = new Date(h.date);
+            const month = date.getMonth() + 1;
+            const day = date.getDate();
+            
+            return {
+                id: `grant-${index}`,
+                monthLabel: `${month}월 ${day}일`,
+                granted: h.granted,
+                expired: h.expired,
+            };
+        });
+    }, [grantHistory]);
 
     // 간단 페이징(1페이지 10개 고정)
     const itemsPerPage = 10;
@@ -213,11 +240,20 @@ export default function VacationPage() {
             setVacations(data);
 
             const stats = await getVacationStats(user.id, yearNum);
+            
+            // 지급/소멸 내역 조회
+            const history = await getVacationGrantHistory(user.id, yearNum);
+            setGrantHistory(history);
+            
+            // 지급 총합 계산
+            const totalGranted = history.reduce((sum, h) => sum + (h.granted || 0), 0);
+            const totalExpired = Math.abs(history.reduce((sum, h) => sum + (h.expired || 0), 0));
+            
             setSummary({
-                myAnnual: stats.total || 15,
-                granted: stats.total || 0,
+                myAnnual: stats.total || 0,
+                granted: totalGranted || stats.total || 0,
                 used: stats.used,
-                expired: 0,
+                expired: totalExpired,
             });
         } catch (error: any) {
             console.error("휴가 삭제 실패:", error);
