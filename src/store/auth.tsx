@@ -63,7 +63,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       async signInWithUsername(username, password) {
         const trimmedUsername = username.trim();
-        
+
         // username으로 profiles 테이블에서 email 찾기
         // username이 "brian.ko_01b7a9" 형식으로 저장되어 있을 수 있으므로
         // 정확히 일치하거나, 입력한 username으로 시작하는 경우를 모두 확인
@@ -80,7 +80,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             .select("email, name, username")
             .like("username", `${trimmedUsername}_%`)
             .limit(1);
-          
+
           if (!searchError && profiles && profiles.length > 0) {
             profile = profiles[0];
           } else if (searchError) {
@@ -107,7 +107,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (error.status === 500) {
             return { ok: false, message: "서버 오류가 발생했습니다. Supabase Dashboard의 Logs를 확인해주세요." };
           }
-          
+
           // 비밀번호 오류인 경우 더 명확한 메시지
           if (error.message.includes("password") || error.message.includes("Invalid login") || error.message.includes("Invalid credentials")) {
             return { ok: false, message: "비밀번호가 올바르지 않습니다." };
