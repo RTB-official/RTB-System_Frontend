@@ -1,5 +1,5 @@
 //workloadPage.tsx
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
     BarChart,
@@ -26,6 +26,21 @@ import {
     type WorkloadTableRow,
 } from "../../lib/workloadApi";
 
+// 워크로드 타입별 색상 및 라벨 상수
+const WORKLOAD_TYPES = [
+    { key: "작업", label: "작업", color: "#51a2ff", dataKey: "작업" },
+    { key: "이동", label: "이동", color: "#fd9a00", dataKey: "이동" },
+    { key: "대기", label: "대기", color: "#d1d5dc", dataKey: "대기" },
+];
+
+// 테이블 컬럼 정의
+const TABLE_COLUMNS = [
+    { key: "name", label: "이름" },
+    { key: "work", label: "작업" },
+    { key: "travel", label: "이동" },
+    { key: "wait", label: "대기" },
+    { key: "days", label: "일수" },
+];
 
 // 커스텀 툴팁
 const CustomTooltip = ({ active, payload, label }: any) => {
@@ -37,29 +52,54 @@ const CustomTooltip = ({ active, payload, label }: any) => {
             <div className="bg-white border border-gray-100 rounded-xl p-4 shadow-lg">
                 <p className="font-semibold text-sm text-gray-900 mb-2">{label}</p>
                 <div className="flex flex-col gap-1.5">
-                    <div className="flex items-center gap-1.5">
-                        <div className="w-3.5 h-3.5 rounded bg-[#51a2ff]" />
-                        <span className="text-sm text-gray-600">
-                            작업 {byKey("작업")}시간
-                        </span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                        <div className="w-3.5 h-3.5 rounded bg-[#fd9a00]" />
-                        <span className="text-sm text-gray-600">
-                            이동 {byKey("이동")}시간
-                        </span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                        <div className="w-3.5 h-3.5 rounded bg-gray-300" />
-                        <span className="text-sm text-gray-600">
-                            대기 {byKey("대기")}시간
-                        </span>
-                    </div>
+                    {WORKLOAD_TYPES.map((type) => (
+                        <div key={type.key} className="flex items-center gap-1.5">
+                            <div
+                                className="w-3.5 h-3.5 rounded"
+                                style={{ backgroundColor: type.color }}
+                            />
+                            <span className="text-sm text-gray-600">
+                                {type.label} {byKey(type.dataKey)}시간
+                            </span>
+                        </div>
+                    ))}
                 </div>
             </div>
         );
     }
     return null;
+};
+
+// 차트 설정 상수
+const CHART_MARGIN = { top: 20, right: 20, left: 0, bottom: 5 };
+const BAR_RADIUS = 4;
+const Y_AXIS_INTERVAL = 35;
+
+// 커스텀 Bar Shape - 각 데이터 포인트에서 실제로 맨 위에 있는 Bar만 위쪽 radius 적용
+const CustomBarShape = (props: any) => {
+    const { fill, x, y, width, height, payload, dataKey } = props;
+    const { 작업, 이동, 대기 } = payload as WorkloadChartData;
+
+    // 실제로 맨 위에 있는 Bar인지 확인
+    // Recharts 스택 순서: 작업(아래) -> 이동(중간) -> 대기(위)
+    const isTopBar =
+        (dataKey === "대기" && 대기 > 0) ||
+        (dataKey === "이동" && 대기 === 0 && 이동 > 0) ||
+        (dataKey === "작업" && 대기 === 0 && 이동 === 0 && 작업 > 0);
+
+    if (isTopBar) {
+        // 위쪽만 radius 적용 (path 사용)
+        const path = `M ${x + BAR_RADIUS} ${y} 
+                      L ${x + width - BAR_RADIUS} ${y} 
+                      Q ${x + width} ${y} ${x + width} ${y + BAR_RADIUS} 
+                      L ${x + width} ${y + height} 
+                      L ${x} ${y + height} 
+                      L ${x} ${y + BAR_RADIUS} 
+                      Q ${x} ${y} ${x + BAR_RADIUS} ${y} Z`;
+        return <path d={path} fill={fill} />;
+    }
+
+    return <rect x={x} y={y} width={width} height={height} fill={fill} />;
 };
 
 
@@ -95,15 +135,16 @@ export default function WorkloadPage() {
         }
     }, [isStaff, userName, navigate]);
 
-    // 행 클릭 핸들러
-    const handleRowClick = (row: WorkloadTableRow) => {
-        // 공사팀(스태프)인 경우 본인 ID와 일치하는 경우만 상세 페이지로 이동
-        // (이미 자동 리다이렉트되므로 이 핸들러는 사실상 사용되지 않지만, 안전장치로 유지)
-        if (isStaff && row.id !== currentUserId) {
-            return;
-        }
-        navigate(`/workload/detail/${encodeURIComponent(row.name)}`);
-    };
+    // 행 클릭 핸들러 (메모이제이션)
+    const handleRowClick = useCallback(
+        (row: WorkloadTableRow) => {
+            if (isStaff && row.id !== currentUserId) {
+                return;
+            }
+            navigate(`/workload/detail/${encodeURIComponent(row.name)}`);
+        },
+        [isStaff, currentUserId, navigate]
+    );
 
     // 데이터 로드
     useEffect(() => {
@@ -140,17 +181,14 @@ export default function WorkloadPage() {
                 }
 
                 // ✅ 인원별 집계
-                const summaries = aggregatePersonWorkload(entries.value, profiles);
+                const summaries = aggregatePersonWorkload(
+                    entries.value,
+                    profiles
+                );
 
-
-
-                // 차트 데이터 생성
-                const chart = generateChartData(summaries);
-                setChartData(chart);
-
-                // 테이블 데이터 생성
-                const table = generateTableData(summaries);
-                setTableData(table);
+                // 차트 및 테이블 데이터 생성
+                setChartData(generateChartData(summaries));
+                setTableData(generateTableData(summaries));
 
                 // 페이지 초기화
                 setCurrentPage(1);
@@ -177,11 +215,28 @@ export default function WorkloadPage() {
         return tableData.slice(startIndex, endIndex);
     }, [tableData, currentPage, itemsPerPage]);
 
-    // Y축 최대값 계산 (차트용)
-    const maxYValue = useMemo(() => {
-        if (chartData.length === 0) return 140;
-        const max = Math.max(...chartData.map((d) => d.작업 + d.이동 + d.대기));
-        return Math.ceil(max / 35) * 35; // 35의 배수로 올림
+    // Y축 최대값 및 ticks 계산 (차트용)
+    const { maxYValue, yAxisTicks } = useMemo(() => {
+        if (chartData.length === 0) {
+            return {
+                maxYValue: 140,
+                yAxisTicks: Array.from(
+                    { length: 140 / Y_AXIS_INTERVAL + 1 },
+                    (_, i) => i * Y_AXIS_INTERVAL
+                ),
+            };
+        }
+        const max = Math.max(
+            ...chartData.map((d) => d.작업 + d.이동 + d.대기)
+        );
+        const maxY = Math.ceil(max / Y_AXIS_INTERVAL) * Y_AXIS_INTERVAL;
+        return {
+            maxYValue: maxY,
+            yAxisTicks: Array.from(
+                { length: maxY / Y_AXIS_INTERVAL + 1 },
+                (_, i) => i * Y_AXIS_INTERVAL
+            ),
+        };
     }, [chartData]);
 
     return (
@@ -239,24 +294,20 @@ export default function WorkloadPage() {
                                         인원별 작업시간
                                     </h2>
                                     <div className="flex items-center gap-5">
-                                        <div className="flex items-center gap-1.5">
-                                            <div className="w-4 h-4 rounded bg-[#51a2ff]" />
-                                            <span className="text-[13px] text-gray-500">
-                                                작업
-                                            </span>
-                                        </div>
-                                        <div className="flex items-center gap-1.5">
-                                            <div className="w-4 h-4 rounded bg-[#fd9a00]" />
-                                            <span className="text-[13px] text-gray-500">
-                                                이동
-                                            </span>
-                                        </div>
-                                        <div className="flex items-center gap-1.5">
-                                            <div className="w-4 h-4 rounded bg-gray-300" />
-                                            <span className="text-[13px] text-gray-500">
-                                                대기
-                                            </span>
-                                        </div>
+                                        {WORKLOAD_TYPES.map((type) => (
+                                            <div
+                                                key={type.key}
+                                                className="flex items-center gap-1.5"
+                                            >
+                                                <div
+                                                    className="w-4 h-4 rounded"
+                                                    style={{ backgroundColor: type.color }}
+                                                />
+                                                <span className="text-[13px] text-gray-500">
+                                                    {type.label}
+                                                </span>
+                                            </div>
+                                        ))}
                                     </div>
                                 </div>
 
@@ -280,12 +331,7 @@ export default function WorkloadPage() {
                                         >
                                             <BarChart
                                                 data={chartData}
-                                                margin={{
-                                                    top: 20,
-                                                    right: 20,
-                                                    left: 0,
-                                                    bottom: 5,
-                                                }}
+                                                margin={CHART_MARGIN}
                                             >
                                                 <CartesianGrid
                                                     strokeDasharray="3 3"
@@ -309,14 +355,7 @@ export default function WorkloadPage() {
                                                     axisLine={false}
                                                     tickLine={false}
                                                     domain={[0, maxYValue]}
-                                                    ticks={Array.from(
-                                                        {
-                                                            length:
-                                                                maxYValue / 35 +
-                                                                1,
-                                                        },
-                                                        (_, i) => i * 35
-                                                    )}
+                                                    ticks={yAxisTicks}
                                                 />
                                                 <Tooltip
                                                     content={<CustomTooltip />}
@@ -324,24 +363,15 @@ export default function WorkloadPage() {
                                                         fill: "rgba(0,0,0,0.05)",
                                                     }}
                                                 />
-                                                <Bar
-                                                    dataKey="작업"
-                                                    stackId="a"
-                                                    fill="#51a2ff"
-                                                    radius={[4, 4, 0, 0]}
-                                                />
-                                                <Bar
-                                                    dataKey="이동"
-                                                    stackId="a"
-                                                    fill="#fd9a00"
-                                                    radius={[4, 4, 0, 0]}
-                                                />
-                                                <Bar
-                                                    dataKey="대기"
-                                                    stackId="a"
-                                                    fill="#d1d5dc"
-                                                    radius={[4, 4, 0, 0]}
-                                                />
+                                                {WORKLOAD_TYPES.map((type) => (
+                                                    <Bar
+                                                        key={type.key}
+                                                        dataKey={type.dataKey}
+                                                        stackId="a"
+                                                        fill={type.color}
+                                                        shape={CustomBarShape}
+                                                    />
+                                                ))}
                                             </BarChart>
                                         </ResponsiveContainer>
                                     </div>
@@ -357,38 +387,13 @@ export default function WorkloadPage() {
                                     클릭하여 상세 내역을 확인하세요
                                 </p>
 
-                                {loading ? (
-                                    <div className="py-8 text-center text-gray-500">
-                                        데이터 로딩 중...
-                                    </div>
-                                ) : tableData.length === 0 ? (
+                                {tableData.length === 0 ? (
                                     <div className="py-8 text-center text-gray-500">
                                         데이터가 없습니다.
                                     </div>
                                 ) : (
                                     <Table
-                                        columns={[
-                                            {
-                                                key: "name",
-                                                label: "이름",
-                                            },
-                                            {
-                                                key: "work",
-                                                label: "작업",
-                                            },
-                                            {
-                                                key: "travel",
-                                                label: "이동",
-                                            },
-                                            {
-                                                key: "wait",
-                                                label: "대기",
-                                            },
-                                            {
-                                                key: "days",
-                                                label: "일수",
-                                            },
-                                        ]}
+                                        columns={TABLE_COLUMNS}
                                         data={currentTableData}
                                         rowKey="id"
                                         onRowClick={handleRowClick}
