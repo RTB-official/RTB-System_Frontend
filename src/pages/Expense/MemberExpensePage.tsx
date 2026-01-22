@@ -20,6 +20,7 @@ import BaseModal from "../../components/ui/BaseModal";
 import EmptyValueIndicator from "./components/EmptyValueIndicator";
 import Avatar from "../../components/common/Avatar";
 import { useUser } from "../../hooks/useUser";
+import { supabase } from "../../lib/supabase";
 import { useToast } from "../../components/ui/ToastProvider";
 
 export default function MemberExpensePage() {
