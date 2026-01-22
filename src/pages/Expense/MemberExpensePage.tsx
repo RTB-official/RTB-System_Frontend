@@ -19,7 +19,7 @@ import EmployeeDetailView from "./components/EmployeeDetailView";
 import BaseModal from "../../components/ui/BaseModal";
 import EmptyValueIndicator from "./components/EmptyValueIndicator";
 import Avatar from "../../components/common/Avatar";
-import { supabase } from "../../lib/supabase";
+import { useUser } from "../../hooks/useUser";
 import { useToast } from "../../components/ui/ToastProvider";
 
 export default function MemberExpensePage() {
@@ -91,27 +91,13 @@ export default function MemberExpensePage() {
 
     // ✅ 사이드바 열려있을 때 모바일에서 body 스크롤 잠금
     // 권한 체크: 공사팀(스태프)은 접근 불가
+    const { userPermissions } = useUser();
     useEffect(() => {
-        const checkAccess = async () => {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (user) {
-                const { data: profile } = await supabase
-                    .from("profiles")
-                    .select("role, department")
-                    .eq("id", user.id)
-                    .single();
-
-                if (profile) {
-                    const isStaff = profile.role === "staff" || profile.department === "공사팀";
-                    if (isStaff) {
-                        navigate("/report", { replace: true });
-                        return;
-                    }
-                }
-            }
-        };
-        checkAccess();
-    }, [navigate]);
+        // useUser 훅에서 이미 권한 정보를 가져왔으므로 추가 API 호출 불필요
+        if (userPermissions.isStaff && !userPermissions.isCEO && !userPermissions.isAdmin) {
+            navigate("/report", { replace: true });
+        }
+    }, [userPermissions, navigate]);
 
     useEffect(() => {
         document.body.style.overflow = sidebarOpen ? "hidden" : "";
