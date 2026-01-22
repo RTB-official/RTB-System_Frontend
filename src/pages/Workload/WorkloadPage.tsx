@@ -15,7 +15,7 @@ import Header from "../../components/common/Header";
 import Table from "../../components/common/Table";
 import YearMonthSelector from "../../components/common/YearMonthSelector";
 import WorkloadSkeleton from "../../components/common/WorkloadSkeleton";
-import { supabase } from "../../lib/supabase";
+import { useUser } from "../../hooks/useUser";
 import {
     getWorkloadData,
     getWorkloadTargetProfiles,
@@ -78,48 +78,29 @@ export default function WorkloadPage() {
     const [loading, setLoading] = useState(true);
     const [chartData, setChartData] = useState<WorkloadChartData[]>([]);
     const [tableData, setTableData] = useState<WorkloadTableRow[]>([]);
-    const [userRole, setUserRole] = useState<string | null>(null);
-    const [userDepartment, setUserDepartment] = useState<string | null>(null);
-    const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-    const [userName, setUserName] = useState<string | null>(null);
     const [redirecting, setRedirecting] = useState(false);
 
     const itemsPerPage = 10;
 
-    // 사용자 정보 로드
+    // ✅ useUser 훅으로 사용자 정보 및 권한 가져오기
+    const { currentUser, currentUserId, userPermissions } = useUser();
+    const userRole = currentUser?.role || null;
+    const userDepartment = currentUser?.department || null;
+    const userName = currentUser?.displayName || null;
+    const isStaff = userPermissions.isStaff;
+
+    // ✅ staff/공사팀이면 WorkloadPage 로딩 없이 즉시 본인 Detail로 이동
     useEffect(() => {
-        const fetchUserInfo = async () => {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (user) {
-                setCurrentUserId(user.id);
-                const { data: profile } = await supabase
-                    .from("profiles")
-                    .select("role, department, name")
-                    .eq("id", user.id)
-                    .single();
-                    if (profile) {
-                        setUserRole(profile.role);
-                        setUserDepartment(profile.department);
-                        setUserName(profile.name);
-    
-                        // ✅ staff/공사팀이면 WorkloadPage 로딩 없이 즉시 본인 Detail로 이동
-                        const isStaff = profile.role === "staff" || profile.department === "공사팀";
-                        if (isStaff && profile.name) {
-                            setRedirecting(true);
-                            navigate(`/workload/detail/${encodeURIComponent(profile.name)}`, {
-                                replace: true,
-                            });
-                            return;
-                        }
-                    }
-            }
-        };
-        fetchUserInfo();
-    }, []);
+        if (isStaff && userName) {
+            setRedirecting(true);
+            navigate(`/workload/detail/${encodeURIComponent(userName)}`, {
+                replace: true,
+            });
+        }
+    }, [isStaff, userName, navigate]);
 
     // 행 클릭 핸들러
     const handleRowClick = (row: WorkloadTableRow) => {
-        const isStaff = userRole === "staff" || userDepartment === "공사팀";
         // 공사팀(스태프)인 경우 본인 ID와 일치하는 경우만 상세 페이지로 이동
         // (이미 자동 리다이렉트되므로 이 핸들러는 사실상 사용되지 않지만, 안전장치로 유지)
         if (isStaff && row.id !== currentUserId) {
@@ -130,7 +111,6 @@ export default function WorkloadPage() {
 
     // 데이터 로드
     useEffect(() => {
-        const isStaff = userRole === "staff" || userDepartment === "공사팀";
         if (isStaff) return; // ✅ staff는 목록 화면 로딩 자체를 하지 않음
 
         const loadData = async () => {
@@ -139,22 +119,32 @@ export default function WorkloadPage() {
                 const yearNum = parseInt(selectedYear.replace("년", ""));
                 const monthNum = parseInt(selectedMonth.replace("월", ""));
 
-                const entries = await getWorkloadData({
-                    year: yearNum,
-                    month: monthNum,
-                });
+                // ✅ API 호출 병렬 처리로 성능 개선
+                const [entries, profilesResult] = await Promise.allSettled([
+                    getWorkloadData({
+                        year: yearNum,
+                        month: monthNum,
+                    }),
+                    getWorkloadTargetProfiles(),
+                ]);
 
-                // ✅ 공사팀/공무팀 대상자 조회 (실패해도 워크로드는 계속 표시)
+                // entries 처리
+                if (entries.status === "rejected") {
+                    console.error("워크로드 데이터 로드 실패:", entries.reason);
+                    throw entries.reason;
+                }
+
+                // profiles 처리 (실패해도 워크로드는 계속 표시)
                 let profiles: Awaited<ReturnType<typeof getWorkloadTargetProfiles>> = [];
-                try {
-                    profiles = await getWorkloadTargetProfiles();
-                } catch (e) {
-                    console.error("워크로드 대상자(profiles) 조회 실패 - fallback 처리:", e);
+                if (profilesResult.status === "fulfilled") {
+                    profiles = profilesResult.value;
+                } else {
+                    console.error("워크로드 대상자(profiles) 조회 실패 - fallback 처리:", profilesResult.reason);
                     profiles = []; // ✅ 대상자 필터 없이 전체 집계
                 }
 
                 // ✅ 인원별 집계
-                const summaries = aggregatePersonWorkload(entries, profiles);
+                const summaries = aggregatePersonWorkload(entries.value, profiles);
 
 
 
@@ -176,7 +166,7 @@ export default function WorkloadPage() {
         };
 
         loadData();
-    }, [selectedYear, selectedMonth, userRole, userDepartment]);
+    }, [selectedYear, selectedMonth, isStaff]);
 
 
 
