@@ -45,15 +45,7 @@ function LoginPage() {
       return;
     }
 
-    // rememberMe는 Supabase 기본 persistSession(true)로 이미 유지됨.
-    // (정말 rememberMe로 분기하려면, localStorage 기반 custom 처리로 확장 가능)
-
-    const nextRole = res.role;
-    if (nextRole === "admin") {
-      nav("/dashboard", { replace: true });
-    } else {
-      nav("/report", { replace: true });
-    }
+    nav("/dashboard", { replace: true });
   };
 
   return (
