@@ -8,7 +8,6 @@ import PageSkeleton from "./components/common/PageSkeleton";
 
 import ReportPdfPage from "./pages/Report/ReportPdfPage";
 import SettingsPage from "./pages/Settings";
-import SafePhrasePage from "./pages/Settings/SafePhrase";
 
 const LoginPage = lazy(() => import("./pages/Login/LoginPage"));
 const DashboardPage = lazy(() => import("./pages/Dashboard/DashboardPage"));
@@ -29,10 +28,8 @@ const MemberExpensePage = lazy(() => import("./pages/Expense/MemberExpensePage")
 
 const MembersPage = lazy(() => import("./pages/Members/MembersPage"));
 const VehiclesPage = lazy(() => import("./pages/Vehicles/VehiclesPage"));
-const EmailNotificationPage = lazy(() => import("./pages/Settings/EmailNotification"));
-const SafePhrasePage = lazy(() => import("./pages/Settings/SafePhrase"));
-
 const EmailSettingsPage = lazy(() => import("./pages/Settings/Email"));
+const SafePhrasePage = lazy(() => import("./pages/Settings/SafePhrase"));
 
 function RoleLanding() {
   const { loading, loadingProfile, user, profile } = useAuth();
@@ -44,7 +41,7 @@ function RoleLanding() {
   return <Navigate to="/report" replace />;
 }
 
-export default function App() {
+function App() {
   return (
     <AuthProvider>
       <ToastProvider>
