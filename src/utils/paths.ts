@@ -7,4 +7,5 @@ export const PATHS = {
     expensePersonal: "/expense",
     vacation: "/Vacation",
     members: "/members",
+    vehicles: "/vehicles",
 } as const;

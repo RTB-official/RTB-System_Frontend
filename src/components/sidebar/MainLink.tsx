@@ -4,10 +4,10 @@ interface MainLinkProps {
   to: string;
   icon: React.ReactNode;
   label: string;
-  kind: "HOME" | "WORKLOAD" | "VACATION" | "MEMBERS";
+  kind: "HOME" | "WORKLOAD" | "VACATION" | "MEMBERS" | "VEHICLES";
   onClick?: () => void;
   onClose?: () => void;
-  shouldForceInactive?: (kind: "HOME" | "WORKLOAD" | "VACATION" | "MEMBERS") => boolean;
+  shouldForceInactive?: (kind: "HOME" | "WORKLOAD" | "VACATION" | "MEMBERS" | "VEHICLES") => boolean;
   onMenuClick?: () => void;
 }
 

@@ -28,6 +28,9 @@ const PersonalExpensePage = lazy(() => import("./pages/Expense/PersonalExpensePa
 const MemberExpensePage = lazy(() => import("./pages/Expense/MemberExpensePage"));
 
 const MembersPage = lazy(() => import("./pages/Members/MembersPage"));
+const VehiclesPage = lazy(() => import("./pages/Vehicles/VehiclesPage"));
+const EmailNotificationPage = lazy(() => import("./pages/Settings/EmailNotification"));
+const SafePhrasePage = lazy(() => import("./pages/Settings/SafePhrase"));
 
 const EmailSettingsPage = lazy(() => import("./pages/Settings/Email"));
 
@@ -71,6 +74,7 @@ export default function App() {
                 <Route path="/expense/member" element={<MemberExpensePage />} />
 
                 <Route path="/members" element={<MembersPage />} />
+                <Route path="/vehicles" element={<VehiclesPage />} />
 
                 <Route path="/settings" element={<SettingsPage />} />
                 <Route path="/settings/email" element={<EmailSettingsPage />} />
@@ -93,3 +97,5 @@ export default function App() {
     </AuthProvider>
   );
 }
+
+export default App;
