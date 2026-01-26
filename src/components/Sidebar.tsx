@@ -1,4 +1,4 @@
-// src/components/Sidebar.tsx
+﻿// src/components/Sidebar.tsx
 import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { lazy, Suspense } from "react";
@@ -6,7 +6,7 @@ import NotificationPopup from "./ui/NotificationPopup";
 import ActionMenu from "./common/ActionMenu";
 import Button from "./common/Button";
 
-// 모달 컴포넌트 lazy loading
+// 紐⑤떖 而댄룷?뚰듃 lazy loading
 const ResetPasswordModal = lazy(() => import("./modals/ResetPasswordModal"));
 const BaseModal = lazy(() => import("./ui/BaseModal"));
 import { supabase } from "../lib/supabase";
@@ -19,6 +19,7 @@ import {
     IconCard,
     IconVacation,
     IconMembers,
+    IconCar,
     IconNotifications,
     IconClose,
     IconSettings,
@@ -50,7 +51,7 @@ export default function Sidebar({ onClose }: SidebarProps) {
     const navigate = useNavigate();
     const { showSuccess, showError } = useToast();
 
-    // 사용자 정보 및 권한
+    // ?ъ슜???뺣낫 諛?沅뚰븳
     const { currentUser, currentUserId, sidebarLoginId, userPermissions, handleLogout } =
         useUser();
 
@@ -58,10 +59,10 @@ export default function Sidebar({ onClose }: SidebarProps) {
             return localStorage.getItem("profile_role") === "admin";
         });
 
-    // 권한 정보를 ref로 저장하여 깜빡임 방지
+    // 沅뚰븳 ?뺣낫瑜?ref濡???ν븯??源쒕묀??諛⑹?
     const userPermissionsRef = useRef(userPermissions);
     useEffect(() => {
-        // 권한이 한 번 설정되면 유지 (초기값이 false가 아닐 때만 업데이트)
+        // 沅뚰븳????踰??ㅼ젙?섎㈃ ?좎? (珥덇린媛믪씠 false媛 ?꾨땺 ?뚮쭔 ?낅뜲?댄듃)
         if (userPermissions.isCEO || userPermissions.isAdmin || userPermissions.isStaff) {
             userPermissionsRef.current = userPermissions;
         }
@@ -78,27 +79,28 @@ export default function Sidebar({ onClose }: SidebarProps) {
                 .single();
 
             if (error) {
-                console.error("profiles role 조회 실패:", error);
-                // ✅ 캐시가 admin이면 깜빡임 방지를 위해 false로 떨어뜨리지 않음
+                console.error("profiles role 議고쉶 ?ㅽ뙣:", error);
+                // ??罹먯떆媛 admin?대㈃ 源쒕묀??諛⑹?瑜??꾪빐 false濡??⑥뼱?⑤━吏 ?딆쓬
                 return;
             }
 
             const nextIsAdmin = data?.role === "admin";
             setIsAdmin(nextIsAdmin);
 
-            // ✅ 다음 라우트 이동/재마운트 시 즉시 반영되도록 캐시
+            // ???ㅼ쓬 ?쇱슦???대룞/?щ쭏?댄듃 ??利됱떆 諛섏쁺?섎룄濡?罹먯떆
             localStorage.setItem("profile_role", data?.role ?? "");
         };
 
         fetchRole();
     }, [currentUserId]);
 
-    // 안정화된 권한 사용 (깜빡임 방지)
+    // ?덉젙?붾맂 沅뚰븳 ?ъ슜 (源쒕묀??諛⑹?)
     const stablePermissions = userPermissionsRef.current.isCEO || userPermissionsRef.current.isAdmin || userPermissionsRef.current.isStaff
         ? userPermissionsRef.current
         : userPermissions;
+    const canShowVehicles = stablePermissions.isAdmin || isAdmin;
 
-    // 알림 관련
+    // ?뚮┝ 愿??
     const {
         showNotifications,
         setShowNotifications,
@@ -108,25 +110,25 @@ export default function Sidebar({ onClose }: SidebarProps) {
         refreshNotifications,
     } = useNotifications(currentUserId);
 
-    // 메뉴 포커스 및 상태
+    // 硫붾돱 ?ъ빱??諛??곹깭
     const [menuFocus, setMenuFocus] = useState<MenuFocus>(null);
 
     
 
-    // 사용자 메뉴 상태
+    // ?ъ슜??硫붾돱 ?곹깭
     const [userMenuOpen, setUserMenuOpen] = useState(false);
     const [resetPasswordModalOpen, setResetPasswordModalOpen] = useState(false);
     const [logoutConfirmModalOpen, setLogoutConfirmModalOpen] = useState(false);
     const usernameRef = useRef<HTMLDivElement>(null);
 
-    // 라우트 감지
+    // ?쇱슦??媛먯?
     const { isReportRoute, isExpenseRoute, isReportEditRoute, location: routeLocation } = useSidebarRoutes();
 
-    // 이전 라우트 추적 (같은 서브메뉴 내 이동 감지)
+    // ?댁쟾 ?쇱슦??異붿쟻 (媛숈? ?쒕툕硫붾돱 ???대룞 媛먯?)
     const prevReportRouteRef = useRef<boolean>(isReportRoute);
     const prevExpenseRouteRef = useRef<boolean>(isExpenseRoute);
 
-    // 서브메뉴 상태 관리
+    // ?쒕툕硫붾돱 ?곹깭 愿由?
     const {
         setReportOpen,
         reportOpenRef,
@@ -136,13 +138,13 @@ export default function Sidebar({ onClose }: SidebarProps) {
         stableExpenseOpen,
     } = useSidebarSubMenuState(isReportRoute, isExpenseRoute, prevReportRouteRef, prevExpenseRouteRef);
 
-    // 메뉴 활성 상태
+    // 硫붾돱 ?쒖꽦 ?곹깭
     const reportActive = isReportRoute || menuFocus === "REPORT";
     const canShowHome = stablePermissions.isCEO || stablePermissions.isAdmin || isAdmin;
     const expenseActive = isExpenseRoute || menuFocus === "EXPENSE";
     const settingsActive = routeLocation.pathname.startsWith("/settings");
 
-    // 메뉴 아이템
+    // 硫붾돱 ?꾩씠??
     const { reportSubMenuItems, expenseSubMenuItems } = useSidebarMenuItems(
         stablePermissions,
         isReportEditRoute,
@@ -150,7 +152,7 @@ export default function Sidebar({ onClose }: SidebarProps) {
     );
 
 
-    // 라우트 변경에 따른 서브메뉴 상태 동기화
+    // ?쇱슦??蹂寃쎌뿉 ?곕Ⅸ ?쒕툕硫붾돱 ?곹깭 ?숆린??
     useSidebarRouteSync({
         pathname: routeLocation.pathname,
         isReportRoute,
@@ -166,7 +168,7 @@ export default function Sidebar({ onClose }: SidebarProps) {
         setShowNotifications,
     });
 
-    // 메뉴 클릭 핸들러
+    // 硫붾돱 ?대┃ ?몃뱾??
     const handleMenuClick = (focus: MenuFocus | null) => {
         if (focus) {
             setMenuFocus(focus);
@@ -178,13 +180,13 @@ export default function Sidebar({ onClose }: SidebarProps) {
         setShowNotifications(false);
     };
 
-    // menuFocus가 있으면 다른 메뉴는 "강제로 비활성" 처리
-    const shouldForceInactive = (_kind: "HOME" | "WORKLOAD" | "VACATION" | "MEMBERS") => {
+    // menuFocus媛 ?덉쑝硫??ㅻⅨ 硫붾돱??"媛뺤젣濡?鍮꾪솢?? 泥섎━
+    const shouldForceInactive = (_kind: "HOME" | "WORKLOAD" | "VACATION" | "MEMBERS" | "VEHICLES") => {
         if (!menuFocus) return false;
         return true;
     };
 
-    // 로그아웃 처리
+    // 濡쒓렇?꾩썐 泥섎━
     const handleLogoutClick = async () => {
         localStorage.removeItem("profile_role");
         await handleLogout();
@@ -199,11 +201,11 @@ export default function Sidebar({ onClose }: SidebarProps) {
                     <div className="flex gap-2.5 items-center">
                         <img
                             src="/images/RTBlogo.png"
-                            alt="RTB 로고"
+                            alt="RTB 濡쒓퀬"
                             className="h-9 w-auto object-contain shrink-0"
                         />
                         <p className="font-medium text-[14px] text-gray-900 whitespace-nowrap">
-                            RTB 통합 관리 시스템
+                            RTB ?듯빀 愿由??쒖뒪??
                         </p>
                     </div>
                     <button
@@ -230,7 +232,7 @@ export default function Sidebar({ onClose }: SidebarProps) {
                         </p>
                     </div>
 
-                    {/* 사용자 액션 메뉴 */}
+                    {/* ?ъ슜???≪뀡 硫붾돱 */}
                     <ActionMenu
                         isOpen={userMenuOpen}
                         anchorEl={usernameRef.current}
@@ -253,7 +255,7 @@ export default function Sidebar({ onClose }: SidebarProps) {
                         userEmail={currentUser?.email}
                     />
 
-                    {/* 비밀번호 재설정 모달 */}
+                    {/* 鍮꾨?踰덊샇 ?ъ꽕??紐⑤떖 */}
                     {resetPasswordModalOpen && (
                         <Suspense fallback={null}>
                             <ResetPasswordModal
@@ -265,25 +267,25 @@ export default function Sidebar({ onClose }: SidebarProps) {
                                     });
 
                                     if (error) {
-                                        console.error("비밀번호 변경 실패:", error.message);
-                                        showError("비밀번호 변경에 실패했습니다. 다시 시도해주세요.");
+                                        console.error("鍮꾨?踰덊샇 蹂寃??ㅽ뙣:", error.message);
+                                        showError("鍮꾨?踰덊샇 蹂寃쎌뿉 ?ㅽ뙣?덉뒿?덈떎. ?ㅼ떆 ?쒕룄?댁＜?몄슂.");
                                         return false;
                                     }
 
-                                    showSuccess("비밀번호가 변경되었습니다.");
+                                    showSuccess("鍮꾨?踰덊샇媛 蹂寃쎈릺?덉뒿?덈떎.");
                                     return true;
                                 }}
                             />
                         </Suspense>
                     )}
 
-                    {/* 로그아웃 확인 모달 */}
+                    {/* 濡쒓렇?꾩썐 ?뺤씤 紐⑤떖 */}
                     {logoutConfirmModalOpen && (
                         <Suspense fallback={null}>
                             <BaseModal
                                 isOpen={logoutConfirmModalOpen}
                                 onClose={() => setLogoutConfirmModalOpen(false)}
-                                title="로그아웃"
+                                title="濡쒓렇?꾩썐"
                                 footer={
                                     <div className="flex gap-3 w-full">
                                         <Button
@@ -292,7 +294,7 @@ export default function Sidebar({ onClose }: SidebarProps) {
                                             fullWidth
                                             onClick={() => setLogoutConfirmModalOpen(false)}
                                         >
-                                            취소
+                                            痍⑥냼
                                         </Button>
                                         <Button
                                             variant="primary"
@@ -300,13 +302,13 @@ export default function Sidebar({ onClose }: SidebarProps) {
                                             fullWidth
                                             onClick={handleLogoutClick}
                                         >
-                                            로그아웃
+                                            濡쒓렇?꾩썐
                                         </Button>
                                     </div>
                                 }
                             >
                                 <p className="text-center text-lg font-medium text-gray-800">
-                                    정말 로그아웃 하시겠습니까?
+                                    ?뺣쭚 濡쒓렇?꾩썐 ?섏떆寃좎뒿?덇퉴?
                                 </p>
                             </BaseModal>
                         </Suspense>
@@ -329,7 +331,7 @@ export default function Sidebar({ onClose }: SidebarProps) {
 
                             <div className="flex gap-3 items-center w-[162px]">
                                 <IconNotifications />
-                                <p className="font-medium text-[16px] leading-normal">알림</p>
+                                <p className="font-medium text-[16px] leading-normal">?뚮┝</p>
                             </div>
                             {unreadCount > 0 && (
                                 <div className="ml-auto">
@@ -361,7 +363,7 @@ export default function Sidebar({ onClose }: SidebarProps) {
                                             await markAllNotificationsAsRead(currentUserId);
                                             await refreshNotifications();
                                         } catch (error) {
-                                            console.error("모두 읽음 처리 실패:", error);
+                                            console.error("紐⑤몢 ?쎌쓬 泥섎━ ?ㅽ뙣:", error);
                                         }
                                     }
                                 }}
@@ -375,7 +377,7 @@ export default function Sidebar({ onClose }: SidebarProps) {
     className="flex flex-col gap-2 flex-1 overflow-y-auto pr-1
                [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
 >
-                        {/* 대시보드 - 대표님, admin만 (레이아웃 튐 방지: 항상 렌더 + invisible 처리) */}
+                        {/* ??쒕낫??- ??쒕떂, admin留?(?덉씠?꾩썐 ??諛⑹?: ??긽 ?뚮뜑 + invisible 泥섎━) */}
                         <div
                             className={
                                 canShowHome
@@ -386,7 +388,7 @@ export default function Sidebar({ onClose }: SidebarProps) {
                             <MainLink
                                 to={PATHS.dashboard}
                                 icon={<IconHome />}
-                                label="홈"
+                                label="??
                                 kind="HOME"
                                 onClose={onClose}
                                 shouldForceInactive={shouldForceInactive}
@@ -396,15 +398,15 @@ export default function Sidebar({ onClose }: SidebarProps) {
 
 
 
-                        {/* 출장 보고서 */}
+                        {/* 異쒖옣 蹂닿퀬??*/}
                         <MenuButton
                             icon={<IconReport />}
-                            label="출장 보고서"
+                            label="異쒖옣 蹂닿퀬??
                             isActive={reportActive}
                             onClick={() => {
                                 handleMenuClick("REPORT");
                                 setExpenseOpen(false);
-                                // 이미 열려있고 같은 서브메뉴 내 이동이면 상태 변경하지 않음
+                                // ?대? ?대젮?덇퀬 媛숈? ?쒕툕硫붾돱 ???대룞?대㈃ ?곹깭 蹂寃쏀븯吏 ?딆쓬
                                 if (!reportOpenRef.current) {
                                     setReportOpen(true);
                                 }
@@ -420,21 +422,21 @@ export default function Sidebar({ onClose }: SidebarProps) {
                             onMenuClick={handleMenuClick}
                         />
 
-                        {/* 워크로드 */}
+                        {/* ?뚰겕濡쒕뱶 */}
                         <MainLink
                             to={PATHS.workload}
                             icon={<IconWorkload />}
-                            label="워크로드"
+                            label="?뚰겕濡쒕뱶"
                             kind="WORKLOAD"
                             onClose={onClose}
                             shouldForceInactive={shouldForceInactive}
                             onMenuClick={() => handleMenuClick(null)}
                         />
 
-                        {/* 지출 관리 */}
+                        {/* 吏異?愿由?*/}
                         <MenuButton
                             icon={<IconCard />}
-                            label="지출 관리"
+                            label="吏異?愿由?
                             isActive={expenseActive}
                             onClick={() => {
                                 handleMenuClick("EXPENSE");
@@ -444,7 +446,7 @@ export default function Sidebar({ onClose }: SidebarProps) {
                                     navigate(expenseSubMenuItems[0].to);
                                     setExpenseOpen(false);
                                 } else if (expenseSubMenuItems.length > 1) {
-                                    // 이미 열려있고 같은 서브메뉴 내 이동이면 상태 변경하지 않음
+                                    // ?대? ?대젮?덇퀬 媛숈? ?쒕툕硫붾돱 ???대룞?대㈃ ?곹깭 蹂寃쏀븯吏 ?딆쓬
                                     if (!expenseOpenRef.current) {
                                         setExpenseOpen(true);
                                     }
@@ -453,7 +455,7 @@ export default function Sidebar({ onClose }: SidebarProps) {
                             }}
                         />
 
-                        {/* 하위메뉴 */}
+                        {/* ?섏쐞硫붾돱 */}
                         {expenseSubMenuItems.length > 1 && (
                             <SubMenu
                                 isOpen={stableExpenseOpen}
@@ -464,12 +466,12 @@ export default function Sidebar({ onClose }: SidebarProps) {
                             />
                         )}
 
-                        {/* 휴가 관리 - 대표님, admin만 (staff 제외) */}
+                        {/* ?닿? 愿由?- ??쒕떂, admin留?(staff ?쒖쇅) */}
                         {(stablePermissions.isCEO || !stablePermissions.isStaff) && (
                             <MainLink
                                 to={PATHS.vacation}
                                 icon={<IconVacation />}
-                                label="휴가 관리"
+                                label="?닿? 愿由?
                                 kind="VACATION"
                                 onClose={onClose}
                                 shouldForceInactive={shouldForceInactive}
@@ -477,16 +479,27 @@ export default function Sidebar({ onClose }: SidebarProps) {
                             />
                         )}
 
-                        {/* 구성원 관리 */}
+                        {/* 援ъ꽦??愿由?*/}
                         <MainLink
                             to={PATHS.members}
                             icon={<IconMembers />}
-                            label="구성원 관리"
+                            label="援ъ꽦??愿由?
                             kind="MEMBERS"
                             onClose={onClose}
                             shouldForceInactive={shouldForceInactive}
                             onMenuClick={() => handleMenuClick(null)}
                         />
+                        {canShowVehicles && (
+                            <MainLink
+                                to={PATHS.vehicles}
+                                icon={<IconCar />}
+                                label="차량 관리"
+                                kind="VEHICLES"
+                                onClose={onClose}
+                                shouldForceInactive={shouldForceInactive}
+                                onMenuClick={() => handleMenuClick(null)}
+                            />
+                        )}
                     </nav>
                     
                     <div className="h-px bg-gray-200 rounded-full mt-2" />
@@ -495,7 +508,7 @@ export default function Sidebar({ onClose }: SidebarProps) {
                         <div className={isAdmin ? "" : "invisible pointer-events-none"}>
                             <MenuButton
                                 icon={<IconSettings />}
-                                label="설정"
+                                label="?ㅼ젙"
                                 isActive={settingsActive}
                                 onClick={() => {
                                     handleMenuClick(null);

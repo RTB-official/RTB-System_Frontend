@@ -20,6 +20,7 @@ const AdminVacationPage = lazy(() => import("./pages/Vacation/AdminVacationPage"
 const PersonalExpensePage = lazy(() => import("./pages/Expense/PersonalExpensePage"));
 const MemberExpensePage = lazy(() => import("./pages/Expense/MemberExpensePage"));
 const MembersPage = lazy(() => import("./pages/Members/MembersPage"));
+const VehiclesPage = lazy(() => import("./pages/Vehicles/VehiclesPage"));
 const EmailNotificationPage = lazy(() => import("./pages/Settings/EmailNotification"));
 const SafePhrasePage = lazy(() => import("./pages/Settings/SafePhrase"));
 
@@ -53,6 +54,7 @@ function App() {
                 <Route path="/expense/member" element={<MemberExpensePage />} />
 
                 <Route path="/members" element={<MembersPage />} />
+                <Route path="/vehicles" element={<VehiclesPage />} />
 
                 <Route path="/settings" element={<SettingsPage />} />
 
