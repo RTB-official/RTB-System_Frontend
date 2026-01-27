@@ -507,7 +507,7 @@ export default function Sidebar({ onClose }: SidebarProps) {
                                 label="설정"
                                 isActive={settingsActive}
                                 onClick={() => {
-                                    go("/settings/email-notifications", null);
+                                    go("/settings", null);
                                 }}
                             />
                         </div>
