@@ -221,7 +221,11 @@ export default function Sidebar({ onClose }: SidebarProps) {
             <div className="flex flex-col gap-6 px-4 py-5 flex-1">
                 {/* Logo & Close Button */}
                 <div className="flex gap-2 items-center justify-between p-2">
-                    <div className="flex gap-2.5 items-center">
+                    <button
+                        type="button"
+                        onClick={() => navigate("/")}
+                        className="flex gap-2.5 items-center text-left hover:opacity-80 transition-opacity"
+                    >
                         <img
                             src="/images/RTBlogo.png"
                             alt="RTB 로고"
@@ -230,7 +234,7 @@ export default function Sidebar({ onClose }: SidebarProps) {
                         <p className="font-medium text-[14px] text-gray-900 whitespace-nowrap">
                             RTB 통합 관리 시스템
                         </p>
-                    </div>
+                    </button>
                     <button
                         onClick={onClose}
                         className="lg:hidden p-1 hover:bg-gray-200 rounded-lg transition-colors text-gray-900"
@@ -533,4 +537,3 @@ export default function Sidebar({ onClose }: SidebarProps) {
         </aside>
     );
 }
-
