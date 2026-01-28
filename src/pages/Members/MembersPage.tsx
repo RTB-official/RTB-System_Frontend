@@ -12,7 +12,6 @@ import Chip from "../../components/ui/Chip";
 import { IconMore } from "../../components/icons/Icons";
 import Avatar from "../../components/common/Avatar";
 import MembersSkeleton from "../../components/common/MembersSkeleton";
-import EmptyValueIndicator from "../../pages/Expense/components/EmptyValueIndicator";
 import { useToast } from "../../components/ui/ToastProvider";
 import {
     uploadPassportPhoto,
@@ -638,12 +637,14 @@ export default function MembersPage() {
                                                         isAdmin ||
                                                         row.id === myUserId;
 
-                                                    // 여권 정보가 아예 없을 때만 EmptyValueIndicator 표시
+                                                    // 여권 정보가 아예 없을 때만 표시
                                                     if (!hasAnyPassportInfo) {
                                                         return (
                                                             <div className="flex items-start pr-2 w-[260px] min-w-[260px]">
                                                                 <div className="flex-1 min-w-0">
-                                                                    <EmptyValueIndicator />
+                                                                    <span className="text-[12px] text-gray-400">
+                                                                        여권 정보 없음
+                                                                    </span>
                                                                 </div>
                                                                 {(isAdmin ||
                                                                     row.id ===
@@ -801,6 +802,7 @@ export default function MembersPage() {
                                         ]}
                                         data={pagedMembers}
                                         rowKey="id"
+                                        emptyText="등록된 구성원이 없습니다."
                                         pagination={{
                                             currentPage: page,
                                             totalPages: pageCount,

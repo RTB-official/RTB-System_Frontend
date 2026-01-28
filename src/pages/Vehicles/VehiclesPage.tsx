@@ -481,7 +481,7 @@ export default function VehiclesPage() {
                                 ]}
                                 data={canManage ? pagedVehicles : []}
                                 rowKey="id"
-                                emptyText="데이터가 없습니다."
+                                emptyText="등록된 차량이 없습니다."
                                 pagination={{
                                     currentPage: page,
                                     totalPages: pageCount,

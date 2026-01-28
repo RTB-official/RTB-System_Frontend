@@ -476,28 +476,23 @@ export default function WorkloadPage() {
                                     클릭하여 상세 내역을 확인하세요
                                 </p>
 
-                                {tableData.length === 0 ? (
-                                    <div className="py-8 text-center text-gray-500">
-                                        데이터가 없습니다.
-                                    </div>
-                                ) : (
-                                    <Table
-                                        columns={TABLE_COLUMNS}
-                                        data={currentTableData}
-                                        rowKey="id"
-                                        onRowClick={handleRowClick}
-                                        pagination={
-                                            totalPages > 1
-                                                ? {
-                                                    currentPage,
-                                                    totalPages,
-                                                    onPageChange:
-                                                        setCurrentPage,
-                                                }
-                                                : undefined
-                                        }
-                                    />
-                                )}
+                                <Table
+                                    columns={TABLE_COLUMNS}
+                                    data={currentTableData}
+                                    rowKey="id"
+                                    onRowClick={handleRowClick}
+                                    emptyText="해당 기간의 상세 데이터가 없습니다."
+                                    pagination={
+                                        totalPages > 1
+                                            ? {
+                                                currentPage,
+                                                totalPages,
+                                                onPageChange:
+                                                    setCurrentPage,
+                                            }
+                                            : undefined
+                                    }
+                                />
                             </div>
                         </div>
                     )}

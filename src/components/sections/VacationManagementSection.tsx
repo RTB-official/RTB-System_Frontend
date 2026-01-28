@@ -292,6 +292,7 @@ export default function VacationManagementSection({
                     data={rows}
                     rowKey="id"
                     className="text-[13px]"
+                    emptyText="휴가 사용 내역이 없습니다."
                     pagination={{
                         currentPage: page,
                         totalPages,
@@ -410,6 +411,7 @@ function GrantExpireTable({
             data={rows}
             rowKey="id"
             className="text-[13px]"
+            emptyText="지급/소멸 내역이 없습니다."
             pagination={pagination}
         />
     );

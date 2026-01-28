@@ -11,7 +11,6 @@ import ActionMenu from "../../components/common/ActionMenu";
 import Chip from "../../components/ui/Chip";
 import ReportListSkeleton from "../../components/common/ReportListSkeleton";
 import { IconMore, IconPlus, IconReport } from "../../components/icons/Icons";
-import EmptyValueIndicator from "../Expense/components/EmptyValueIndicator";
 import { getWorkLogs, deleteWorkLog, WorkLog } from "../../lib/workLogApi";
 import { useToast } from "../../components/ui/ToastProvider";
 import ConfirmDialog from "../../components/ui/ConfirmDialog";
@@ -585,6 +584,7 @@ const reportsWithTitle = reportItems.map((item) => {
                             {/* 테이블 섹션 */}
                             <Table
                                 className="text-[14px]"
+                                emptyText="조회된 보고서가 없습니다."
                                 columns={[
                                     {
                                         key: "owner",
@@ -632,7 +632,7 @@ const reportsWithTitle = reportItems.map((item) => {
                                                     </span>
                                                 );
                                             }
-                                            return <EmptyValueIndicator />;
+                                            return "—";
                                         },
                                     },
                                     {
@@ -651,7 +651,7 @@ const reportsWithTitle = reportItems.map((item) => {
                                                     </span>
                                                 );
                                             }
-                                            return <EmptyValueIndicator />;
+                                            return "—";
                                         },
                                     },
                                     {

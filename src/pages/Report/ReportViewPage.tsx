@@ -6,8 +6,8 @@ import Header from "../../components/common/Header";
 import CreationSkeleton from "../../components/common/CreationSkeleton";
 import SectionCard from "../../components/ui/SectionCard";
 import Button from "../../components/common/Button";
+import Table from "../../components/common/Table";
 import { IconArrowBack } from "../../components/icons/Icons";
-import EmptyValueIndicator from "../Expense/components/EmptyValueIndicator";
 import { getWorkLogById } from "../../lib/workLogApi";
 import { getWorkLogReceipts } from "../../lib/workLogApi";
 import { useToast } from "../../components/ui/ToastProvider";
@@ -299,6 +299,17 @@ export default function ReportViewPage() {
     const toggleCard = (key: string) => {
     setExpandedCards((prev) => ({ ...prev, [key]: !prev[key] }));
     };
+
+    const expenseRows = (data?.expenses ?? [])
+        .slice()
+        .sort((a: any, b: any) => (a.date || "").localeCompare(b.date || ""));
+    const expenseTotal = expenseRows.reduce((sum: number, ex: any) => {
+        const n =
+            typeof ex.amount === "number"
+                ? ex.amount
+                : Number(String(ex.amount || "0").replace(/,/g, "")) || 0;
+        return sum + n;
+    }, 0);
     
     useEffect(() => {
         const load = async () => {
@@ -488,21 +499,21 @@ try {
                                     <div>
                                         <p className="text-xs text-gray-400 mb-1">호선</p>
                                         <p className="text-lg font-semibold text-gray-900">
-                                            {workLog?.vessel?.trim() ? workLog.vessel : <EmptyValueIndicator />}
+                                            {workLog?.vessel?.trim() ? workLog.vessel : "—"}
                                         </p>
                                     </div>
 
                                     <div>
                                         <p className="text-xs text-gray-400 mb-1">엔진</p>
                                         <p className="text-lg font-semibold text-gray-900">
-                                            {workLog?.engine?.trim() ? workLog.engine : <EmptyValueIndicator />}
+                                            {workLog?.engine?.trim() ? workLog.engine : "—"}
                                         </p>
                                     </div>
 
                                     <div>
                                         <p className="text-xs text-gray-400 mb-1">목적(제목)</p>
                                         <p className="text-lg font-semibold text-gray-900">
-                                            {workLog?.subject?.trim() ? workLog.subject : <EmptyValueIndicator />}
+                                            {workLog?.subject?.trim() ? workLog.subject : "—"}
                                         </p>
                                     </div>
                                 </div>
@@ -512,28 +523,28 @@ try {
                                     <div className="flex">
                                         <span className="w-28 text-gray-400 shrink-0">출장지</span>
                                         <span className="text-gray-900">
-                                            {workLog?.location?.trim() ? workLog.location : <EmptyValueIndicator />}
+                                            {workLog?.location?.trim() ? workLog.location : "—"}
                                         </span>
                                     </div>
 
                                     <div className="flex">
                                         <span className="w-28 text-gray-400 shrink-0">작업 지시</span>
                                         <span className="text-gray-900">
-                                            {workLog?.order_group?.trim() ? workLog.order_group : <EmptyValueIndicator />}
+                                            {workLog?.order_group?.trim() ? workLog.order_group : "—"}
                                         </span>
                                     </div>
 
                                     <div className="flex">
                                         <span className="w-28 text-gray-400 shrink-0">참관감독</span>
                                         <span className="text-gray-900">
-                                            {workLog?.order_person?.trim() ? workLog.order_person : <EmptyValueIndicator />}
+                                            {workLog?.order_person?.trim() ? workLog.order_person : "—"}
                                         </span>
                                     </div>
 
                                     <div className="flex">
                                         <span className="w-28 text-gray-400 shrink-0">차량</span>
                                         <span className="text-gray-900">
-                                            {workLog?.vehicle?.trim() ? workLog.vehicle : <EmptyValueIndicator />}
+                                            {workLog?.vehicle?.trim() ? workLog.vehicle : "—"}
                                         </span>
                                     </div>
 
@@ -802,84 +813,73 @@ try {
 
 {/* 경비 내역 */}
 <SectionCard title="경비 내역">
-    {data?.expenses?.length ? (
-        <div className="overflow-x-auto">
-            <table className="w-full border-collapse">
-                <thead>
-                    <tr className="bg-gray-100">
-                        <th className="border border-gray-200 px-3 py-2 text-[13px] font-semibold text-center">
-                            날짜
-                        </th>
-                        <th className="border border-gray-200 px-3 py-2 text-[13px] font-semibold text-center">
-                            분류
-                        </th>
-                        <th className="border border-gray-200 px-3 py-2 text-[13px] font-semibold text-center">
-                            상세내용
-                        </th>
-                        <th className="border border-gray-200 px-3 py-2 text-[13px] font-semibold text-center">
-                            금액
-                        </th>
-                    </tr>
-                </thead>
-
-                <tbody>
-                    {[...data.expenses]
-                        .sort((a: any, b: any) => (a.date || "").localeCompare(b.date || ""))
-                        .map((ex: any, idx: number) => {
-                            const amountNum =
-                                typeof ex.amount === "number"
-                                    ? ex.amount
-                                    : Number(String(ex.amount || "0").replace(/,/g, "")) || 0;
-
-                            return (
-                                <tr
-                                    key={ex.id ?? `${ex.date}-${ex.type}-${idx}`}
-                                    className={`${getExpenseTypeRowClass(ex.type)}`}
-                                >
-                                    <td className="border border-gray-200 px-3 py-2 text-[13px] text-center whitespace-nowrap">
-                                        {formatDateKoreanMD(ex.date)}
-                                    </td>
-                                    <td className="border border-gray-200 px-3 py-2 text-[13px] text-center whitespace-nowrap font-medium">
-                                        {ex.type || "—"}
-                                    </td>
-                                    <td className="border border-gray-200 px-3 py-2 text-[13px]">
-                                        {ex.detail || "—"}
-                                    </td>
-                                    <td className="border border-gray-200 px-3 py-2 text-[13px] text-center whitespace-nowrap font-semibold">
-                                        {amountNum.toLocaleString()}원
-                                    </td>
-                                </tr>
-                            );
-                        })}
-                </tbody>
-
-                <tfoot>
-                    <tr>
-                        <td
-                            colSpan={3}
-                            className="border border-gray-200 px-3 py-2 text-right font-semibold text-[13px]"
-                        >
-                            합계
-                        </td>
-                        <td className="border border-gray-200 px-3 py-2 text-center font-bold text-[14px] whitespace-nowrap">
-                            {data.expenses
-                                .reduce((sum: number, ex: any) => {
-                                    const n =
-                                        typeof ex.amount === "number"
-                                            ? ex.amount
-                                            : Number(String(ex.amount || "0").replace(/,/g, "")) || 0;
-                                    return sum + n;
-                                }, 0)
-                                .toLocaleString()}
-                            원
-                        </td>
-                    </tr>
-                </tfoot>
-            </table>
-        </div>
-    ) : (
-        <div className="text-gray-400">경비 내역이 없습니다.</div>
-    )}
+    <div className="overflow-x-auto">
+        <Table
+            columns={[
+                {
+                    key: "date",
+                    label: "날짜",
+                    align: "center",
+                    headerClassName:
+                        "border border-gray-200 px-3 py-2 text-[13px] font-semibold text-center",
+                    cellClassName:
+                        "border border-gray-200 px-3 py-2 text-[13px] text-center whitespace-nowrap",
+                    render: (value) => formatDateKoreanMD(value),
+                },
+                {
+                    key: "type",
+                    label: "분류",
+                    align: "center",
+                    headerClassName:
+                        "border border-gray-200 px-3 py-2 text-[13px] font-semibold text-center",
+                    cellClassName:
+                        "border border-gray-200 px-3 py-2 text-[13px] text-center whitespace-nowrap font-medium",
+                },
+                {
+                    key: "detail",
+                    label: "상세내용",
+                    headerClassName:
+                        "border border-gray-200 px-3 py-2 text-[13px] font-semibold text-center",
+                    cellClassName:
+                        "border border-gray-200 px-3 py-2 text-[13px]",
+                },
+                {
+                    key: "amount",
+                    label: "금액",
+                    align: "center",
+                    headerClassName:
+                        "border border-gray-200 px-3 py-2 text-[13px] font-semibold text-center",
+                    cellClassName:
+                        "border border-gray-200 px-3 py-2 text-[13px] text-center whitespace-nowrap font-semibold",
+                    render: (value) => {
+                        const amountNum =
+                            typeof value === "number"
+                                ? value
+                                : Number(String(value || "0").replace(/,/g, "")) || 0;
+                        return `${amountNum.toLocaleString()}원`;
+                    },
+                },
+            ]}
+            data={expenseRows}
+            rowKey={(row: any) => row.id ?? `${row.date || "date"}-${row.type || "type"}`}
+            rowClassName={(row: any) => getExpenseTypeRowClass(row.type)}
+            className="border-collapse"
+            emptyText="등록된 경비 내역이 없습니다."
+            footer={
+                <tr>
+                    <td
+                        colSpan={3}
+                        className="border border-gray-200 px-3 py-2 text-right font-semibold text-[13px]"
+                    >
+                        합계
+                    </td>
+                    <td className="border border-gray-200 px-3 py-2 text-center font-bold text-[14px] whitespace-nowrap">
+                        {expenseTotal.toLocaleString()}원
+                    </td>
+                </tr>
+            }
+        />
+    </div>
 </SectionCard>
 
 {/* 소모 자재 */}
