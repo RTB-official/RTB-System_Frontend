@@ -13,6 +13,7 @@ import { getWorkLogReceipts } from "../../lib/workLogApi";
 import { useToast } from "../../components/ui/ToastProvider";
 import TimelineSummarySection from "../../components/sections/TimelineSummarySection";
 import { useWorkReportStore } from "../../store/workReportStore";
+import WorkloadLegend from "../../components/common/WorkloadLegend";
 
 type ViewData = {
     workLog: any;
@@ -1057,7 +1058,22 @@ try {
 </SectionCard>
 
 {/* 타임라인 */}
-<SectionCard title="">
+<SectionCard
+    title="타임라인"
+    headerContent={
+        <WorkloadLegend
+            items={[
+                { key: "work", label: "작업", color: "#3b82f6" },
+                { key: "move", label: "이동", color: "#10b981" },
+                { key: "wait", label: "대기", color: "#f59e0b" },
+            ]}
+            className="flex items-center gap-4"
+            itemClassName="flex items-center gap-1.5"
+            labelClassName="text-[12px] text-[#6a7282]"
+            swatchClassName="w-[14px] h-[14px] rounded-md"
+        />
+    }
+>
     <TimelineSummarySection />
 </SectionCard>
 

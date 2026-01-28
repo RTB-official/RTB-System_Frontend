@@ -25,6 +25,15 @@ const minutesToTopLabel = (min: number): string => {
     return `${h}:${String(m).padStart(2, "0")}시`;
 };
 
+const formatKoreanDateLabel = (dateKey: string) => {
+    const d = new Date(dateKey);
+    const month = d.getMonth() + 1;
+    const day = d.getDate();
+    const weekdays = ["일", "월", "화", "수", "목", "금", "토"];
+    const weekday = weekdays[d.getDay()] || "";
+    return `${month}월 ${day}일 (${weekday})`;
+};
+
 // ✅ 작업시간 표기용: 09~22 / 09:30~22:00 형태
 const minutesToRangeLabel = (minStart: number, minEnd: number): string => {
     const fmt = (m: number) => {
@@ -209,31 +218,28 @@ const aggregatePersonDayData = (entries: any[]) => {
 const getTypeColor = (type: string) => {
     switch (type) {
         case "작업":
-            // 일별 시간표: bg-blue-50 / text-blue-700
             return {
-                bg: "#dbeafe",     // blue-100
-                bgDark: "#bfdbfe", // blue-200
-                border: "#60a5fa", // blue-400
+                bg: "#dbeafe",
+                border: "#60a5fa",
+                text: "#1f2937",
             };
         case "이동":
-            // 일별 시간표: bg-emerald-50 / text-emerald-700
             return {
-                bg: "#d1fae5",     // emerald-100
-                bgDark: "#a7f3d0", // emerald-200
-                border: "#34d399", // emerald-400
+                bg: "#d1fae5",
+                border: "#34d399",
+                text: "#1f2937",
             };
         case "대기":
-            // 일별 시간표: bg-amber-50 / text-amber-700
             return {
-                bg: "#fef3c7",     // amber-100
-                bgDark: "#fde68a", // amber-200
-                border: "#fbbf24", // amber-400
+                bg: "#fef3c7",
+                border: "#fbbf24",
+                text: "#1f2937",
             };
         default:
             return {
                 bg: "#e5e7eb",
-                bgDark: "#d1d5db",
                 border: "#9ca3af",
+                text: "#374151",
             };
     }
 };
@@ -543,24 +549,6 @@ const personChunks = useMemo(() => {
 
     return (
         <div className="bg-white" style={{ width: "100%", maxWidth: "100%", boxSizing: "border-box" }}>
-            {/* 타임라인 */}
-            <h2 className="text-[18px] md:text-[22px] font-semibold text-[#364153] mb-4">
-                타임라인
-            </h2>
-
-            {/* 범례 */}
-            <div className="flex flex-wrap gap-4 mb-6 text-[12px] text-[#6a7282]">
-                <span className="flex items-center gap-1.5">
-                    <span className="w-4 h-4 rounded-md bg-[#3b82f6]"></span> 작업
-                </span>
-                <span className="flex items-center gap-1.5">
-                    <span className="w-4 h-4 rounded-md bg-[#10b981]"></span> 이동
-                </span>
-                <span className="flex items-center gap-1.5">
-                    <span className="w-4 h-4 rounded-md bg-[#f59e0b]"></span> 대기
-                </span>
-            </div>
-
             {/* 그룹별 타임라인 */}
             <div className="flex flex-col gap-8" style={{ width: "100%" }}>
                 {overallGroups.map((group, groupIdx) => {
@@ -571,7 +559,6 @@ const personChunks = useMemo(() => {
                                 <div className="text-[14px] font-semibold text-slate-800">
                                     {group.persons.join(", ")} ({group.persons.length}명)
                                 </div>
-                                <div className="text-[12px] text-slate-400"></div>
                             </div>
 
                             {/* 그룹 내 날짜별 타임라인 */}
@@ -586,7 +573,7 @@ const personChunks = useMemo(() => {
 
                                     const lanesSegments = assignLanes(segments);
                                     const laneCount = Math.max(1, ...lanesSegments.map((s) => s.lane + 1));
-                                    const trackHeight = Math.max(36, laneCount * 32 + 8);
+                                    const trackHeight = Math.max(48, laneCount * 38 + 10);
 
                                     const d = new Date(dateKey);
                                     const isSunday = d.getDay() === 0;
@@ -598,12 +585,12 @@ const personChunks = useMemo(() => {
                                     return (
                                         <div
                                             key={`${groupIdx}-${dateKey}`}
-                                            className="flex items-start gap-3"
+                                            className="flex items-center gap-4"
                                             style={{ width: "100%" }}
                                         >
                                             {/* 날짜 */}
                                             <div
-                                                className={`w-[44px] shrink-0 text-[14px] font-semibold leading-[28px] pt-[18px] ${
+                                                className={`mt-2.5 text-[14px] font-medium ${
                                                     isSunday
                                                         ? "text-rose-500"
                                                         : isSaturday
@@ -611,31 +598,38 @@ const personChunks = useMemo(() => {
                                                         : "text-slate-700"
                                                 }`}
                                             >
-                                                {d.getMonth() + 1}/{d.getDate()}
+                                                {formatKoreanDateLabel(dateKey)}
                                             </div>
 
                                             {/* 트랙 */}
                                             <div className="flex-1" style={{ minWidth: 0, width: "100%" }}>
                                                 <div
-                                                    className="relative border border-[#e5e7eb] rounded-xl overflow-visible w-full mt-5"
+                                                    className="relative border border-gray-300 rounded-lg overflow-visible w-full mt-3 bg-gray-50"
                                                     style={{
                                                         width: "100%",
                                                         height: `${trackHeight}px`,
-                                                        background: `
-                                                            linear-gradient(90deg, rgba(17,24,39,0.04) 1px, transparent 1px) 0 0 / calc(100%/${hourCols}) 100%,
-                                                            linear-gradient(to bottom, #f8fafc, #fff)
-                                                        `,
                                                     }}
                                                 >
-                                                    {/* 시간 라벨 */}
+                                                    {/* 세로 그리드 */}
+                                                    {Array.from({ length: Math.max(0, hourCols - 1) }).map(
+                                                        (_, i) => (
+                                                            <div
+                                                                key={`grid-${dateKey}-${i + 1}`}
+                                                                className="absolute top-0 bottom-0 border-l border-gray-200"
+                                                                style={{
+                                                                    left: `${((i + 1) / hourCols) * 100}%`,
+                                                                }}
+                                                            />
+                                                        )
+                                                    )}                
                                                     {labels.map((label, idx) => (
                                                         <div
-                                                        key={idx}
-                                                        className="absolute -top-4 text-[10px] font-semibold text-slate-600 whitespace-nowrap bg-white px-1 py-0 transform -translate-x-1/2"
-                                                        style={{ left: `${label.left}%` }}
-                                                    >
-                                                        {minutesToTopLabel(label.min)}
-                                                    </div>
+                                                            key={idx}
+                                                            className="absolute -top-4 text-[11px] font-medium text-gray-500 whitespace-nowrap bg-white px-1 transform -translate-x-1/2"
+                                                            style={{ left: `${label.left}%` }}
+                                                        >
+                                                            {minutesToTopLabel(label.min)}
+                                                        </div>
                                                     ))}
 
                                                     {/* 세그먼트 */}
@@ -647,21 +641,26 @@ const personChunks = useMemo(() => {
                                                         const width = Math.max(((segEnd - segStart) / span) * 100, 0.5);
 
                                                         const color = getTypeColor(seg.type);
-                                                        const laneHeight = 28;
-                                                        const topOffset = 4 + seg.lane * (laneHeight + 4);
+                                                        const laneHeight = 38;
+                                                        const topOffset = 5 + seg.lane * (laneHeight + 6);
+
+                                                        const showHours = width > 2;
+                                                        const showType = width > 6;
+                                                        const labelText = showType
+                                                            ? `${seg.type} ${toHourStr(seg.totalMin)}h`
+                                                            : `${toHourStr(seg.totalMin)}h`;
 
                                                         return (
                                                             <div
                                                                 key={`${seg.entryId}-${groupIdx}-${dateKey}-${idx}`}
-                                                                className="absolute rounded-lg cursor-pointer transition-all hover:scale-[1.02] hover:shadow-lg hover:z-10"
+                                                                className="absolute rounded-md cursor-pointer transition-colors hover:shadow-md hover:z-10"
                                                                 style={{
                                                                     left: `${left}%`,
                                                                     width: `${width}%`,
                                                                     top: `${topOffset}px`,
                                                                     height: `${laneHeight}px`,
-                                                                    background: `linear-gradient(135deg, ${color.bg} 0%, ${color.bgDark} 100%)`,
+                                                                    background: color.bg,
                                                                     border: `1px solid ${color.border}`,
-                                                                    boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
                                                                 }}
                                                                 onMouseEnter={(e) =>
                                                                     setHoveredSegment({
@@ -679,11 +678,14 @@ const personChunks = useMemo(() => {
                                                                     }
                                                                 }}
                                                             >
-                                                                {width > 6 && (
-                                                                    <div className="absolute inset-0 flex items-center justify-center px-2 overflow-hidden">
-                                                                    <span className="text-[11px] font-semibold text-[#1f2937] truncate">
-                                                                        {seg.type} {toHourStr(seg.totalMin)}h
-                                                                    </span>
+                                                                {showHours && (
+                                                                    <div className="absolute inset-0 flex items-center justify-center px-1 overflow-hidden">
+                                                                        <span
+                                                                            className={`font-semibold truncate ${showType ? "text-[13px]" : "text-[12px]"}`}
+                                                                            style={{ color: color.text ?? "#ffffff" }}
+                                                                        >
+                                                                            {labelText}
+                                                                        </span>
                                                                     </div>
                                                                 )}
                                                             </div>
