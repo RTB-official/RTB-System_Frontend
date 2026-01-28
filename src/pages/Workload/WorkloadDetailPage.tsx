@@ -322,7 +322,7 @@ export default function WorkloadDetailPage() {
                                                 if (prev?.date === row.date) {
                                                     return <span className="text-transparent">-</span>;
                                                 }
-                                                return value || "-";
+                                                    return value || "";
                                             },
                                         },
                                         {

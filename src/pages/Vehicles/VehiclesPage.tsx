@@ -3,9 +3,10 @@ import Sidebar from "../../components/Sidebar";
 import Header from "../../components/common/Header";
 import Table from "../../components/common/Table";
 import ActionMenu from "../../components/common/ActionMenu";
-import { IconMore } from "../../components/icons/Icons";
+import { IconMore, IconPlus } from "../../components/icons/Icons";
 import BaseModal from "../../components/ui/BaseModal";
 import Button from "../../components/common/Button";
+import VehiclesSkeleton from "../../components/common/VehiclesSkeleton";
 import Input from "../../components/common/Input";
 import DatePicker from "../../components/ui/DatePicker";
 import { useToast } from "../../components/ui/ToastProvider";
@@ -342,6 +343,7 @@ export default function VehiclesPage() {
                                     size="lg"
                                     onClick={() => openEditModal()}
                                 >
+                                    <IconPlus />
                                     차량 추가
                                 </Button>
                         ) : undefined
@@ -359,135 +361,135 @@ export default function VehiclesPage() {
                             </div>
                         )}
 
-                        {loading && canManage && (
-                            <div className="mb-3 text-sm text-gray-500">
-                                차량 목록을 불러오는 중입니다...
-                            </div>
-                        )}
+                        {loading && canManage && <div className="mb-3" />}
 
                         <div className="overflow-x-auto w-full">
-                            <Table
-                                columns={[
-                                    {
-                                        key: "type",
-                                        label: renderSortLabel("차종", "type"),
-                                        width: "8%",
-                                        render: (_, row: VehicleRow) =>
-                                            row.form.type,
-                                    },
-                                    {
-                                        key: "plate",
-                                        label: "차량번호",
-                                        width: "8%",
-                                        render: (_, row: VehicleRow) =>
-                                            row.form.plate,
-                                    },
-                                    {
-                                        key: "color",
-                                        label: renderSortLabel("색상", "color"),
-                                        width: "8%",
-                                        render: (_, row: VehicleRow) =>
-                                            row.form.color || "-",
-                                    },
-                                    {
-                                        key: "primaryUser",
-                                        label: renderSortLabel(
-                                            "주 사용자",
-                                            "primaryUser"
-                                        ),
-                                        width: "8%",
-                                        render: (_, row: VehicleRow) =>
-                                            row.form.primaryUser,
-                                    },
-                                    {
-                                        key: "rentalStart",
-                                        label: renderSortLabel(
-                                            "대여 개시일",
-                                            "rentalStart"
-                                        ),
-                                        width: "8%",
-                                        render: (_, row: VehicleRow) =>
-                                            row.form.rentalStart,
-                                    },
-                                    {
-                                        key: "contractEnd",
-                                        label: renderSortLabel(
-                                            "계약 만료일",
-                                            "contractEnd"
-                                        ),
-                                        width: "8%",
-                                        render: (_, row: VehicleRow) =>
-                                            row.form.contractEnd,
-                                    },
-                                    {
-                                        key: "insurer",
-                                        label: renderSortLabel("보험사", "insurer"),
-                                        width: "8%",
-                                        render: (_, row: VehicleRow) =>
-                                            row.form.insurer,
-                                    },
-                                    {
-                                        key: "inspection",
-                                        label: renderSortLabel("검사 만료일", "inspection"),
-                                        width: "8%",
-                                        render: (_, row: VehicleRow) =>
-                                            row.form.inspection,
-                                    },
-                                    {
-                                        key: "engineOil",
-                                        label: renderSortLabel("엔진오일 정비", "engineOil"),
-                                        width: "8%",
-                                        render: (_, row: VehicleRow) =>
-                                            row.form.engineOil,
-                                    },
-                                    {
-                                        key: "engineOilKm",
-                                        label: "정비 km",
-                                        width: "8%",
-                                        render: (_, row: VehicleRow) =>
-                                            row.form.engineOilKm || "-",
-                                    },
-                                    {
-                                        key: "repair",
-                                        label: "기타수리",
-                                        width: "12%",
-                                        render: (_, row: VehicleRow) =>
-                                            row.form.repair || "-",
-                                    },
-                                    {
-                                        key: "actions",
-                                        label: "",
-                                        width: "4%",
-                                        render: (_, row: VehicleRow) => (
-                                            <button
-                                                className="w-8 h-8 rounded-lg hover:bg-gray-100 transition flex items-center justify-center text-gray-400"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    setSelectedVehicleId(
-                                                        row.id
-                                                    );
-                                                    setActionAnchor(
-                                                        e.currentTarget
-                                                    );
-                                                    setActionOpen(true);
-                                                }}
-                                                aria-label="more"
-                                                disabled={!canManage}
-                                            >
-                                                <IconMore className="w-5 h-5" />
-                                            </button>
-                                        ),
-                                    },
-                                ]}
-                                data={canManage ? pagedVehicles : []}
-                                rowKey="id"
-                                emptyText="등록된 차량이 없습니다."
-                                pagination={{
-                                    currentPage: page,
-                                    totalPages: pageCount,
-                                    onPageChange: setPage,
-                                }}
-                            />
+                            {loading ? (
+                                <VehiclesSkeleton />
+                            ) : (
+                                <Table
+                                    columns={[
+                                        {
+                                            key: "type",
+                                            label: renderSortLabel("차종", "type"),
+                                            width: "8%",
+                                            render: (_, row: VehicleRow) =>
+                                                row.form.type ?? "",
+                                        },
+                                        {
+                                            key: "plate",
+                                            label: "차량번호",
+                                            width: "8%",
+                                            render: (_, row: VehicleRow) =>
+                                                row.form.plate ?? "",
+                                        },
+                                        {
+                                            key: "color",
+                                            label: renderSortLabel("색상", "color"),
+                                            width: "8%",
+                                            render: (_, row: VehicleRow) =>
+                                                row.form.color ?? "",
+                                        },
+                                        {
+                                            key: "primaryUser",
+                                            label: renderSortLabel(
+                                                "주 사용자",
+                                                "primaryUser"
+                                            ),
+                                            width: "8%",
+                                            render: (_, row: VehicleRow) =>
+                                                row.form.primaryUser ?? "",
+                                        },
+                                        {
+                                            key: "rentalStart",
+                                            label: renderSortLabel(
+                                                "대여 개시일",
+                                                "rentalStart"
+                                            ),
+                                            width: "8%",
+                                            render: (_, row: VehicleRow) =>
+                                                row.form.rentalStart ?? "",
+                                        },
+                                        {
+                                            key: "contractEnd",
+                                            label: renderSortLabel(
+                                                "계약 만료일",
+                                                "contractEnd"
+                                            ),
+                                            width: "8%",
+                                            render: (_, row: VehicleRow) =>
+                                                row.form.contractEnd ?? "",
+                                        },
+                                        {
+                                            key: "insurer",
+                                            label: renderSortLabel("보험사", "insurer"),
+                                            width: "8%",
+                                            render: (_, row: VehicleRow) =>
+                                                row.form.insurer ?? "",
+                                        },
+                                        {
+                                            key: "inspection",
+                                            label: renderSortLabel("검사 만료일", "inspection"),
+                                            width: "8%",
+                                            render: (_, row: VehicleRow) =>
+                                                row.form.inspection ?? "",
+                                        },
+                                        {
+                                            key: "engineOil",
+                                            label: renderSortLabel("엔진오일 정비", "engineOil"),
+                                            width: "8%",
+                                            render: (_, row: VehicleRow) =>
+                                                row.form.engineOil ?? "",
+                                        },
+                                        {
+                                            key: "engineOilKm",
+                                            label: "정비 km",
+                                            width: "8%",
+                                            render: (_, row: VehicleRow) =>
+                                                row.form.engineOilKm ?? "",
+                                        },
+                                        {
+                                            key: "repair",
+                                            label: "기타수리",
+                                            width: "12%",
+                                            render: (_, row: VehicleRow) =>
+                                                row.form.repair ?? "",
+                                        },
+                                        {
+                                            key: "actions",
+                                            label: "",
+                                            width: "4%",
+                                            render: (_, row: VehicleRow) => (
+                                                <button
+                                                    className="w-8 h-8 rounded-lg hover:bg-gray-100 transition flex items-center justify-center text-gray-400"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setSelectedVehicleId(
+                                                            row.id
+                                                        );
+                                                        setActionAnchor(
+                                                            e.currentTarget
+                                                        );
+                                                        setActionOpen(true);
+                                                    }}
+                                                    aria-label="more"
+                                                    disabled={!canManage}
+                                                >
+                                                    <IconMore className="w-5 h-5" />
+                                                </button>
+                                            ),
+                                        },
+                                    ]}
+                                    data={canManage ? pagedVehicles : []}
+                                    rowKey="id"
+                                    emptyText="등록된 차량이 없습니다."
+                                    pagination={{
+                                        currentPage: page,
+                                        totalPages: pageCount,
+                                        onPageChange: setPage,
+                                    }}
+                                />
+                            )}
                         </div>
 
                         <div className="h-8" />

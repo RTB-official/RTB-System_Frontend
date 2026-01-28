@@ -325,7 +325,7 @@ export default function MemberExpensePage() {
                 if (value && value.trim()) {
                     return <span className="text-gray-700">{value}</span>;
                 }
-                return "—";
+                return "";
             },
         },
     ];
@@ -352,7 +352,7 @@ export default function MemberExpensePage() {
                 if (value && value.trim()) {
                     return <span className="text-gray-700">{value}</span>;
                 }
-                return "—";
+                return "";
             },
         },
         {
@@ -372,7 +372,7 @@ export default function MemberExpensePage() {
                         </button>
                     );
                 }
-                return "—";
+                return "";
             },
         },
     ];

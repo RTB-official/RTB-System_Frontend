@@ -10,6 +10,7 @@ import ResetPasswordModal from "../../components/modals/ResetPasswordModal";
 import Table from "../../components/common/Table";
 import Chip from "../../components/ui/Chip";
 import { IconMore } from "../../components/icons/Icons";
+import EmptyValueIndicator from "../../pages/Expense/components/EmptyValueIndicator";
 import Avatar from "../../components/common/Avatar";
 import MembersSkeleton from "../../components/common/MembersSkeleton";
 import { useToast } from "../../components/ui/ToastProvider";
@@ -550,10 +551,18 @@ export default function MembersPage() {
                                                         />
                                                         <div className="leading-tight">
                                                             <div className="text-[14px] font-semibold text-gray-900">
-                                                                {row.name}
+                                                                {row.name ? (
+                                                                    row.name
+                                                                ) : (
+                                                                    <EmptyValueIndicator />
+                                                                )}
                                                             </div>
                                                             <div className="text-[12px] text-gray-500">
-                                                                {row.username}
+                                                                {row.username ? (
+                                                                    row.username
+                                                                ) : (
+                                                                    <EmptyValueIndicator />
+                                                                )}
                                                             </div>
                                                         </div>
                                                     </div>
@@ -566,7 +575,7 @@ export default function MembersPage() {
                                                 width: "1%",
                                                 render: (value) => (
                                                     <div className="text-[14px] text-gray-900 w-[90px] min-w-[90px]">
-                                                        {value}
+                                                        {value ? <span>{value}</span> : <EmptyValueIndicator />}
                                                     </div>
                                                 ),
                                             },
@@ -576,7 +585,7 @@ export default function MembersPage() {
                                                 width: "2%",
                                                 render: (value) => (
                                                     <div className="text-[14px] text-gray-900 w-[140px] min-w-[140px]">
-                                                        {value}
+                                                        {value ? <span>{value}</span> : <EmptyValueIndicator />}
                                                     </div>
                                                 ),
                                             },
@@ -584,16 +593,23 @@ export default function MembersPage() {
                                                 key: "address",
                                                 label: "주소",
                                                 width: "28%",
-                                                render: (_, row) => (
-                                                    <div className="text-[14px] text-gray-900 w-full max-w-[520px]">
-                                                        <div className="truncate whitespace-nowrap">
-                                                            {row.address1}
+                                                render: (_, row) => {
+                                                    const hasAddress1 = !!row.address1;
+                                                    const hasAddress2 = !!row.address2;
+                                                    if (!hasAddress1 && !hasAddress2) {
+                                                        return <EmptyValueIndicator />;
+                                                    }
+                                                    return (
+                                                        <div className="text-[14px] text-gray-900 w-full max-w-[520px]">
+                                                            <div className="truncate whitespace-nowrap">
+                                                                {hasAddress1 ? row.address1 : <EmptyValueIndicator />}
+                                                            </div>
+                                                            <div className="text-[12px] text-gray-500 mt-1 truncate whitespace-nowrap">
+                                                                {hasAddress2 ? row.address2 : <EmptyValueIndicator />}
+                                                            </div>
                                                         </div>
-                                                        <div className="text-[12px] text-gray-500 mt-1 truncate whitespace-nowrap">
-                                                            {row.address2}
-                                                        </div>
-                                                    </div>
-                                                ),
+                                                    );
+                                                },
                                             },
                                             {
                                                 key: "joinDate",
@@ -601,7 +617,7 @@ export default function MembersPage() {
                                                 width: "4%",
                                                 render: (value) => (
                                                     <div className="text-[14px] text-gray-900 w-[100px] min-w-[100px]">
-                                                        {value}
+                                                        {value ? <span>{value}</span> : <EmptyValueIndicator />}
                                                     </div>
                                                 ),
                                             },
@@ -611,7 +627,7 @@ export default function MembersPage() {
                                                 width: "1%",
                                                 render: (value) => (
                                                     <div className="text-[14px] text-gray-900 w-[110px] min-w-[110px]">
-                                                        {value}
+                                                        {value ? <span>{value}</span> : <EmptyValueIndicator />}
                                                     </div>
                                                 ),
                                             },
@@ -642,9 +658,7 @@ export default function MembersPage() {
                                                         return (
                                                             <div className="flex items-start pr-2 w-[260px] min-w-[260px]">
                                                                 <div className="flex-1 min-w-0">
-                                                                    <span className="text-[12px] text-gray-400">
-                                                                        여권 정보 없음
-                                                                    </span>
+                                                                    <EmptyValueIndicator />
                                                                 </div>
                                                                 {(isAdmin ||
                                                                     row.id ===

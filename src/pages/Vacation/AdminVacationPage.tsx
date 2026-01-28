@@ -572,7 +572,12 @@ export default function AdminVacationPage() {
                                             align: "right",
                                             headerClassName: "px-4 py-3 text-right font-semibold text-gray-600",
                                             cellClassName: "px-4 py-3 text-right",
-                                            render: (value) => `${Number(value).toFixed(1)}일`,
+                                            render: (value) => {
+                                                if (value === null || value === undefined) {
+                                                    return null;
+                                                }
+                                                return `${Number(value).toFixed(1)}일`;
+                                            },
                                         },
                                         {
                                             key: "pendingDays",
@@ -580,10 +585,12 @@ export default function AdminVacationPage() {
                                             align: "right",
                                             headerClassName: "px-4 py-3 text-right font-semibold text-gray-600",
                                             cellClassName: "px-4 py-3 text-right text-yellow-600",
-                                            render: (value) =>
-                                                Number(value) > 0
-                                                    ? `${Number(value).toFixed(1)}일`
-                                                    : "-",
+                                            render: (value) => {
+                                                if (value === null || value === undefined) {
+                                                    return null;
+                                                }
+                                                return `${Number(value).toFixed(1)}일`;
+                                            },
                                         },
                                         {
                                             key: "remainingDays",
@@ -591,7 +598,12 @@ export default function AdminVacationPage() {
                                             align: "right",
                                             headerClassName: "px-4 py-3 text-right font-semibold text-gray-600",
                                             cellClassName: "px-4 py-3 text-right",
-                                            render: (value) => `${Number(value).toFixed(1)}일`,
+                                            render: (value) => {
+                                                if (value === null || value === undefined) {
+                                                    return null;
+                                                }
+                                                return `${Number(value).toFixed(1)}일`;
+                                            },
                                         },
                                     ]}
                                     data={employeeStats}

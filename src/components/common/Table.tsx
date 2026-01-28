@@ -1,4 +1,5 @@
 import React from "react";
+import EmptyValueIndicator from "../../pages/Expense/components/EmptyValueIndicator";
 import Pagination from "./Pagination";
 
 export interface TableColumn<T = any> {
@@ -130,7 +131,9 @@ export default function Table<T = any>({
                                                     renderedValue === null ||
                                                     renderedValue === undefined ||
                                                     (typeof renderedValue === "string" &&
-                                                        renderedValue.trim() === "");
+                                                        (renderedValue.trim() === "" ||
+                                                            renderedValue.trim() === "-" ||
+                                                            renderedValue.trim() === "—"));
                                                 const cellClass =
                                                     typeof column.cellClassName === "function"
                                                         ? column.cellClassName(rawValue, row, index)
@@ -147,7 +150,11 @@ export default function Table<T = any>({
                                                                 : "text-left"
                                                         } ${cellClass}`}
                                                     >
-                                                        {isEmpty ? "—" : renderedValue}
+                                                        {isEmpty ? (
+                                                            <EmptyValueIndicator />
+                                                        ) : (
+                                                            renderedValue
+                                                        )}
                                                     </td>
                                                 );
                                             })}
