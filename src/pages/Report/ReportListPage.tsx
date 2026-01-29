@@ -839,7 +839,6 @@ const reportsWithTitle = reportItems.map((item) => {
                                 ]}
                                 data={currentData}
                                 rowKey="id"
-                                emptyText="결과가 없습니다."
                                 onRowClick={(row: ReportItem) => {
                                     navigate(`/report/${row.id}`);
                                 }}
