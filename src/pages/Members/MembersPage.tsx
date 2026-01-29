@@ -9,11 +9,12 @@ import AddMemberModal from "../../components/modals/AddMemberModal";
 import ResetPasswordModal from "../../components/modals/ResetPasswordModal";
 import Table from "../../components/common/Table";
 import Chip from "../../components/ui/Chip";
-import { IconMore } from "../../components/icons/Icons";
+import { IconDownload, IconMore } from "../../components/icons/Icons";
 import EmptyValueIndicator from "../../pages/Expense/components/EmptyValueIndicator";
 import Avatar from "../../components/common/Avatar";
 import MembersSkeleton from "../../components/common/MembersSkeleton";
 import { useToast } from "../../components/ui/ToastProvider";
+import MiniIconButton from "../../components/ui/MiniIconButton";
 import {
     uploadPassportPhoto,
     uploadProfilePhoto,
@@ -69,6 +70,7 @@ export default function MembersPage() {
     const [loadError, setLoadError] = useState<string | null>(null);
     const PAGE_SIZE = 10;
     const [isAdmin, setIsAdmin] = useState(false);
+    const [isStaff, setIsStaff] = useState(false);
     const MEMBERS_CACHE_KEY = "members_cache_v1";
     const [myUserId, setMyUserId] = useState<string | null>(null);
 
@@ -175,7 +177,7 @@ export default function MembersPage() {
 
         const { data, error } = await supabase
             .from("profiles")
-            .select("role")
+            .select("role, department")
             .eq("id", user.id)
             .single();
 
@@ -184,7 +186,8 @@ export default function MembersPage() {
             return;
         }
 
-        setIsAdmin(data?.role === "admin");
+        setIsAdmin(data?.role === "admin" || data?.department === "공무팀");
+        setIsStaff(data?.role === "staff" || data?.department === "공사팀");
     };
 
     const fetchMembers = async (opts?: {
@@ -386,10 +389,13 @@ export default function MembersPage() {
 
     const filteredMembers = useMemo(() => {
         let filtered = members;
+        if (!isAdmin && isStaff && myUserId) {
+            filtered = filtered.filter((m) => m.id === myUserId);
+        }
         if (activeTab === "ADMIN") {
-            filtered = members.filter((m) => m.team === "공무팀");
+            filtered = filtered.filter((m) => m.team === "공무팀");
         } else if (activeTab === "STAFF") {
-            filtered = members.filter((m) => m.team === "공사팀");
+            filtered = filtered.filter((m) => m.team === "공사팀");
         }
 
         // 직급 순으로 정렬 (높은 순)
@@ -511,39 +517,7 @@ export default function MembersPage() {
                                                         !!row.profilePhotoBucket &&
                                                         !!row.profilePhotoPath;
                                                     return (
-                                                    <div
-                                                        className={`flex items-center gap-3 ${
-                                                            canDownload && hasPhoto
-                                                                ? "cursor-pointer"
-                                                                : ""
-                                                        }`}
-                                                        onClick={async (e) => {
-                                                            e.stopPropagation();
-                                                            if (
-                                                                !canDownload ||
-                                                                !hasPhoto
-                                                            )
-                                                                return;
-                                                            try {
-                                                                await downloadStorageFile(
-                                                                    row.profilePhotoBucket,
-                                                                    row.profilePhotoPath,
-                                                                    row.profilePhotoName ||
-                                                                        "profile-photo"
-                                                                );
-                                                            } catch (error: any) {
-                                                                showError(
-                                                                    error?.message ||
-                                                                        "증명사진 다운로드 실패"
-                                                                );
-                                                            }
-                                                        }}
-                                                        title={
-                                                            canDownload && hasPhoto
-                                                                ? "증명사진 다운로드"
-                                                                : undefined
-                                                        }
-                                                    >
+                                                    <div className="relative group flex items-center gap-3">
                                                         <Avatar
                                                             email={row.email}
                                                             size={24}
@@ -565,6 +539,29 @@ export default function MembersPage() {
                                                                 )}
                                                             </div>
                                                         </div>
+                                                        {canDownload && hasPhoto && (
+                                                            <MiniIconButton
+                                                                onClick={async (e) => {
+                                                                    e.stopPropagation();
+                                                                    try {
+                                                                        await downloadStorageFile(
+                                                                            row.profilePhotoBucket,
+                                                                            row.profilePhotoPath,
+                                                                            row.profilePhotoName ||
+                                                                                "profile-photo"
+                                                                        );
+                                                                    } catch (error: any) {
+                                                                        showError(
+                                                                            error?.message ||
+                                                                                "증명사진 다운로드 실패"
+                                                                        );
+                                                                    }
+                                                                }}
+                                                                title="증명사진 다운로드"
+                                                                icon={<IconDownload className="w-3.5 h-3.5" />}
+                                                                className="-ml-1"
+                                                            />
+                                                        )}
                                                     </div>
                                                 );
                                                 },
@@ -572,7 +569,7 @@ export default function MembersPage() {
                                             {
                                                 key: "role",
                                                 label: "직급",
-                                                width: "1%",
+                                                width: "10%",
                                                 render: (value) => (
                                                     <div className="text-[14px] text-gray-900 w-[90px] min-w-[90px]">
                                                         {value ? <span>{value}</span> : <EmptyValueIndicator />}
@@ -582,7 +579,7 @@ export default function MembersPage() {
                                             {
                                                 key: "phone",
                                                 label: "전화번호",
-                                                width: "2%",
+                                                width: "10%",
                                                 render: (value) => (
                                                     <div className="text-[14px] text-gray-900 w-[140px] min-w-[140px]">
                                                         {value ? <span>{value}</span> : <EmptyValueIndicator />}
@@ -592,21 +589,25 @@ export default function MembersPage() {
                                             {
                                                 key: "address",
                                                 label: "주소",
-                                                width: "28%",
+                                                width: "30%",
                                                 render: (_, row) => {
                                                     const hasAddress1 = !!row.address1;
                                                     const hasAddress2 = !!row.address2;
                                                     if (!hasAddress1 && !hasAddress2) {
                                                         return <EmptyValueIndicator />;
                                                     }
+                                                    const primaryAddress =
+                                                        row.address1 || row.address2 || "";
                                                     return (
                                                         <div className="text-[14px] text-gray-900 w-full max-w-[520px]">
                                                             <div className="truncate whitespace-nowrap">
-                                                                {hasAddress1 ? row.address1 : <EmptyValueIndicator />}
+                                                                {primaryAddress}
                                                             </div>
-                                                            <div className="text-[12px] text-gray-500 mt-1 truncate whitespace-nowrap">
-                                                                {hasAddress2 ? row.address2 : <EmptyValueIndicator />}
-                                                            </div>
+                                                            {hasAddress1 && hasAddress2 && (
+                                                                <div className="text-[12px] text-gray-500 mt-1 truncate whitespace-nowrap">
+                                                                    {row.address2}
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     );
                                                 },
@@ -614,7 +615,7 @@ export default function MembersPage() {
                                             {
                                                 key: "joinDate",
                                                 label: "입사일",
-                                                width: "4%",
+                                                width: "10%",
                                                 render: (value) => (
                                                     <div className="text-[14px] text-gray-900 w-[100px] min-w-[100px]">
                                                         {value ? <span>{value}</span> : <EmptyValueIndicator />}
@@ -634,7 +635,7 @@ export default function MembersPage() {
                                             {
                                                 key: "etc",
                                                 label: "여권정보",
-                                                width: "12%",
+                                                width: "10%",
                                                 render: (_, row) => {
                                                     // 여권 정보 확인
                                                     const hasPassportNo = !!row.passportNo;
@@ -664,7 +665,7 @@ export default function MembersPage() {
                                                                     row.id ===
                                                                     myUserId) && (
                                                                         <button
-                                                                            className="ml-3 flex-none w-8 h-8 rounded-lg hover:bg-gray-100 transition flex items-center justify-center text-gray-400"
+                                                                            className="flex-none w-8 h-8 rounded-lg hover:bg-gray-100 transition flex items-center justify-center text-gray-400"
                                                                             onClick={(
                                                                                 e
                                                                             ) => {
@@ -717,41 +718,7 @@ export default function MembersPage() {
 
                                                     // 여권정보가 있으면 있는 정보만 표시
                                                     return (
-                                                        <div
-                                                            className={`flex items-start pr-2 w-[260px] min-w-[260px] ${
-                                                                canDownload &&
-                                                                hasPassportPhoto
-                                                                    ? "cursor-pointer"
-                                                                    : ""
-                                                            }`}
-                                                            onClick={async (e) => {
-                                                                e.stopPropagation();
-                                                                if (
-                                                                    !canDownload ||
-                                                                    !hasPassportPhoto
-                                                                )
-                                                                    return;
-                                                                try {
-                                                                    await downloadStorageFile(
-                                                                        row.passportPhotoBucket,
-                                                                        row.passportPhotoPath,
-                                                                        row.passportPhotoName ||
-                                                                            "passport-photo"
-                                                                    );
-                                                                } catch (error: any) {
-                                                                    showError(
-                                                                        error?.message ||
-                                                                            "여권사진 다운로드 실패"
-                                                                    );
-                                                                }
-                                                            }}
-                                                            title={
-                                                                canDownload &&
-                                                                hasPassportPhoto
-                                                                    ? "여권사진 다운로드"
-                                                                    : undefined
-                                                            }
-                                                        >
+                                                        <div className="relative group flex items-start pr-2 w-[260px] min-w-[260px]">
                                                             <div className="flex-1 min-w-0">
                                                                 <div className="flex items-center gap-2 flex-wrap">
                                                                     {hasPassportNo && (
@@ -785,6 +752,29 @@ export default function MembersPage() {
                                                                         </div>
                                                                     )}
                                                             </div>
+                                                            {canDownload && hasPassportPhoto && (
+                                                                <MiniIconButton
+                                                                    onClick={async (e) => {
+                                                                        e.stopPropagation();
+                                                                        try {
+                                                                            await downloadStorageFile(
+                                                                                row.passportPhotoBucket,
+                                                                                row.passportPhotoPath,
+                                                                                row.passportPhotoName ||
+                                                                                    "passport-photo"
+                                                                            );
+                                                                        } catch (error: any) {
+                                                                            showError(
+                                                                                error?.message ||
+                                                                                    "여권사진 다운로드 실패"
+                                                                            );
+                                                                        }
+                                                                    }}
+                                                                    title="여권사진 다운로드"
+                                                                    icon={<IconDownload className="w-3.5 h-3.5" />}
+                                                                    className="relative -left-1"
+                                                                />
+                                                            )}
                                                             {(isAdmin ||
                                                                 row.id ===
                                                                 myUserId) && (

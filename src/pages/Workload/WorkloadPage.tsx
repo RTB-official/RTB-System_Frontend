@@ -15,6 +15,7 @@ import Header from "../../components/common/Header";
 import Table from "../../components/common/Table";
 import YearMonthSelector from "../../components/common/YearMonthSelector";
 import WorkloadSkeleton from "../../components/common/WorkloadSkeleton";
+import WorkloadLegend from "../../components/common/WorkloadLegend";
 import { useUser } from "../../hooks/useUser";
 import { supabase } from "../../lib/supabase";
 import {
@@ -241,6 +242,7 @@ export default function WorkloadPage() {
                     getWorkloadData({
                         year: yearNum,
                         month: monthNum,
+                        includeDrafts: true,
                     }),
                     getWorkloadTargetProfiles(),
                 ]);
@@ -375,22 +377,7 @@ export default function WorkloadPage() {
                                     <h2 className="text-[22px] font-semibold text-gray-700 tracking-tight">
                                         인원별 작업시간
                                     </h2>
-                                    <div className="flex items-center gap-5">
-                                        {WORKLOAD_TYPES.map((type) => (
-                                            <div
-                                                key={type.key}
-                                                className="flex items-center gap-1.5"
-                                            >
-                                                <div
-                                                    className="w-4 h-4 rounded"
-                                                    style={{ backgroundColor: type.color }}
-                                                />
-                                                <span className="text-[13px] text-gray-500">
-                                                    {type.label}
-                                                </span>
-                                            </div>
-                                        ))}
-                                    </div>
+                                    <WorkloadLegend />
                                 </div>
 
                                 {chartData.length === 0 ? (

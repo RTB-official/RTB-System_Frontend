@@ -96,10 +96,10 @@ export default function VehiclesPage() {
                 key === "rentalStart"
                     ? row.form.rentalStart
                     : key === "contractEnd"
-                    ? row.form.contractEnd
-                    : key === "inspection"
-                    ? row.form.inspection
-                    : row.form.engineOil;
+                        ? row.form.contractEnd
+                        : key === "inspection"
+                            ? row.form.inspection
+                            : row.form.engineOil;
             if (!value) return Number.NEGATIVE_INFINITY;
             return new Date(value).getTime();
         };
@@ -150,16 +150,14 @@ export default function VehiclesPage() {
             <button
                 type="button"
                 onClick={() => handleSortChange(key)}
-                className={`inline-flex items-center gap-2 text-left ${
-                    active ? "text-gray-900" : "text-gray-600"
-                }`}
+                className={`inline-flex items-center gap-2 text-left ${active ? "text-gray-900" : "text-gray-600"
+                    }`}
                 aria-label={`${label} 정렬`}
             >
                 {label}
                 <span
-                    className={`inline-flex flex-col leading-[8px] text-[9px] ${
-                        active ? "text-gray-800" : "text-gray-400"
-                    }`}
+                    className={`inline-flex flex-col leading-[8px] text-[9px] ${active ? "text-gray-800" : "text-gray-400"
+                        }`}
                     aria-hidden="true"
                 >
                     <span className={active && isAsc ? "text-gray-900" : ""}>
@@ -338,14 +336,14 @@ export default function VehiclesPage() {
                     onMenuClick={() => setSidebarOpen(true)}
                     rightContent={
                         canManage ? (
-                                <Button
-                                    variant="primary"
-                                    size="lg"
-                                    onClick={() => openEditModal()}
-                                >
-                                    <IconPlus />
-                                    차량 추가
-                                </Button>
+                            <Button
+                                variant="primary"
+                                size="lg"
+                                onClick={() => openEditModal()}
+                            >
+                                <IconPlus />
+                                차량 추가
+                            </Button>
                         ) : undefined
                     }
                 />
@@ -652,13 +650,12 @@ export default function VehiclesPage() {
                                 {registrationFile?.name
                                     ? `현재 파일: ${registrationFile.name}`
                                     : editForm.registrationName
-                                    ? `현재 파일: ${editForm.registrationName}`
-                                    : editForm.registrationPath
-                                    ? `현재 파일: ${
-                                          editForm.registrationPath.split("/").pop() ||
-                                          editForm.registrationPath
-                                      }`
-                                    : "현재 파일 없음"}
+                                        ? `현재 파일: ${editForm.registrationName}`
+                                        : editForm.registrationPath
+                                            ? `현재 파일: ${editForm.registrationPath.split("/").pop() ||
+                                            editForm.registrationPath
+                                            }`
+                                            : "현재 파일 없음"}
                             </div>
                         </div>
                     </div>
