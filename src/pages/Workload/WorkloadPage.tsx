@@ -242,6 +242,7 @@ export default function WorkloadPage() {
                     getWorkloadData({
                         year: yearNum,
                         month: monthNum,
+                        includeDrafts: true,
                     }),
                     getWorkloadTargetProfiles(),
                 ]);

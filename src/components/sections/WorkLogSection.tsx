@@ -855,7 +855,7 @@ export default function WorkLogSection() {
                         )}
                         {/* 작업일 때 점심/저녁 체크박스 */}
                         {currentEntry.descType === "작업" && (
-                            <div className="flex flex-col md:flex-row gap-3">
+                            <div className="flex flex-col md:flex-row gap-2">
                                 <label className="flex-1 min-w-[260px] flex items-start gap-3 p-3 border border-[#e5e7eb] rounded-xl bg-[#fffbeb] cursor-pointer hover:bg-[#fef3c7] transition-colors">
                                     <input
                                         type="checkbox"
@@ -911,10 +911,10 @@ export default function WorkLogSection() {
                                     />
 
                                     <div className="flex flex-col">
-                                        <span className="text-[14px] font-semibold text-[#0369a1]">
+                                        <span className="text-[14px] font-semibold text-sky-900">
                                             저녁 안 먹고 작업진행 (18:00~19:00)
                                         </span>
-                                        <span className="text-[12px] text-[#0284c7]">
+                                        <span className="text-[12px] text-sky-800">
                                             ※운항선 작업일 때 체크해주세요.
                                         </span>
                                     </div>
