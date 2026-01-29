@@ -471,8 +471,9 @@ export async function getWorkLogsForDashboard(
             const profile = profileMap.get(name);
             return profile?.isTeamLead;
         });
-        if (leaders.length === 0) return "";
-        return leaders.sort((a, b) => {
+        const candidates = leaders.length > 0 ? leaders : names;
+        if (candidates.length === 0) return "";
+        return candidates.sort((a, b) => {
             const posA = profileMap.get(a)?.position || "";
             const posB = profileMap.get(b)?.position || "";
             const rankA = roleOrder[posA] ?? 999;
